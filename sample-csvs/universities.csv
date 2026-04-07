@@ -1,0 +1,4 @@
+name,description,location,state,website,logo,establishedYear,ranking,type,campuses,internationalStudents
+"Curtin University","Curtin University is a leading Australian university based in Perth, Western Australia.","Perth, Western Australia",WA,https://www.curtin.edu.au,,1966,200,public,"Perth;Kalgoorlie;Dubai",true
+"Edith Cowan University","ECU is a public university with campuses in metropolitan and regional Western Australia.","Perth, Western Australia",WA,https://www.ecu.edu.au,,1991,601,public,"Joondalup;Mt Lawley;Bunbury",true
+"University of Tasmania","UTAS is Australia's most globally focused university.","Hobart, Tasmania",TAS,https://www.utas.edu.au,,1890,401,public,"Hobart;Launceston;Cradle Coast",true

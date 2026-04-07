@@ -1,0 +1,5 @@
+name,description,location,state,website,logo,establishedYear,ranking,type,campuses,internationalStudents
+Adelaide University,New university created through the amalgamation of the University of Adelaide and the University of South Australia,"Adelaide, South Australia",SA,https://www.adelaide.edu.au/,,2024,,public,Adelaide City;Magill;Mawson Lakes;Waite;Mount Gambier;Roseworthy;Whyalla,true
+Flinders University,Listed by SA Government as a public university in Adelaide,"Adelaide, South Australia",SA,https://www.flinders.edu.au/,,1966,,public,Bedford Park,true
+Torrens University Australia,Listed by SA Government as a private Australian institution with a campus in Adelaide,"Adelaide, South Australia",SA,https://www.torrens.edu.au/,,2013,,private,Adelaide,true
+CQUniversity,Listed by SA Government as having a campus in Adelaide,"Adelaide, South Australia",SA,https://www.cqu.edu.au/,,1967,,public,Adelaide,true
