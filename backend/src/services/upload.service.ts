@@ -86,12 +86,28 @@ export const uploadService = {
     for (let i = 0; i < records.length; i++) {
       const row = records[i];
       try {
-        const university = await University.findOne({
-          $or: [{ slug: slugify(row.universityName || '', { lower: true, strict: true }) }, { name: row.universityName }],
-        });
-        if (!university) throw new Error(`University "${row.universityName}" not found`);
+        // Normalize column names: support both snake_case (CSV) and camelCase
+        const universityName = row.university_name || row.universityName || '';
+        const programName    = row.program_name    || row.name          || '';
+        const level          = row.degree_level    || row.level         || 'bachelor';
+        const field          = row.field_of_study  || row.field         || '';
+        const description    = row.description     || '';
+        const duration       = row.duration        || '';
+        const tuitionRaw     = row.annual_tuition_fee_aud || row.tuitionFeeInternational || '';
+        const intakeRaw      = row.intake_periods   || row.intakeMonths  || '';
+        const englishReq     = row.english_requirement || row.englishRequirements || '';
+        const campusMode     = row.delivery_mode   || row.campusMode    || 'on-campus';
+        const website        = row.source_url      || row.website       || '';
 
-        const baseSlug = slugify(`${row.name} ${university.name}`, { lower: true, strict: true });
+        const university = await University.findOne({
+          $or: [
+            { slug: slugify(universityName, { lower: true, strict: true }) },
+            { name: new RegExp(`^${universityName}$`, 'i') },
+          ],
+        });
+        if (!university) throw new Error(`University "${universityName}" not found`);
+
+        const baseSlug = slugify(`${programName} ${university.name}`, { lower: true, strict: true });
         let slug = baseSlug;
         let counter = 1;
         while (await Program.findOne({ slug, university: { $ne: university._id } })) {
@@ -99,25 +115,25 @@ export const uploadService = {
         }
 
         await Program.findOneAndUpdate(
-          { name: new RegExp(`^${row.name}$`, 'i'), university: university._id },
+          { name: new RegExp(`^${programName}$`, 'i'), university: university._id },
           {
-            name: row.name,
+            name: programName,
             slug,
             university: university._id,
             universityName: university.name,
             universitySlug: university.slug,
-            level: row.level || 'bachelor',
-            field: row.field || '',
-            description: row.description || '',
-            duration: row.duration || '',
-            tuitionFeeLocal: row.tuitionFeeLocal ? parseFloat(row.tuitionFeeLocal) : undefined,
-            tuitionFeeInternational: row.tuitionFeeInternational ? parseFloat(row.tuitionFeeInternational) : undefined,
-            intakeMonths: row.intakeMonths ? row.intakeMonths.split(';').map((m) => m.trim()) : [],
-            englishRequirements: row.englishRequirements || '',
+            level,
+            field,
+            description,
+            duration,
+            tuitionFeeLocal: undefined,
+            tuitionFeeInternational: tuitionRaw ? parseFloat(tuitionRaw) : undefined,
+            intakeMonths: intakeRaw ? intakeRaw.split(';').map((m: string) => m.trim()) : [],
+            englishRequirements: englishReq,
             academicRequirements: row.academicRequirements || '',
-            careerPathways: row.careerPathways ? row.careerPathways.split(';').map((c) => c.trim()) : [],
-            campusMode: row.campusMode || 'on-campus',
-            website: row.website || '',
+            careerPathways: row.careerPathways ? row.careerPathways.split(';').map((c: string) => c.trim()) : [],
+            campusMode,
+            website,
           },
           { upsert: true, new: true }
         );
