@@ -10,16 +10,27 @@ import {
   LogOut,
   GraduationCap,
   ChevronRight,
+  FileInput,
+  GitCompare,
+  Database,
+  BarChart3,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
 
 const navItems = [
+  // Core admin
   { href: '/admin', label: 'Dashboard', icon: LayoutDashboard, exact: true },
   { href: '/admin/universities', label: 'Universities', icon: University },
   { href: '/admin/programs', label: 'Programs', icon: BookOpen },
-  { href: '/admin/uploads', label: 'CSV Upload', icon: Upload },
+  { href: '/admin/uploads', label: 'CSV Upload (Legacy)', icon: Upload },
+  // ── Phase 1: Data Pipeline ─────────────────────────────────────────────
+  { divider: true, label: 'Data Pipeline' },
+  { href: '/admin/imports', label: 'Seed Imports', icon: FileInput },
+  { href: '/admin/sync', label: 'Data Sync', icon: Database },
+  { href: '/admin/staged-changes', label: 'Staged Changes', icon: GitCompare },
+  { href: '/admin/analytics', label: 'Analytics', icon: BarChart3 },
 ];
 
 export function AdminSidebar() {
@@ -51,7 +62,16 @@ export function AdminSidebar() {
 
       {/* Nav */}
       <nav className="flex-1 px-3 py-4 space-y-1">
-        {navItems.map((item) => {
+        {(navItems as any[]).map((item, idx) => {
+          if (item.divider) {
+            return (
+              <div key={`divider-${idx}`} className="px-3 pt-4 pb-1">
+                <p className="text-[10px] font-semibold uppercase tracking-widest text-sidebar-foreground/40">
+                  {item.label}
+                </p>
+              </div>
+            );
+          }
           const isActive = item.exact
             ? pathname === item.href
             : pathname.startsWith(item.href);

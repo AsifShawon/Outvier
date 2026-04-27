@@ -2,6 +2,8 @@ import type { Metadata } from "next";
 import { Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { Providers } from "./providers";
+import { Toaster } from "sonner";
+import { AICopilot } from "@/components/copilot/AICopilot";
 
 const geistMono = Geist_Mono({
   variable: "--font-geist-mono",
@@ -24,6 +26,8 @@ export default function RootLayout({
     <html lang="en" className={`${geistMono.variable} h-full antialiased`}>
       <body className="min-h-full flex flex-col">
         <Providers>{children}</Providers>
+        <AICopilot />
+        <Toaster richColors position="top-right" />
       </body>
     </html>
   );

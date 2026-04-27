@@ -5,6 +5,13 @@ import authRoutes from './routes/auth.routes';
 import universityRoutes from './routes/university.routes';
 import programRoutes from './routes/program.routes';
 import adminRoutes from './routes/admin.routes';
+import importsRoutes from './routes/imports.routes';
+import stagedChangesRoutes from './routes/stagedChanges.routes';
+import syncRoutes from './routes/sync.routes';
+import comparisonRoutes from './routes/comparison.routes';
+import studentProfileRoutes from './routes/studentProfile.routes';
+import analyticsRoutes from './routes/analytics.routes';
+import aiRoutes from './routes/ai.routes';
 import { errorHandler, notFound } from './middleware/error.middleware';
 
 dotenv.config();
@@ -24,11 +31,20 @@ app.get('/health', (req, res) => {
   res.status(200).json({ status: 'ok', timestamp: new Date().toISOString() });
 });
 
-// API Routes
+// API Routes — existing (untouched)
 app.use('/api/v1/auth', authRoutes);
 app.use('/api/v1/universities', universityRoutes);
 app.use('/api/v1/programs', programRoutes);
 app.use('/api/v1/admin', adminRoutes);
+app.use('/api/v1/comparison', comparisonRoutes);
+app.use('/api/v1/profile', studentProfileRoutes);
+app.use('/api/v1/copilot', aiRoutes);
+
+// API Routes — Phase 1 & 2 additions
+app.use('/api/v1/admin/imports', importsRoutes);
+app.use('/api/v1/admin/staged-changes', stagedChangesRoutes);
+app.use('/api/v1/admin/sync', syncRoutes);
+app.use('/api/v1/admin/analytics', analyticsRoutes);
 
 // Error handling
 app.use(notFound);
