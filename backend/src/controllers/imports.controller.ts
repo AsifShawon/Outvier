@@ -24,12 +24,7 @@ export const importsController = {
   async confirmImport(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       const { id } = req.params;
-      const { rows } = req.body as { rows: SeedPreviewRow[] };
-      if (!rows || !Array.isArray(rows)) {
-        res.status(400).json({ success: false, message: 'rows array is required' });
-        return;
-      }
-      const job = await seedImportService.confirm(id, rows, (req as any).user?.username);
+      const job = await seedImportService.confirm(id, (req as any).user?.username);
       res.status(200).json({ success: true, data: job });
     } catch (error) {
       next(error);

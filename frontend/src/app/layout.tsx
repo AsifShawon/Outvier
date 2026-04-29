@@ -17,6 +17,8 @@ export const metadata: Metadata = {
   keywords: ["Australia", "University", "Programs", "Compare", "Adelaide", "Flinders", "CQUniversity", "Torrens"],
 };
 
+import { CompareBar } from "@/components/ui-custom/CompareBar";
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -25,7 +27,10 @@ export default function RootLayout({
   return (
     <html lang="en" className={`${geistMono.variable} h-full antialiased`}>
       <body className="min-h-full flex flex-col">
-        <Providers>{children}</Providers>
+        <Providers>
+          {children}
+          <CompareBar />
+        </Providers>
         <AICopilot />
         <Toaster richColors position="top-right" />
       </body>

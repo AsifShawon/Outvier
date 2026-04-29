@@ -14,6 +14,7 @@ import {
   GitCompare,
   Database,
   BarChart3,
+  RefreshCw,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
@@ -24,11 +25,11 @@ const navItems = [
   { href: '/admin', label: 'Dashboard', icon: LayoutDashboard, exact: true },
   { href: '/admin/universities', label: 'Universities', icon: University },
   { href: '/admin/programs', label: 'Programs', icon: BookOpen },
-  { href: '/admin/uploads', label: 'CSV Upload (Legacy)', icon: Upload },
-  // ── Phase 1: Data Pipeline ─────────────────────────────────────────────
+  // ── Data Pipeline ──────────────────────────────────────────────────────
   { divider: true, label: 'Data Pipeline' },
   { href: '/admin/imports', label: 'Seed Imports', icon: FileInput },
-  { href: '/admin/sync', label: 'Data Sync', icon: Database },
+  { href: '/admin/data-sources', label: 'Data Sources', icon: Database },
+  { href: '/admin/sync', label: 'Sync Jobs', icon: RefreshCw },
   { href: '/admin/staged-changes', label: 'Staged Changes', icon: GitCompare },
   { href: '/admin/analytics', label: 'Analytics', icon: BarChart3 },
 ];

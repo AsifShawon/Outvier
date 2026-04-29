@@ -271,11 +271,13 @@ async function seed() {
 
     // Create admin user
     const adminUser = await User.create({
-      username: process.env.ADMIN_USERNAME || 'admin',
-      password: process.env.ADMIN_PASSWORD || 'admin',
+      name: 'Admin User',
+      username: 'admin',
+      email: process.env.ADMIN_EMAIL || 'admin@outvier.com',
+      passwordHash: process.env.ADMIN_PASSWORD || 'admin',
       role: 'admin',
     });
-    console.log(`👤 Admin user created: ${adminUser.username}`);
+    console.log(`👤 Admin user created: ${adminUser.email}`);
 
     // Create universities
     const createdUniversities: Record<string, IUniversity> = {};

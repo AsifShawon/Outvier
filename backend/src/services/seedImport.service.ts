@@ -88,8 +88,8 @@ export const seedImportService = {
     // Create a pending UploadJob to track this import
     const job = await UploadJob.create({
       entity: 'universities',
-      filename,
-      status: 'pending',
+      originalFilename: filename,
+      status: 'preview',
       totalRows: rawRows.length,
     });
 
@@ -172,8 +172,10 @@ export const seedImportService = {
     }
 
     job.totalRows = rawRows.length;
-    job.successCount = validCount;
-    job.errorCount = invalidCount;
+    job.validRows = validCount;
+    job.invalidRows = invalidCount;
+    job.duplicateRows = duplicates;
+    job.previewRows = rows;
     await job.save();
 
     return {
@@ -193,10 +195,10 @@ export const seedImportService = {
    * Confirm and apply the import.
    * Reads the preview data from the job, re-validates, and writes to the database.
    */
-  async confirm(jobId: string, rows: SeedPreviewRow[], uploadedBy?: string): Promise<IUploadJob> {
+  async confirm(jobId: string, uploadedBy?: string): Promise<IUploadJob> {
     const job = await UploadJob.findById(jobId);
     if (!job) throw new Error(`Upload job ${jobId} not found`);
-    if (job.status !== 'pending') throw new Error(`Job is already ${job.status}`);
+    if (job.status !== 'preview') throw new Error(`Job is already ${job.status}`);
 
     job.status = 'processing';
     await job.save();
@@ -204,57 +206,24 @@ export const seedImportService = {
     let successCount = 0;
     const rowErrors: { row: number; message: string }[] = [];
 
-    for (const row of rows) {
+    const StagedChange = (await import('../models/StagedChange.model')).StagedChange;
+
+    for (const row of job.previewRows as SeedPreviewRow[]) {
       if (row.action === 'invalid' || row.action === 'duplicate' || !row.data) continue;
 
       try {
         const data: SeedUniversityRow = row.data;
-        const nameSlug = slugify(data.universityName, { lower: true, strict: true });
-
-        const upsertFilter: Record<string, unknown> = {};
-        if (data.cricosProviderCode) {
-          upsertFilter.cricosProviderCode = data.cricosProviderCode;
-        } else if (row.existingId) {
-          upsertFilter._id = row.existingId;
-        } else {
-          upsertFilter.name = new RegExp(`^${data.universityName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`, 'i');
-        }
-
-        const campusDetails = data.campusName
-          ? [{ name: data.campusName, city: data.city, state: data.state }]
-          : [];
-
-        await University.findOneAndUpdate(
-          upsertFilter,
-          {
-            $set: {
-              name: data.universityName,
-              slug: nameSlug,
-              shortName: data.shortName || undefined,
-              country: data.country || 'Australia',
-              state: data.state,
-              city: data.city || undefined,
-              officialWebsite: data.officialWebsite || undefined,
-              website: data.officialWebsite || undefined, // legacy alias
-              cricosProviderCode: data.cricosProviderCode || undefined,
-              logoUrl: data.logoUrl || undefined,
-              logo: data.logoUrl || undefined, // legacy alias
-              providerType: data.providerType || undefined,
-              description: data.description || undefined,
-              status: 'active',
-              sourceMetadata: {
-                createdBy: uploadedBy || 'admin',
-                createdVia: 'csv',
-                lastVerifiedAt: new Date(),
-                notes: data.notes || undefined,
-              },
-            },
-            $setOnInsert: {
-              campusDetails,
-            },
-          },
-          { upsert: true, new: true }
-        );
+        const changeType = row.action === 'create' ? 'create' : 'update';
+        
+        await StagedChange.create({
+          entityType: 'university',
+          changeType,
+          entityId: row.existingId ? row.existingId : undefined,
+          newValue: data,
+          confidence: 1, // High confidence for admin manual upload
+          status: 'pending',
+          sourceUrl: 'csv_upload',
+        });
 
         successCount++;
       } catch (err: unknown) {
@@ -265,10 +234,8 @@ export const seedImportService = {
       }
     }
 
-    job.successCount = successCount;
-    job.errorCount = rowErrors.length;
-    job.rowErrors = rowErrors;
-    job.status = rowErrors.length > 0 && successCount === 0 ? 'failed' : 'completed';
+    job.status = 'confirmed';
+    job.confirmedAt = new Date();
     await job.save();
 
     return job;

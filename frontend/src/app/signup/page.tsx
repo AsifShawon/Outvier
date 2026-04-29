@@ -4,40 +4,41 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useMutation } from '@tanstack/react-query';
 import { toast } from 'sonner';
-import { GraduationCap, Lock, Mail, Eye, EyeOff } from 'lucide-react';
+import { GraduationCap, Lock, Mail, User, Eye, EyeOff } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { authApi } from '@/lib/api/auth.api';
 import Link from 'next/link';
 
-export default function LoginPage() {
+export default function SignupPage() {
   const router = useRouter();
+  const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPw, setShowPw] = useState(false);
 
   const mutation = useMutation({
-    mutationFn: () => authApi.login({ email, password }),
+    mutationFn: () => authApi.signup({ name, email, password }),
     onSuccess: (res) => {
       const { token, user } = res.data.data;
       localStorage.setItem('outvier_token', token);
-      toast.success(`Welcome back, ${user.name || 'User'}!`);
-      if (user.role === 'admin') {
-        router.push('/admin');
-      } else {
-        router.push('/dashboard');
-      }
+      toast.success(`Welcome to Outvier, ${user.name}!`);
+      router.push('/dashboard');
     },
     onError: (err: any) => {
-      toast.error(err?.response?.data?.message || 'Invalid email or password');
+      toast.error(err?.response?.data?.message || 'Failed to sign up');
     },
   });
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!email || !password) {
-      toast.error('Please enter your credentials');
+    if (!name || !email || !password) {
+      toast.error('Please fill in all fields');
+      return;
+    }
+    if (password.length < 5) {
+      toast.error('Password must be at least 5 characters');
       return;
     }
     mutation.mutate();
@@ -52,12 +53,28 @@ export default function LoginPage() {
             <GraduationCap className="h-7 w-7" />
           </div>
           <h1 className="text-3xl font-bold font-display text-white tracking-tight">Outvier</h1>
-          <p className="text-white/70 text-sm mt-2">Sign in to your account</p>
+          <p className="text-white/70 text-sm mt-2">Create your student profile</p>
         </div>
 
         {/* Form */}
         <div className="glass rounded-2xl p-8 shadow-2xl border border-white/20">
           <form onSubmit={handleSubmit} className="space-y-5">
+            <div className="space-y-2">
+              <Label htmlFor="name" className="text-white/90 text-sm font-medium">Full Name</Label>
+              <div className="relative">
+                <User className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-white/50" />
+                <Input
+                  id="name"
+                  type="text"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  placeholder="John Doe"
+                  className="pl-10 bg-white/10 border-white/20 text-white placeholder:text-white/40 focus:border-white/50 focus:ring-1 focus:ring-white/50 transition-all h-11"
+                  autoComplete="name"
+                />
+              </div>
+            </div>
+
             <div className="space-y-2">
               <Label htmlFor="email" className="text-white/90 text-sm font-medium">Email address</Label>
               <div className="relative">
@@ -85,7 +102,7 @@ export default function LoginPage() {
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="••••••••"
                   className="pl-10 pr-10 bg-white/10 border-white/20 text-white placeholder:text-white/40 focus:border-white/50 focus:ring-1 focus:ring-white/50 transition-all h-11"
-                  autoComplete="current-password"
+                  autoComplete="new-password"
                 />
                 <button
                   type="button"
@@ -102,15 +119,15 @@ export default function LoginPage() {
               disabled={mutation.isPending}
               className="w-full bg-white text-blue-900 hover:bg-slate-100 font-semibold h-11 text-base shadow-lg transition-all"
             >
-              {mutation.isPending ? 'Signing in...' : 'Sign In'}
+              {mutation.isPending ? 'Creating account...' : 'Sign Up'}
             </Button>
           </form>
 
           <div className="mt-6 text-center">
             <p className="text-sm text-white/70">
-              Don't have an account?{' '}
-              <Link href="/signup" className="text-white font-medium hover:underline hover:text-blue-100 transition-colors">
-                Sign up
+              Already have an account?{' '}
+              <Link href="/login" className="text-white font-medium hover:underline hover:text-blue-100 transition-colors">
+                Sign in
               </Link>
             </p>
           </div>

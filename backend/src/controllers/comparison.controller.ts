@@ -6,55 +6,88 @@ import { Program } from '../models/Program.model';
 import { fitScoreService } from '../services/fitScore.service';
 
 export const comparisonController = {
-  /** GET /api/v1/comparison/session
-   *  Gets or creates a comparison session for the user/anonymous key
+  /** POST /api/v1/comparison/create
+   *  Creates a new comparison session and returns a hash
+   */
+  async createSession(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const userId = (req as any).user?._id;
+      const crypto = await import('crypto');
+      const hash = crypto.randomBytes(16).toString('hex');
+      
+      const session = await ComparisonSession.create({
+        userId: userId || undefined,
+        sessionKey: hash,
+        selectedUniversityIds: [],
+        selectedProgramIds: [],
+      });
+
+      res.status(201).json({ success: true, data: { hash, session } });
+    } catch (error) {
+      next(error);
+    }
+  },
+
+  /** GET /api/v1/comparison/:hash
+   *  Gets a comparison session by hash
    */
   async getSession(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
-      const userId = (req as any).user?._id;
-      const sessionKey = req.headers['x-session-key'] as string;
-
-      if (!userId && !sessionKey) {
-        res.status(400).json({ success: false, message: 'Must provide Auth or x-session-key' });
+      const { hash } = req.params;
+      const session = await ComparisonSession.findOne({ sessionKey: hash }).populate('selectedProgramIds');
+      
+      if (!session) {
+        res.status(404).json({ success: false, message: 'Session not found' });
         return;
       }
-
-      let session;
-      if (userId) {
-        session = await ComparisonSession.findOne({ userId }).populate('selectedProgramIds');
-      } else {
-        session = await ComparisonSession.findOne({ sessionKey }).populate('selectedProgramIds');
-      }
-
-      if (!session) {
-        session = await ComparisonSession.create({
-          userId: userId || undefined,
-          sessionKey: userId ? undefined : sessionKey,
-          selectedUniversityIds: [],
-          selectedProgramIds: [],
-        });
-      }
-
+      
       res.status(200).json({ success: true, data: session });
     } catch (error) {
       next(error);
     }
   },
 
-  /** POST /api/v1/comparison/add-program
+  /** PUT /api/v1/comparison/:hash
+   *  Updates a comparison session by hash
+   */
+  async updateSession(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const { hash } = req.params;
+      const updateData = req.body;
+      const session = await ComparisonSession.findOneAndUpdate(
+        { sessionKey: hash },
+        { $set: updateData },
+        { new: true }
+      ).populate('selectedProgramIds');
+      
+      if (!session) {
+        res.status(404).json({ success: false, message: 'Session not found' });
+        return;
+      }
+      
+      res.status(200).json({ success: true, data: session });
+    } catch (error) {
+      next(error);
+    }
+  },
+
+  /** POST /api/v1/comparison/:hash/add-program
    */
   async addProgram(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
+      const { hash } = req.params;
       const { programId } = req.body;
-      const userId = (req as any).user?._id;
-      const sessionKey = req.headers['x-session-key'] as string;
 
-      const filter = userId ? { userId } : { sessionKey };
       const session = await ComparisonSession.findOneAndUpdate(
-        filter,
+        { sessionKey: hash },
         { $addToSet: { selectedProgramIds: new Types.ObjectId(programId) } },
-        { new: true, upsert: true }
+        { new: true }
       ).populate('selectedProgramIds');
+
+      if (!session) {
+        res.status(404).json({ success: false, message: 'Session not found' });
+        return;
+      }
 
       res.status(200).json({ success: true, data: session });
     } catch (error) {
@@ -62,37 +95,38 @@ export const comparisonController = {
     }
   },
 
-  /** POST /api/v1/comparison/remove-program
+  /** DELETE /api/v1/comparison/:hash/remove-program
    */
   async removeProgram(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
+      const { hash } = req.params;
       const { programId } = req.body;
-      const userId = (req as any).user?._id;
-      const sessionKey = req.headers['x-session-key'] as string;
 
-      const filter = userId ? { userId } : { sessionKey };
       const session = await ComparisonSession.findOneAndUpdate(
-        filter,
+        { sessionKey: hash },
         { $pull: { selectedProgramIds: new Types.ObjectId(programId) } },
         { new: true }
       ).populate('selectedProgramIds');
 
+      if (!session) {
+        res.status(404).json({ success: false, message: 'Session not found' });
+        return;
+      }
+
       res.status(200).json({ success: true, data: session });
     } catch (error) {
       next(error);
     }
   },
 
-  /** GET /api/v1/comparison/scores
+  /** GET /api/v1/comparison/:hash/scores
    *  Calculates fit scores for the programs currently in the session
    */
   async getScores(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
-      const userId = (req as any).user?._id;
-      const sessionKey = req.headers['x-session-key'] as string;
-      const filter = userId ? { userId } : { sessionKey };
+      const { hash } = req.params;
 
-      const session = await ComparisonSession.findOne(filter);
+      const session = await ComparisonSession.findOne({ sessionKey: hash });
       if (!session || !session.selectedProgramIds.length) {
         res.status(200).json({ success: true, data: [] });
         return;
@@ -105,6 +139,7 @@ export const comparisonController = {
 
       // Fetch or mock student profile
       let profile = {};
+      const userId = (req as any).user?._id;
       if (userId) {
         const p = await StudentProfile.findOne({ userId }).lean();
         if (p) profile = p;

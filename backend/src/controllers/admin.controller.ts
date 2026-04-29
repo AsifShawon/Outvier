@@ -1,7 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import { universityService } from '../services/university.service';
 import { programService } from '../services/program.service';
-import { uploadService } from '../services/upload.service';
 import { University } from '../models/University.model';
 import { Program } from '../models/Program.model';
 import { User } from '../models/User.model';
@@ -88,46 +87,10 @@ export const adminController = {
     }
   },
 
-  // Bulk upload
-  async uploadUniversitiesCSV(req: Request, res: Response, next: NextFunction): Promise<void> {
-    try {
-      if (!req.file) {
-        res.status(400).json({ success: false, message: 'No file uploaded' });
-        return;
-      }
-      const job = await uploadService.processUniversitiesCSV(req.file.buffer, req.file.originalname);
-      res.status(200).json({ success: true, data: job });
-    } catch (error) {
-      next(error);
-    }
-  },
-
-  async uploadProgramsCSV(req: Request, res: Response, next: NextFunction): Promise<void> {
-    try {
-      if (!req.file) {
-        res.status(400).json({ success: false, message: 'No file uploaded' });
-        return;
-      }
-      const job = await uploadService.processProgramsCSV(req.file.buffer, req.file.originalname);
-      res.status(200).json({ success: true, data: job });
-    } catch (error) {
-      next(error);
-    }
-  },
-
-  async getUploadHistory(req: Request, res: Response, next: NextFunction): Promise<void> {
-    try {
-      const jobs = await uploadService.getUploadJobs();
-      res.status(200).json({ success: true, data: jobs });
-    } catch (error) {
-      next(error);
-    }
-  },
-
   // Users list
   async getUsers(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
-      const users = await User.find().select('-password');
+      const users = await User.find().select('-passwordHash');
       res.status(200).json({ success: true, data: users });
     } catch (error) {
       next(error);

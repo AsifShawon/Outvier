@@ -12,9 +12,22 @@ const navLinks = [
   { href: '/programs', label: 'Programs' },
 ];
 
+import { useQuery } from '@tanstack/react-query';
+import { authApi } from '@/lib/api/auth.api';
+import { User, LogIn, LayoutDashboard } from 'lucide-react';
+
 export function Navbar() {
   const pathname = usePathname();
   const [mobileOpen, setMobileOpen] = useState(false);
+
+  const { data: userData, isLoading } = useQuery({
+    queryKey: ['me'],
+    queryFn: () => authApi.getMe().then((r) => r.data.data),
+    retry: false,
+    enabled: typeof window !== 'undefined' && !!localStorage.getItem('outvier_token'),
+  });
+
+  const user = userData;
 
   return (
     <header className="sticky top-0 z-50 w-full border-b border-border/60 bg-background/80 backdrop-blur-xl">
@@ -50,11 +63,29 @@ export function Navbar() {
 
           {/* Actions */}
           <div className="hidden md:flex items-center gap-3">
-            <Link href="/admin">
-              <Button variant="outline" size="sm" className="h-8 text-xs">
-                Admin
-              </Button>
-            </Link>
+            {isLoading ? (
+              <div className="h-8 w-20 bg-muted animate-pulse rounded-lg" />
+            ) : user ? (
+              <div className="flex items-center gap-3">
+                <Link href={user.role === 'admin' ? '/admin' : '/dashboard'}>
+                  <Button variant="outline" size="sm" className="h-8 text-xs gap-2 rounded-xl border-primary/20 hover:bg-primary/5">
+                    {user.role === 'admin' ? (
+                      <LayoutDashboard className="h-3.5 w-3.5 text-primary" />
+                    ) : (
+                      <User className="h-3.5 w-3.5 text-primary" />
+                    )}
+                    {user.name.split(' ')[0]}
+                  </Button>
+                </Link>
+              </div>
+            ) : (
+              <Link href="/login">
+                <Button size="sm" className="h-8 text-xs gap-2 rounded-xl bg-primary hover:bg-primary/90 text-primary-foreground">
+                  <LogIn className="h-3.5 w-3.5" />
+                  Sign In
+                </Button>
+              </Link>
+            )}
           </div>
 
           {/* Mobile Menu Button */}
@@ -85,11 +116,20 @@ export function Navbar() {
                 {link.label}
               </Link>
             ))}
-            <Link href="/admin" onClick={() => setMobileOpen(false)}>
-              <Button variant="outline" size="sm" className="w-full mt-2">
-                Admin
-              </Button>
-            </Link>
+            {user ? (
+              <Link href={user.role === 'admin' ? '/admin' : '/dashboard'} onClick={() => setMobileOpen(false)}>
+                <Button variant="outline" size="sm" className="w-full mt-2 gap-2 rounded-xl">
+                   {user.role === 'admin' ? <LayoutDashboard className="h-4 w-4" /> : <User className="h-4 w-4" />}
+                   {user.name}
+                </Button>
+              </Link>
+            ) : (
+              <Link href="/login" onClick={() => setMobileOpen(false)}>
+                <Button size="sm" className="w-full mt-2 gap-2 rounded-xl bg-primary text-white">
+                  <LogIn className="h-4 w-4" /> Sign In
+                </Button>
+              </Link>
+            )}
           </div>
         )}
       </div>

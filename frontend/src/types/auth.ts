@@ -1,11 +1,18 @@
 export interface AuthUser {
   _id: string;
-  username: string;
-  role: 'admin';
+  name: string;
+  email: string;
+  role: 'user' | 'admin';
 }
 
 export interface LoginPayload {
-  username: string;
+  email: string;
+  password: string;
+}
+
+export interface SignupPayload {
+  name: string;
+  email: string;
   password: string;
 }
 

@@ -4,19 +4,35 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { AdminSidebar } from '@/components/layout/AdminSidebar';
 import { Skeleton } from '@/components/ui/skeleton';
+import { authApi } from '@/lib/api/auth.api';
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const [isAuthed, setIsAuthed] = useState<boolean | null>(null);
 
   useEffect(() => {
-    const token = localStorage.getItem('outvier_token');
-    if (!token) {
-      router.push('/login');
-      setIsAuthed(false);
-    } else {
-      setIsAuthed(true);
-    }
+    const checkAuth = async () => {
+      const token = localStorage.getItem('outvier_token');
+      if (!token) {
+        setIsAuthed(false);
+        router.push('/login');
+        return;
+      }
+      try {
+        const res = await authApi.getMe();
+        if (res.data.data.role === 'admin') {
+          setIsAuthed(true);
+        } else {
+          setIsAuthed(false);
+          router.push('/dashboard');
+        }
+      } catch (err) {
+        setIsAuthed(false);
+        localStorage.removeItem('outvier_token');
+        router.push('/login');
+      }
+    };
+    checkAuth();
   }, [router]);
 
   if (isAuthed === null) {

@@ -1,6 +1,8 @@
 import { Request, Response, NextFunction } from 'express';
+import mongoose from 'mongoose';
 import { StagedChange } from '../models/StagedChange.model';
 import { University } from '../models/University.model';
+import { Program } from '../models/Program.model';
 import { RankingRecord } from '../models/RankingRecord.model';
 import { TuitionRecord } from '../models/TuitionRecord.model';
 import { OutcomeMetric } from '../models/OutcomeMetric.model';
@@ -49,8 +51,10 @@ export const stagedChangesController = {
    *  Approve a staged change — writes the approved data to the target collection
    */
   async approve(req: Request, res: Response, next: NextFunction): Promise<void> {
+    const session = await StagedChange.startSession();
+    session.startTransaction();
     try {
-      const change = await StagedChange.findById(req.params.id);
+      const change = await StagedChange.findById(req.params.id).session(session);
       if (!change) {
         res.status(404).json({ success: false, message: 'Staged change not found' });
         return;
@@ -64,16 +68,20 @@ export const stagedChangesController = {
       const approvedAt = new Date();
 
       // Apply the change to the appropriate collection
-      await applyApprovedChange(change.entityType, change.changeType, change.newValue, change.entityId, approvedAt);
+      await applyApprovedChange(change.entityType, change.changeType, change.newValue, change.entityId, approvedAt, session);
 
       change.status = 'approved';
       change.reviewedBy = reviewer;
       change.reviewedAt = approvedAt;
-      await change.save();
+      await change.save({ session });
 
+      await session.commitTransaction();
       res.status(200).json({ success: true, message: 'Change approved and applied' });
     } catch (error) {
+      await session.abortTransaction();
       next(error);
+    } finally {
+      session.endSession();
     }
   },
 
@@ -107,8 +115,10 @@ export const stagedChangesController = {
    *  Edit the new value and approve
    */
   async editAndApprove(req: Request, res: Response, next: NextFunction): Promise<void> {
+    const session = await StagedChange.startSession();
+    session.startTransaction();
     try {
-      const change = await StagedChange.findById(req.params.id);
+      const change = await StagedChange.findById(req.params.id).session(session);
       if (!change) {
         res.status(404).json({ success: false, message: 'Staged change not found' });
         return;
@@ -124,14 +134,76 @@ export const stagedChangesController = {
       const approvedAt = new Date();
 
       change.newValue = newValue;
-      await applyApprovedChange(change.entityType, change.changeType, newValue, change.entityId, approvedAt);
+      await applyApprovedChange(change.entityType, change.changeType, newValue, change.entityId, approvedAt, session);
 
       change.status = 'edited';
       change.reviewedBy = reviewer;
       change.reviewedAt = approvedAt;
-      await change.save();
+      await change.save({ session });
 
+      await session.commitTransaction();
       res.status(200).json({ success: true, message: 'Change edited and approved' });
+    } catch (error) {
+      await session.abortTransaction();
+      next(error);
+    } finally {
+      session.endSession();
+    }
+  },
+
+  /** POST /api/v1/admin/staged-changes/bulk-approve
+   *  Approve multiple staged changes
+   */
+  async bulkApprove(req: Request, res: Response, next: NextFunction): Promise<void> {
+    const session = await StagedChange.startSession();
+    session.startTransaction();
+    try {
+      const { ids } = req.body as { ids: string[] };
+      if (!Array.isArray(ids) || ids.length === 0) {
+        res.status(400).json({ success: false, message: 'ids array is required' });
+        return;
+      }
+
+      const changes = await StagedChange.find({ _id: { $in: ids }, status: 'pending' }).session(session);
+      const reviewer = (req as any).user?.username || 'admin';
+      const approvedAt = new Date();
+
+      for (const change of changes) {
+        await applyApprovedChange(change.entityType, change.changeType, change.newValue, change.entityId, approvedAt, session);
+        change.status = 'approved';
+        change.reviewedBy = reviewer;
+        change.reviewedAt = approvedAt;
+        await change.save({ session });
+      }
+
+      await session.commitTransaction();
+      res.status(200).json({ success: true, message: `${changes.length} changes approved` });
+    } catch (error) {
+      await session.abortTransaction();
+      next(error);
+    } finally {
+      session.endSession();
+    }
+  },
+
+  /** POST /api/v1/admin/staged-changes/bulk-reject
+   *  Reject multiple staged changes
+   */
+  async bulkReject(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const { ids } = req.body as { ids: string[] };
+      if (!Array.isArray(ids) || ids.length === 0) {
+        res.status(400).json({ success: false, message: 'ids array is required' });
+        return;
+      }
+
+      const reviewer = (req as any).user?.username || 'admin';
+      await StagedChange.updateMany(
+        { _id: { $in: ids }, status: 'pending' },
+        { $set: { status: 'rejected', reviewedBy: reviewer, reviewedAt: new Date() } }
+      );
+
+      res.status(200).json({ success: true, message: 'Changes rejected' });
     } catch (error) {
       next(error);
     }
@@ -147,46 +219,62 @@ async function applyApprovedChange(
   changeType: string,
   newValue: Record<string, unknown>,
   entityId?: unknown,
-  approvedAt?: Date
+  approvedAt?: Date,
+  session?: mongoose.mongo.ClientSession
 ): Promise<void> {
   const value = { ...newValue, approvedAt: approvedAt ?? new Date(), status: 'approved' };
+  const options = session ? { session } : {};
 
   switch (entityType) {
     case 'university':
-      if (changeType === 'update' && entityId) {
-        await University.findByIdAndUpdate(entityId, { $set: newValue });
+      if (changeType === 'create') {
+        await University.create([newValue], options);
+      } else if (changeType === 'update' && entityId) {
+        await University.findByIdAndUpdate(entityId, { $set: newValue }, options);
+      } else if (changeType === 'delete' && entityId) {
+        await University.findByIdAndDelete(entityId, options);
+      }
+      break;
+
+    case 'program':
+      if (changeType === 'create') {
+        await Program.create([newValue], options);
+      } else if (changeType === 'update' && entityId) {
+        await Program.findByIdAndUpdate(entityId, { $set: newValue }, options);
+      } else if (changeType === 'delete' && entityId) {
+        await Program.findByIdAndDelete(entityId, options);
       }
       break;
 
     case 'ranking':
       if (changeType === 'create') {
-        await RankingRecord.create(value);
+        await RankingRecord.create([value], options);
       } else if (entityId) {
-        await RankingRecord.findByIdAndUpdate(entityId, { $set: value });
+        await RankingRecord.findByIdAndUpdate(entityId, { $set: value }, options);
       }
       break;
 
     case 'tuition':
       if (changeType === 'create') {
-        await TuitionRecord.create(value);
+        await TuitionRecord.create([value], options);
       } else if (entityId) {
-        await TuitionRecord.findByIdAndUpdate(entityId, { $set: value });
+        await TuitionRecord.findByIdAndUpdate(entityId, { $set: value }, options);
       }
       break;
 
     case 'outcome':
       if (changeType === 'create') {
-        await OutcomeMetric.create(value);
+        await OutcomeMetric.create([value], options);
       } else if (entityId) {
-        await OutcomeMetric.findByIdAndUpdate(entityId, { $set: value });
+        await OutcomeMetric.findByIdAndUpdate(entityId, { $set: value }, options);
       }
       break;
 
     case 'scholarship':
       if (changeType === 'create') {
-        await Scholarship.create(value);
+        await Scholarship.create([value], options);
       } else if (entityId) {
-        await Scholarship.findByIdAndUpdate(entityId, { $set: value });
+        await Scholarship.findByIdAndUpdate(entityId, { $set: value }, options);
       }
       break;
 

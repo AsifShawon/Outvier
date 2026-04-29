@@ -67,8 +67,8 @@ export const uploadService = {
       }
     }
 
-    job.successCount = successCount;
-    job.errorCount = rowErrors.length;
+    job.validRows = successCount;
+    job.invalidRows = rowErrors.length;
     job.rowErrors = rowErrors;
     job.status = rowErrors.length === records.length ? 'failed' : 'completed';
     await job.save();
@@ -143,8 +143,8 @@ export const uploadService = {
       }
     }
 
-    job.successCount = successCount;
-    job.errorCount = rowErrors.length;
+    job.validRows = successCount;
+    job.invalidRows = rowErrors.length;
     job.rowErrors = rowErrors;
     job.status = rowErrors.length === records.length ? 'failed' : 'completed';
     await job.save();

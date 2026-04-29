@@ -33,12 +33,29 @@ const campusModeIcons: Record<string, string> = {
   hybrid: '🔄',
 };
 
+import { useComparison } from '@/context/ComparisonContext';
+import { Button } from '@/components/ui/button';
+import { Plus, Check } from 'lucide-react';
+
 export function ProgramCard({ program }: ProgramCardProps) {
+  const { selectedIds, addToCompare, removeFromCompare } = useComparison();
+  const isSelected = selectedIds.includes(program._id);
+
+  const handleCompareClick = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (isSelected) {
+      removeFromCompare(program._id);
+    } else {
+      addToCompare(program._id);
+    }
+  };
+
   return (
     <Link href={`/programs/${program.slug}`}>
-      <Card className="card-hover group h-full overflow-hidden border-border/60 hover:border-primary/30 bg-card">
+      <Card className="card-hover group h-full overflow-hidden border-border/60 hover:border-primary/30 bg-card flex flex-col">
         <div className="h-2 bg-gradient-to-r from-violet-500 via-primary to-primary/40" />
-        <CardContent className="p-5">
+        <CardContent className="p-5 flex-1 flex flex-col">
           {/* Level & Field */}
           <div className="flex items-center gap-2 mb-3">
             <span
@@ -65,16 +82,16 @@ export function ProgramCard({ program }: ProgramCardProps) {
           </p>
 
           {/* Meta */}
-          <div className="grid grid-cols-2 gap-2">
+          <div className="grid grid-cols-2 gap-2 mt-auto">
             <div className="flex items-center gap-1.5">
               <Clock className="h-3 w-3 text-muted-foreground shrink-0" />
               <span className="text-[11px] text-muted-foreground truncate">{program.duration}</span>
             </div>
-            {program.tuitionFeeLocal && (
+            {program.tuitionFeeInternational && (
               <div className="flex items-center gap-1.5">
                 <DollarSign className="h-3 w-3 text-muted-foreground shrink-0" />
                 <span className="text-[11px] text-muted-foreground">
-                  ${program.tuitionFeeLocal.toLocaleString()}/yr
+                  ${program.tuitionFeeInternational.toLocaleString()}/yr
                 </span>
               </div>
             )}
@@ -82,12 +99,35 @@ export function ProgramCard({ program }: ProgramCardProps) {
 
           {/* Intake months */}
           {program.intakeMonths && program.intakeMonths.length > 0 && (
-            <div className="mt-4 pt-4 border-t border-border/50">
+            <div className="mt-3 pt-3 border-t border-border/50">
               <span className="text-[10px] text-muted-foreground">
                 Intake: {program.intakeMonths.join(', ')}
               </span>
             </div>
           )}
+
+          {/* Compare Button */}
+          <div className="mt-4 pt-3 border-t border-border/50">
+            <Button
+              size="sm"
+              variant={isSelected ? "secondary" : "outline"}
+              className={cn(
+                "w-full gap-2 text-[11px] h-8 rounded-lg transition-all",
+                isSelected && "bg-primary/10 text-primary border-primary/20 hover:bg-primary/20"
+              )}
+              onClick={handleCompareClick}
+            >
+              {isSelected ? (
+                <>
+                  <Check className="h-3 w-3" /> Compared
+                </>
+              ) : (
+                <>
+                  <Plus className="h-3 w-3" /> Compare
+                </>
+              )}
+            </Button>
+          </div>
         </CardContent>
       </Card>
     </Link>
