@@ -12,7 +12,7 @@ export const aiService = {
   async getModel() {
     let provider = process.env.DEFAULT_AI_PROVIDER || 'groq';
     let apiKey = process.env.GROQ_API_KEY;
-    let modelName = 'llama3-8b-8192'; // Default groq model
+    let modelName = 'llama-3.3-70b-versatile'; // Default groq model
 
     // Check DB for active setting
     const activeSetting = await AIProviderSetting.findOne({ isActive: true }).select('+encryptedApiKey');
