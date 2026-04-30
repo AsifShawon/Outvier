@@ -4,7 +4,9 @@ import { programService } from '../services/program.service';
 import { University } from '../models/University.model';
 import { Program } from '../models/Program.model';
 import { User } from '../models/User.model';
-import { powerbiService } from '../services/powerbi.service';
+import { RankingRecord } from '../models/RankingRecord.model';
+import { Scholarship } from '../models/Scholarship.model';
+import { OutcomeMetric } from '../models/OutcomeMetric.model';
 
 export const adminController = {
   // Dashboard stats
@@ -98,13 +100,63 @@ export const adminController = {
     }
   },
 
-  // Analytics
-  async getEmbedToken(req: Request, res: Response, next: NextFunction): Promise<void> {
+  // Rankings CRUD
+  async getRankings(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
-      const embedConfig = await powerbiService.getEmbedToken();
-      res.status(200).json({ success: true, data: embedConfig });
-    } catch (error) {
-      next(error);
-    }
+      const rankings = await RankingRecord.find().populate('universityId', 'name slug').sort({ year: -1 });
+      res.json({ success: true, data: rankings });
+    } catch (error) { next(error); }
+  },
+  async createRanking(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const ranking = await RankingRecord.create(req.body);
+      res.status(201).json({ success: true, data: ranking });
+    } catch (error) { next(error); }
+  },
+  async deleteRanking(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      await RankingRecord.findByIdAndDelete(req.params.id);
+      res.json({ success: true, message: 'Ranking deleted' });
+    } catch (error) { next(error); }
+  },
+
+  // Scholarships CRUD
+  async getScholarships(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const scholarships = await Scholarship.find().populate('universityId', 'name slug').sort({ createdAt: -1 });
+      res.json({ success: true, data: scholarships });
+    } catch (error) { next(error); }
+  },
+  async createScholarship(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const scholarship = await Scholarship.create(req.body);
+      res.status(201).json({ success: true, data: scholarship });
+    } catch (error) { next(error); }
+  },
+  async deleteScholarship(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      await Scholarship.findByIdAndDelete(req.params.id);
+      res.json({ success: true, message: 'Scholarship deleted' });
+    } catch (error) { next(error); }
+  },
+
+  // Outcomes CRUD
+  async getOutcomes(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const outcomes = await OutcomeMetric.find().populate('universityId', 'name slug').sort({ year: -1 });
+      res.json({ success: true, data: outcomes });
+    } catch (error) { next(error); }
+  },
+  async createOutcome(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const outcome = await OutcomeMetric.create(req.body);
+      res.status(201).json({ success: true, data: outcome });
+    } catch (error) { next(error); }
+  },
+  async deleteOutcome(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      await OutcomeMetric.findByIdAndDelete(req.params.id);
+      res.json({ success: true, message: 'Outcome deleted' });
+    } catch (error) { next(error); }
   },
 };

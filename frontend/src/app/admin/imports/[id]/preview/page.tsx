@@ -44,6 +44,18 @@ export default function ImportPreviewPage() {
     },
   });
 
+  const cancelMutation = useMutation({
+    mutationFn: () => api.post(`/admin/imports/${id}/cancel`),
+    onSuccess: () => {
+      toast.success('Import cancelled.');
+      queryClient.invalidateQueries({ queryKey: ['import', id] });
+      router.push('/admin/imports');
+    },
+    onError: (err: any) => {
+      toast.error(err?.response?.data?.message || 'Failed to cancel import');
+    },
+  });
+
   const statusBadge = job?.status === 'confirmed' || job?.status === 'completed'
     ? <Badge variant="default" className="gap-1.5"><CheckCircle2 className="h-3 w-3" /> {job.status}</Badge>
     : job?.status === 'failed'
@@ -66,14 +78,25 @@ export default function ImportPreviewPage() {
           {!isLoading && statusBadge}
         </div>
         {!isLoading && job?.status === 'preview' && (
-          <Button 
-            onClick={() => confirmMutation.mutate()} 
-            disabled={confirmMutation.isPending}
-            className="rounded-xl bg-blue-600 hover:bg-blue-700 text-white"
-          >
-            {confirmMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <CheckCircle2 className="h-4 w-4 mr-2" />}
-            Confirm Import
-          </Button>
+          <div className="flex gap-3">
+            <Button 
+              variant="outline"
+              onClick={() => cancelMutation.mutate()} 
+              disabled={cancelMutation.isPending || confirmMutation.isPending}
+              className="rounded-xl border-slate-200"
+            >
+              {cancelMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <XCircle className="h-4 w-4 mr-2" />}
+              Cancel Import
+            </Button>
+            <Button 
+              onClick={() => confirmMutation.mutate()} 
+              disabled={confirmMutation.isPending || cancelMutation.isPending}
+              className="rounded-xl bg-blue-600 hover:bg-blue-700 text-white"
+            >
+              {confirmMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <CheckCircle2 className="h-4 w-4 mr-2" />}
+              Confirm Import
+            </Button>
+          </div>
         )}
       </div>
 

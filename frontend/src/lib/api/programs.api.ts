@@ -21,12 +21,4 @@ export const programsApi = {
 
   delete: (id: string): Promise<{ data: ApiResponse<null> }> =>
     api.delete(`/admin/programs/${id}`),
-
-  bulkUpload: (file: File) => {
-    const formData = new FormData();
-    formData.append('file', file);
-    return api.post('/admin/programs/bulk-upload', formData, {
-      headers: { 'Content-Type': 'multipart/form-data' },
-    });
-  },
 };

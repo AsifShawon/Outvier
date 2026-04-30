@@ -1,131 +1,124 @@
-# 🎓 Outvier — Comparative Analytics Dashboard
+# 🎓 Outvier — Comparative Analytics & Decision-Support Platform
 
-Welcome to **Outvier**, a full-stack comparative analytics platform designed for discovering, filtering, and comparing university programs across Australia. Built to empower data-driven decisions, Outvier offers an elegant, high-performance UI and a robust scalable API.
+Welcome to **Outvier**, a full-stack Australian university comparison and decision-support platform. Outvier goes beyond simple searching, providing students with personalized "Fit Scores," a Kanban-style application tracker, and a comprehensive budget calculator, while giving administrators automated data-sync pipelines and deep business intelligence through Metabase.
 
 ---
 
 ## 🏗️ Architecture Overview
 
-The application is structured as a **Monorepo** consisting of two main environments:
+Outvier is built as a high-performance monorepo with a decoupled frontend, backend, and background processing layer.
 
 ### 1. Frontend (`/frontend`)
-Built with cutting-edge web technologies optimized for performance and aesthetics:
 - **Framework:** Next.js 16 (App Router)
-- **Language:** TypeScript
-- **Styling:** Tailwind CSS (v4) & Shadcn/UI
-- **Animations:** Framer Motion (Scroll-triggered animations, interactive hover states, glassmorphism hero sections)
-- **Data Fetching:** TanStack React Query & Axios
-- **State/Forms:** React Hook Form & Zod validation
+- **Design System:** Vanilla CSS with Radix UI & Shadcn components.
+- **Analytics:** Metabase Embedding & Native Stats via **Recharts**.
+- **Data Fetching:** TanStack React Query (v5).
+- **Interactive UI:** Framer Motion for premium animations and Kanban-style drag-and-drop interfaces.
 
 ### 2. Backend (`/backend`)
-A fully typed, robust RESTful API that bridges the database and front-end reliably.
-- **Runtime & Framework:** Node.js, Express.js
-- **Language:** TypeScript
-- **Database Modeler:** Mongoose
-- **File Handling:** Multer & CSV-Parse (For bulk document parsing)
-- **Security:** JWT Authentication, Bcrypt Password Hashing, CORS, and centralized Error Middleware routes.
+- **Runtime:** Node.js with Express.js (TypeScript).
+- **Queue System:** **BullMQ** with **Redis** for handling long-running scraping and sync jobs.
+- **Data Pipeline:** Custom connectors for **QS World Rankings**, **QILT Graduate Outcomes**, and automated Scholarship scrapers.
+- **Security:** JWT Authentication with Role-Based Access Control (RBAC).
 
-### 3. Database
-- **Engine:** MongoDB
-- **Collections:** `Users`, `Universities`, `Programs`, and `UploadJobs`.
-- **Search Optimization:** MongoDB Text Indexes (`$text`) mapped for rapid multi-field fuzzy search across titles, locations, and descriptions.
+### 3. Data & Services
+- **Database:** MongoDB (Mongoose) with optimized text-indexes for fuzzy search.
+- **Analytics Engine:** **Metabase** (Self-hosted via Docker) for deep business intelligence.
+- **Notifications:** Nodemailer-based SMTP service for student engagement.
 
 ---
 
 ## 🚀 Getting Started
 
-Follow the steps below to start the platform from a completely clean slate.
-
-### 🛠️ 1. Setup the Database (MongoDB)
-
-You have two choices for running the database locally.
-
-**Option A: Using Docker (Recommended for ease)**
-1. Ensure Docker Desktop is running.
-2. In the root directory (`ICT801/`), spin up the provided `docker-compose.yml`:
-   ```bash
-   docker compose up -d
-   ```
-   *Note: Our config maps the container to port `27018` to avoid common local port conflicts.*
-
-**Option B: Without Docker (Native Install)**
-1. Download and install [MongoDB Community Server](https://www.mongodb.com/try/download/community).
-2. Start the `mongod` service on your machine (Default binds to port `27017`).
-3. If using standard port 27017, update `backend/.env` line 2 to: `MONGODB_URI=mongodb://localhost:27017/outvier`
+### 🛠️ 1. Infrastructure (Docker)
+The easiest way to run the full stack (Database, Redis, and Metabase) is via Docker Compose:
+```bash
+docker compose up -d
+```
+This will start:
+- **MongoDB** on port `27018`
+- **Redis** on port `6379`
+- **Metabase** on port `3001`
 
 ### 📦 2. Install Dependencies
-Open your terminal and navigate to the project directory:
-
 ```bash
-# Install backend packages
-cd backend
-npm install
-
-# In a new terminal, install frontend packages
-cd frontend
-npm install
+# Root
+cd backend && npm install
+cd ../frontend && npm install
 ```
 
-### 🌱 3. Initialize & Seed Database
-There are two ways to populate data:
+### 🏃‍♂️ 3. Run the Platform
+You need to run three processes for the full experience:
 
-**Using the Default Seeder:**
-Provides an instantaneous baseline of mock data.
-```bash
-cd backend
-npm run seed
-```
-*(Creates the Admin account: `admin / admin`, plus core Universities and Programs).*
-
-**Seeding using the Sample CSVs (Admin Dashboard):**
-1. Wait to start both servers (see Step 4 below).
-2. Log into the application at `http://localhost:3000/login` as `admin`.
-3. Navigate to the **CSV Upload** tab in the admin sidebar.
-4. Drag and drop `universities.csv` from the root folder `sample-csvs/` into the dropzone to bulk insert Universities.
-5. Drag and drop `programs.csv` into the Programs dropzone. 
-*(The backend employs strict Upsert logic—any duplicate uploads will gracefully match and update the exact row).*
-
-### 🏃‍♂️ 4. Start the Application Servers
-To visualize the whole platform:
-
-**Start the Backend:**
+**Start the Backend API:**
 ```bash
 cd backend
 npm run dev
-# Running securely on http://localhost:5000/api/v1
+```
+
+**Start the Background Worker (For Scrapers/Sync):**
+```bash
+cd backend
+npm run dev:worker
 ```
 
 **Start the Frontend:**
 ```bash
 cd frontend
 npm run dev
-# Running securely on http://localhost:3000
 ```
 
 ---
 
-## 🗺️ What We Have Built & What is Working
+## 🗺️ Key Features
 
-### Public Interfaces (Client-Side)
-- ✅ **Dynamic Interactive Homepage:** Framer Motion-powered landing view with glassmorphism dashboard mockups, fluid gradients, scroll-activated components, and deep hover scales.
-- ✅ **University Directory (`/universities`):** Grid layout with real-time text-index debounced search and active State / Type filters.
-- ✅ **University Detail View (`/universities/[slug]`):** Renders all critical context (established year, international students, location) alongside a dynamically linked grid of all nested *Programs* belonging to that school.
-- ✅ **Program Directory (`/programs`):** Advanced comparison list featuring filters for Campus Mode and Program Levels.
-- ✅ **Program Detail View (`/programs/[slug]`):** In-depth information displaying tuition breakdowns, intake months, academic requirements, duration, and direct website references.
+### 🎓 For Students
+- ✅ **Personalized Fit Score:** An advanced comparison engine that calculates a 0-100% match based on your academic profile, budget, and preferred location.
+- ✅ **Comparison Table:** Side-by-side analysis of programs featuring real-time ranking data and graduate outcome metrics.
+- ✅ **Application Tracker:** A Kanban board to manage your journey from "Researching" to "Enrolled."
+- ✅ **Budget Calculator:** Estimate total yearly costs including tuition, accommodation, and lifestyle expenses across different Australian states.
 
-### Admin Dashboard (Protected Route)
-- ✅ **Secure Login (`/login`):** JWT-secured gateway with `httpOnly` cookie injection capabilities.
-- ✅ **Stats Dashboard (`/admin`):** Rapid overview displaying total active Universities and Programs.
-- ✅ **Data Modifiers (CRUD):** 
-  - Complete "Create", "Read", "Update", "Delete" interface integrations across both Universities and Programs.
-  - Form validation utilizes `React Hook Form` piped with `Zod` logic resolving to strict types against the Node Server mappings.
-- ✅ **Intelligent CSV Bulk-Uploads (`/admin/uploads`):** 
-  - Handles parsing logic seamlessly. Identifies duplicate structures by mapping Regex lookups to Row Headers safely. Provides visual success/failure feedback per row immediately on frontend.
+### 🛡️ For Administrators
+- ✅ **Metabase Dashboard:** Integrated BI dashboard for tracking student trends and platform performance.
+- ✅ **Automated Data Sync:** Connectors that pull the latest data from QS Rankings and QILT Outcomes.
+- ✅ **Staged Changes System:** Review and approve automated data updates before they go live.
+- ✅ **Bulk CSV Upload:** High-speed ingestion for university and program data.
+- ✅ **Rankings & Scholarships CRUD:** Manage global rankings and financial aid records through a dedicated admin UI.
 
-## 🔑 Key API Routes
-Here is a snapshot of the major functioning routes active in the `v1` backend framework:
-*   `POST /api/v1/auth/login` - Generates JWT login scope.
-*   `GET /api/v1/universities` - Accepts `?search`, `?state`, `?type`, `?page`, and `?limit`. Returns paginated lists.
-*   `GET /api/v1/universities/:slug` - Matches specific URI query for detail views.
-*   `GET /api/v1/universities/:slug/programs` - Maps and returns all unique courses mapped strictly to a designated University ID.
-*   `POST /api/v1/admin/upload/:entity` - Multipart-Form target route for capturing and digesting CSV streams.
+---
+
+## 🔑 Environment Configuration
+
+### Backend (.env)
+- `MONGODB_URI`: Connection string for MongoDB.
+- `REDIS_URL`: Connection string for Redis.
+- `METABASE_URL`: URL of the Metabase instance (default: `http://localhost:3001`).
+- `SMTP_*`: Credentials for the email notification service.
+
+### Frontend (.env.local)
+- `NEXT_PUBLIC_API_URL`: URL of the backend API (default: `http://localhost:5000/api/v1`).
+- `NEXT_PUBLIC_METABASE_EMBED_URL`: Signed URL for Metabase dashboard embedding.
+
+---
+
+## 📊 Metabase Setup (Analytics)
+The admin panel is pre-configured to link directly to your local Metabase instance. To set it up:
+1. **Start Metabase**: Ensure Docker is running. Metabase will be active at `http://localhost:3001`.
+2. **Connect MongoDB**:
+   - **Database Type**: `MongoDB`
+   - **Name**: `outvier`
+   - **Host**: `outvier-mongodb` (internal Docker name) or `localhost` (if running locally).
+   - **Port**: `27017`
+   - **Database Name**: `outvier`
+3. **Admin Dashboard**: Clicking **"Analytics"** in the sidebar will now open your Metabase instance in a new tab for full access.
+4. **Embedding (Optional)**: If you prefer to see the dashboard *inside* the Outvier panel, enable embedding in Metabase settings and paste the signed URL into `frontend/.env.local` as `NEXT_PUBLIC_METABASE_EMBED_URL`.
+
+---
+
+## 🧪 Seeding Data
+To populate the database with an initial dataset:
+```bash
+cd backend
+npm run seed
+```
+**Admin Credentials:** `admin` / `admin`

@@ -1,23 +1,9 @@
-import multer from 'multer';
 import { parse } from 'csv-parse';
 import { Readable } from 'stream';
 import slugify from 'slugify';
 import { University } from '../models/University.model';
 import { UploadJob, IUploadJob } from '../models/UploadJob.model';
 import { validateSeedRow, SeedUniversityRow } from '../validators/seedUniversity.validator';
-
-/** Re-export the existing multer instance so this can be imported standalone */
-export const upload = multer({
-  storage: multer.memoryStorage(),
-  limits: { fileSize: 10 * 1024 * 1024 },
-  fileFilter: (_req, file, cb) => {
-    if (file.mimetype === 'text/csv' || file.originalname.endsWith('.csv')) {
-      cb(null, true);
-    } else {
-      cb(new Error('Only CSV files are allowed'));
-    }
-  },
-});
 
 // --------------------------------------------------------------------------
 // Types
@@ -250,5 +236,14 @@ export const seedImportService = {
 
   async getImportById(id: string) {
     return UploadJob.findById(id).lean();
+  },
+
+  async cancel(jobId: string): Promise<IUploadJob> {
+    const job = await UploadJob.findById(jobId);
+    if (!job) throw new Error('Job not found');
+    if (job.status !== 'preview') throw new Error(`Cannot cancel job with status: ${job.status}`);
+    job.status = 'cancelled';
+    await job.save();
+    return job;
   },
 };

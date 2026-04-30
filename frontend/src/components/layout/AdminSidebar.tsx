@@ -15,6 +15,7 @@ import {
   Database,
   BarChart3,
   RefreshCw,
+  ExternalLink,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
@@ -25,13 +26,17 @@ const navItems = [
   { href: '/admin', label: 'Dashboard', icon: LayoutDashboard, exact: true },
   { href: '/admin/universities', label: 'Universities', icon: University },
   { href: '/admin/programs', label: 'Programs', icon: BookOpen },
+  { href: '/admin/rankings', label: 'Rankings', icon: GitCompare },
+  { href: '/admin/scholarships', label: 'Scholarships', icon: GraduationCap },
+  { href: '/admin/outcomes', label: 'Outcomes', icon: BarChart3 },
   // ── Data Pipeline ──────────────────────────────────────────────────────
   { divider: true, label: 'Data Pipeline' },
   { href: '/admin/imports', label: 'Seed Imports', icon: FileInput },
   { href: '/admin/data-sources', label: 'Data Sources', icon: Database },
   { href: '/admin/sync', label: 'Sync Jobs', icon: RefreshCw },
   { href: '/admin/staged-changes', label: 'Staged Changes', icon: GitCompare },
-  { href: '/admin/analytics', label: 'Analytics', icon: BarChart3 },
+  { href: 'http://localhost:3001', label: 'Analytics', icon: BarChart3, external: true },
+  { href: '/admin/analytics/native', label: 'Native Stats', icon: LayoutDashboard },
 ];
 
 export function AdminSidebar() {
@@ -76,20 +81,40 @@ export function AdminSidebar() {
           const isActive = item.exact
             ? pathname === item.href
             : pathname.startsWith(item.href);
-          return (
-            <Link
-              key={item.href}
-              href={item.href}
-              className={cn(
-                'flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-150 group',
-                isActive
-                  ? 'bg-sidebar-primary text-sidebar-primary-foreground shadow-sm'
-                  : 'text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground'
-              )}
-            >
+
+          const content = (
+            <>
               <item.icon className="h-4 w-4 shrink-0" />
               <span className="flex-1">{item.label}</span>
               {isActive && <ChevronRight className="h-3.5 w-3.5 opacity-70" />}
+              {item.external && <ExternalLink className="h-3 w-3 opacity-30 group-hover:opacity-100 transition-opacity" />}
+            </>
+          );
+
+          const className = cn(
+            'flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-150 group',
+            isActive
+              ? 'bg-sidebar-primary text-sidebar-primary-foreground shadow-sm'
+              : 'text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground'
+          );
+
+          if (item.external) {
+            return (
+              <a 
+                key={item.href} 
+                href={item.href} 
+                target="_blank" 
+                rel="noopener noreferrer" 
+                className={className}
+              >
+                {content}
+              </a>
+            );
+          }
+
+          return (
+            <Link key={item.href} href={item.href} className={className}>
+              {content}
             </Link>
           );
         })}

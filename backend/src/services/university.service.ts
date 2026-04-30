@@ -61,6 +61,21 @@ export const universityService = {
       throw Object.assign(new Error('University with this name already exists'), { statusCode: 409 });
     }
     const university = await University.create({ ...data, slug });
+
+    // Auto-trigger enrichment if website is provided
+    const website = data.officialWebsite || data.website;
+    if (website) {
+      try {
+        const { universitySyncQueue } = await import('../jobs/queue');
+        await universitySyncQueue.add('sync', { 
+          universityId: String(university._id), 
+          triggeredBy: 'system_auto_create' 
+        });
+      } catch (err) {
+        console.error('Failed to trigger auto-enrichment:', err);
+      }
+    }
+
     return university;
   },
 

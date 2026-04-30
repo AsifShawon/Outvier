@@ -197,46 +197,37 @@ export default function DashboardPage() {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-        {/* Saved Programs Quick Link */}
-        <Card className="border-border/60 shadow-sm">
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-lg font-bold">Saved Programs</CardTitle>
-            <Bookmark className="h-5 w-5 text-primary opacity-50" />
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="text-3xl font-black font-display text-foreground">{savedProgramsCount}</div>
-            <p className="text-xs text-muted-foreground leading-relaxed">
-              Programs you've bookmarked for comparison. You can add up to 4 programs to a single comparison session.
-            </p>
+        {/* Recently Saved Programs */}
+        <Card className="border-border/60 shadow-sm md:col-span-2">
+          <CardHeader className="flex flex-row items-center justify-between">
+            <div>
+              <CardTitle className="text-lg font-bold">Your Shortlist</CardTitle>
+              <CardDescription>Recently bookmarked programs.</CardDescription>
+            </div>
             <Link href="/dashboard/saved">
-              <Button variant="ghost" className="w-full justify-between hover:bg-primary/5 group h-11 border border-border/50">
-                Manage Shortlist
-                <ChevronRight className="h-4 w-4 group-hover:translate-x-1 transition-transform" />
-              </Button>
+              <Button variant="outline" size="sm">View All</Button>
             </Link>
-          </CardContent>
-        </Card>
-
-        {/* Upcoming Intakes */}
-        <Card className="border-border/60 shadow-sm">
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-lg font-bold">Upcoming Intakes</CardTitle>
-            <Calendar className="h-5 w-5 text-primary opacity-50" />
           </CardHeader>
-          <CardContent className="space-y-4">
-             <div className="flex flex-col gap-3">
-               {[
-                 { month: 'July 2025', status: 'Applications Open' },
-                 { month: 'November 2025', status: 'Planning' },
-                 { month: 'February 2026', status: 'Future' }
-               ].map((intake) => (
-                 <div key={intake.month} className="flex justify-between items-center text-sm p-2 rounded-lg bg-muted/20">
-                   <span className="font-semibold">{intake.month}</span>
-                   <Badge variant="outline" className="text-[10px] uppercase font-bold text-primary/70 border-primary/20">{intake.status}</Badge>
-                 </div>
-               ))}
-             </div>
-             <p className="text-[11px] text-muted-foreground">Most Australian universities have major intakes in February and July.</p>
+          <CardContent>
+            {profile?.savedPrograms?.length > 0 ? (
+               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                 {profile.savedPrograms.slice(0, 3).map((prog: any) => (
+                   <div key={prog._id} className="p-4 rounded-xl border border-border/60 bg-muted/20 flex gap-3 items-center">
+                     <div className="h-10 w-10 rounded-lg bg-white flex items-center justify-center shrink-0 border border-border/40">
+                        <GraduationCap className="h-5 w-5 text-primary" />
+                     </div>
+                     <div className="min-w-0">
+                       <p className="text-sm font-bold truncate">{prog.name || 'Program Name'}</p>
+                       <p className="text-[10px] text-muted-foreground truncate">{prog.universityName || 'University'}</p>
+                     </div>
+                   </div>
+                 ))}
+               </div>
+            ) : (
+              <div className="py-8 text-center text-muted-foreground text-sm">
+                No saved programs yet. Start browsing to build your shortlist!
+              </div>
+            )}
           </CardContent>
         </Card>
       </div>

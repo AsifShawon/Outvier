@@ -19,6 +19,7 @@ export interface IStudentProfile extends Document {
   pteScore?: number;
   academicBackground?: string;
   priorityWeights?: IPriorityWeights;
+  priorityPreset?: 'balanced' | 'budget' | 'career' | 'prestige' | 'easy-admission' | 'scholarship';
   savedUniversities?: Types.ObjectId[];
   savedPrograms?: Types.ObjectId[];
   createdAt: Date;
@@ -48,6 +49,11 @@ const StudentProfileSchema = new Schema<IStudentProfile>(
     pteScore: Number,
     academicBackground: String,
     priorityWeights: { type: PriorityWeightsSchema, default: () => ({}) },
+    priorityPreset: { 
+      type: String, 
+      enum: ['balanced', 'budget', 'career', 'prestige', 'easy-admission', 'scholarship'],
+      default: 'balanced'
+    },
     savedUniversities: [{ type: Schema.Types.ObjectId, ref: 'University' }],
     savedPrograms: [{ type: Schema.Types.ObjectId, ref: 'Program' }],
   },

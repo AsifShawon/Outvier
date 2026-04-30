@@ -51,8 +51,13 @@ export const stagedChangesController = {
    *  Approve a staged change — writes the approved data to the target collection
    */
   async approve(req: Request, res: Response, next: NextFunction): Promise<void> {
-    const session = await StagedChange.startSession();
-    session.startTransaction();
+    let session = null;
+    try {
+      session = await StagedChange.startSession();
+      session.startTransaction();
+    } catch (e) {
+      // Fallback for standalone MongoDB
+    }
     try {
       const change = await StagedChange.findById(req.params.id).session(session);
       if (!change) {
@@ -75,13 +80,13 @@ export const stagedChangesController = {
       change.reviewedAt = approvedAt;
       await change.save({ session });
 
-      await session.commitTransaction();
+      if (session) await session.commitTransaction();
       res.status(200).json({ success: true, message: 'Change approved and applied' });
     } catch (error) {
-      await session.abortTransaction();
+      if (session) await session.abortTransaction();
       next(error);
     } finally {
-      session.endSession();
+      if (session) session.endSession();
     }
   },
 
@@ -115,8 +120,13 @@ export const stagedChangesController = {
    *  Edit the new value and approve
    */
   async editAndApprove(req: Request, res: Response, next: NextFunction): Promise<void> {
-    const session = await StagedChange.startSession();
-    session.startTransaction();
+    let session = null;
+    try {
+      session = await StagedChange.startSession();
+      session.startTransaction();
+    } catch (e) {
+      // Fallback for standalone MongoDB
+    }
     try {
       const change = await StagedChange.findById(req.params.id).session(session);
       if (!change) {
@@ -141,13 +151,13 @@ export const stagedChangesController = {
       change.reviewedAt = approvedAt;
       await change.save({ session });
 
-      await session.commitTransaction();
+      if (session) await session.commitTransaction();
       res.status(200).json({ success: true, message: 'Change edited and approved' });
     } catch (error) {
-      await session.abortTransaction();
+      if (session) await session.abortTransaction();
       next(error);
     } finally {
-      session.endSession();
+      if (session) session.endSession();
     }
   },
 
@@ -155,8 +165,13 @@ export const stagedChangesController = {
    *  Approve multiple staged changes
    */
   async bulkApprove(req: Request, res: Response, next: NextFunction): Promise<void> {
-    const session = await StagedChange.startSession();
-    session.startTransaction();
+    let session = null;
+    try {
+      session = await StagedChange.startSession();
+      session.startTransaction();
+    } catch (e) {
+      // Fallback for standalone MongoDB
+    }
     try {
       const { ids } = req.body as { ids: string[] };
       if (!Array.isArray(ids) || ids.length === 0) {
@@ -176,13 +191,13 @@ export const stagedChangesController = {
         await change.save({ session });
       }
 
-      await session.commitTransaction();
+      if (session) await session.commitTransaction();
       res.status(200).json({ success: true, message: `${changes.length} changes approved` });
     } catch (error) {
-      await session.abortTransaction();
+      if (session) await session.abortTransaction();
       next(error);
     } finally {
-      session.endSession();
+      if (session) session.endSession();
     }
   },
 

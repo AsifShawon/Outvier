@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useMutation } from '@tanstack/react-query';
 import { toast } from 'sonner';
@@ -17,6 +17,24 @@ export default function SignupPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPw, setShowPw] = useState(false);
+  const [isCheckingAuth, setIsCheckingAuth] = useState(true);
+
+  useEffect(() => {
+    const token = localStorage.getItem('outvier_token');
+    if (token) {
+      authApi.getMe()
+        .then(res => {
+          const role = res.data.data.role;
+          router.replace(role === 'admin' ? '/admin' : '/dashboard');
+        })
+        .catch(() => {
+          localStorage.removeItem('outvier_token');
+          setIsCheckingAuth(false);
+        });
+    } else {
+      setIsCheckingAuth(false);
+    }
+  }, [router]);
 
   const mutation = useMutation({
     mutationFn: () => authApi.signup({ name, email, password }),
@@ -43,6 +61,10 @@ export default function SignupPage() {
     }
     mutation.mutate();
   };
+
+  if (isCheckingAuth) {
+    return null;
+  }
 
   return (
     <div className="min-h-screen gradient-hero flex items-center justify-center p-4">

@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import { importsController } from '../controllers/imports.controller';
 import { protect, adminOnly } from '../middleware/auth.middleware';
-import { upload } from '../services/seedImport.service';
+import { upload } from '../services/upload.service';
 
 const router = Router();
 
@@ -19,5 +19,8 @@ router.get('/:id', importsController.getImport);
 
 /** POST /api/v1/admin/imports/:id/confirm — confirm and apply a previewed import */
 router.post('/:id/confirm', importsController.confirmImport);
+
+/** POST /api/v1/admin/imports/:id/cancel — cancel a previewed import */
+router.post('/:id/cancel', importsController.cancelImport);
 
 export default router;

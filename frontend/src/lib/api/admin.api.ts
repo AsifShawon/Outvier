@@ -15,8 +15,9 @@ export const adminApi = {
   // ── Seed imports ──────────────────────────────────────────────────────────
   listImports: () => api.get('/admin/imports'),
   getImport: (id: string) => api.get(`/admin/imports/${id}`),
-  confirmImport: (id: string, rows: unknown[]) =>
-    api.post(`/admin/imports/${id}/confirm`, { rows }),
+  // Confirmation uses the stored importId only — no rows sent from client
+  confirmImport: (id: string) => api.post(`/admin/imports/${id}/confirm`),
+  cancelImport: (id: string) => api.post(`/admin/imports/${id}/cancel`),
 
   uploadSeedCSV: (formData: FormData) =>
     api.post('/admin/imports/seed-universities', formData, {
@@ -43,4 +44,12 @@ export const adminApi = {
 
   // ── Analytics ─────────────────────────────────────────────────────────────
   getPowerBiToken: () => api.get('/admin/analytics/powerbi/token'),
+  getAdminAnalytics: () => api.get('/admin/analytics'),
+
+  // ── AI Settings ───────────────────────────────────────────────────────────
+  getAISettings: () => api.get('/admin/settings/ai'),
+  upsertAISetting: (data: { provider: string; aiModel: string; apiKey?: string; baseUrl?: string; isActive?: boolean }) =>
+    api.post('/admin/settings/ai', data),
+  testAIConnection: (provider: string) => api.post('/admin/settings/ai/test', { provider }),
+  activateAIProvider: (provider: string) => api.post('/admin/settings/ai/activate', { provider }),
 };

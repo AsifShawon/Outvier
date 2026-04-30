@@ -40,6 +40,11 @@ export interface IProgram extends Document {
   cricosCourseCode?: string;
   officialProgramUrl?: string;
   scholarshipAvailable?: boolean;
+  applicationDeadlines?: {
+    intake: string;      // e.g. "February 2025"
+    deadline: string;    // e.g. "November 30, 2024"
+    notes?: string;
+  }[];
   status: 'active' | 'inactive' | 'draft';
   dataQuality?: IDataQuality;
   createdAt: Date;
@@ -93,6 +98,11 @@ const ProgramSchema = new Schema<IProgram>(
     cricosCourseCode: { type: String, sparse: true },
     officialProgramUrl: String,
     scholarshipAvailable: { type: Boolean, default: false },
+    applicationDeadlines: [{
+      intake: String,
+      deadline: String,
+      notes: String,
+    }],
     status: { type: String, enum: ['active', 'inactive', 'draft'], default: 'active' },
     dataQuality: DataQualitySchema,
   },

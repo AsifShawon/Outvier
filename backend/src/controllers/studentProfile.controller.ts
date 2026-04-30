@@ -1,5 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import { StudentProfile } from '../models/StudentProfile.model';
+import { fitScoreService } from '../services/fitScore.service';
 
 export const studentProfileController = {
   /** GET /api/v1/profile
@@ -33,6 +34,11 @@ export const studentProfileController = {
 
       // Don't allow changing the userId
       delete updates.userId;
+
+      // If priorityPreset is set, automatically compute priorityWeights
+      if (updates.priorityPreset) {
+        updates.priorityWeights = fitScoreService.getWeightsFromPreset(updates.priorityPreset);
+      }
 
       const profile = await StudentProfile.findOneAndUpdate(
         { userId },

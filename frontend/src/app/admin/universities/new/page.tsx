@@ -18,7 +18,7 @@ import { universitiesApi } from '@/lib/api/universities.api';
 const schema = z.object({
   name: z.string().min(2),
   description: z.string().min(10),
-  location: z.string().min(2),
+  location: z.string().optional(),
   state: z.string().min(2),
   website: z.string().url(),
   logo: z.string().optional(),
@@ -27,6 +27,9 @@ const schema = z.object({
   type: z.enum(['public', 'private']),
   campuses: z.string().optional(),
   internationalStudents: z.boolean().optional(),
+  cricosProviderCode: z.string().optional(),
+  city: z.string().optional(),
+  country: z.string().default('Australia'),
 });
 
 type FormData = z.infer<typeof schema>;
@@ -54,6 +57,9 @@ export default function NewUniversityPage() {
         type: data.type,
         campuses: data.campuses ? data.campuses.split(',').map((c) => c.trim()).filter(Boolean) : [],
         internationalStudents: data.internationalStudents,
+        cricosProviderCode: data.cricosProviderCode,
+        city: data.city,
+        country: data.country,
       }),
     onSuccess: () => {
       toast.success('University created!');
@@ -98,14 +104,24 @@ export default function NewUniversityPage() {
 
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-1.5">
-                <Label htmlFor="uni-location">Location *</Label>
-                <Input id="uni-location" {...register('location')} placeholder="Adelaide, SA" />
-                {errors.location && <p className="text-xs text-destructive">{errors.location.message}</p>}
+                <Label htmlFor="uni-city">City</Label>
+                <Input id="uni-city" {...register('city')} placeholder="Adelaide" />
               </div>
               <div className="space-y-1.5">
                 <Label htmlFor="uni-state">State *</Label>
                 <Input id="uni-state" {...register('state')} placeholder="SA" maxLength={10} />
                 {errors.state && <p className="text-xs text-destructive">{errors.state.message}</p>}
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-1.5">
+                <Label htmlFor="uni-country">Country *</Label>
+                <Input id="uni-country" {...register('country')} placeholder="Australia" />
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="uni-cricos">CRICOS Provider Code</Label>
+                <Input id="uni-cricos" {...register('cricosProviderCode')} placeholder="00123M" />
               </div>
             </div>
 

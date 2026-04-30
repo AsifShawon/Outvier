@@ -3,7 +3,7 @@ import { z } from 'zod';
 export const createUniversitySchema = z.object({
   name: z.string().min(2, 'Name must be at least 2 characters'),
   description: z.string().min(10, 'Description must be at least 10 characters'),
-  location: z.string().min(2, 'Location is required'),
+  location: z.string().optional().or(z.literal('')),
   state: z.string().min(2, 'State is required'),
   website: z.string().url('Website must be a valid URL'),
   logo: z.string().url().optional().or(z.literal('')),
@@ -12,6 +12,9 @@ export const createUniversitySchema = z.object({
   type: z.enum(['public', 'private']),
   campuses: z.array(z.string()).optional(),
   internationalStudents: z.boolean().optional(),
+  cricosProviderCode: z.string().optional().or(z.literal('')),
+  city: z.string().optional().or(z.literal('')),
+  country: z.string().default('Australia'),
 });
 
 export const updateUniversitySchema = createUniversitySchema.partial();

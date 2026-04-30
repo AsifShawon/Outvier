@@ -1,6 +1,6 @@
 'use client';
 
-import { PowerBIReport } from '@/components/analytics/PowerBIEmbed';
+import { MetabaseEmbed } from '@/components/analytics/MetabaseEmbed';
 
 export default function AnalyticsPage() {
   return (
@@ -8,11 +8,11 @@ export default function AnalyticsPage() {
       <div>
         <h1 className="text-2xl font-bold font-display">Platform Analytics</h1>
         <p className="text-sm text-muted-foreground mt-1">
-          Interactive Power BI dashboards for deep insights into student engagement and platform health.
+          Interactive open-source dashboards powered by Metabase.
         </p>
       </div>
 
-      <PowerBIReport />
+      <MetabaseEmbed />
     </div>
   );
 }

@@ -32,6 +32,7 @@ interface ProfileFormData {
   pteScore: number;
   academicBackground: string;
   priorityWeights: IPriorityWeights;
+  priorityPreset: 'balanced' | 'budget' | 'career' | 'prestige' | 'easy-admission' | 'scholarship';
 }
 
 const STATES = ['SA', 'QLD', 'VIC', 'NSW', 'WA', 'TAS', 'NT', 'ACT'];
@@ -44,8 +45,18 @@ const LEVELS = [
   { value: 'graduate_certificate', label: 'Graduate Certificate' },
 ];
 
+const PRESETS = [
+  { id: 'balanced', label: 'Balanced recommendation', description: 'All factors considered equally', weights: { affordability: 25, ranking: 20, employability: 20, admissionMatch: 15, location: 10, scholarship: 10 } },
+  { id: 'budget', label: 'Lower cost matters most', description: 'Prioritises affordable tuition and scholarships', weights: { affordability: 45, scholarship: 20, admissionMatch: 15, employability: 10, location: 5, ranking: 5 } },
+  { id: 'career', label: 'Career outcome matters most', description: 'Prioritises graduate employment and outcomes', weights: { employability: 40, ranking: 20, affordability: 15, admissionMatch: 10, scholarship: 10, location: 5 } },
+  { id: 'prestige', label: 'Better ranking matters most', description: 'Prioritises QS/THE world ranking', weights: { ranking: 45, employability: 20, affordability: 10, admissionMatch: 10, scholarship: 5, location: 10 } },
+  { id: 'easy-admission', label: 'Easier admission matters most', description: 'Prioritises meeting entry requirements', weights: { admissionMatch: 40, affordability: 20, scholarship: 15, location: 10, employability: 10, ranking: 5 } },
+  { id: 'scholarship', label: 'Scholarships matter most', description: 'Prioritises scholarship availability', weights: { scholarship: 35, affordability: 25, admissionMatch: 15, employability: 10, ranking: 10, location: 5 } },
+];
+
 export default function ProfilePage() {
   const qc = useQueryClient();
+  const [showAdvanced, setShowAdvanced] = useState(false);
   const [formData, setFormData] = useState<ProfileFormData>({
     preferredField: '',
     preferredLevel: 'master',
@@ -54,13 +65,14 @@ export default function ProfilePage() {
     ieltsScore: 6.5,
     pteScore: 65,
     academicBackground: '',
+    priorityPreset: 'balanced',
     priorityWeights: {
-      affordability: 30,
+      affordability: 25,
       ranking: 20,
       employability: 20,
       admissionMatch: 15,
       location: 10,
-      scholarship: 5,
+      scholarship: 10,
     },
   });
 
@@ -85,13 +97,14 @@ export default function ProfilePage() {
         ieltsScore: p.ieltsScore || 6.5,
         pteScore: p.pteScore || 65,
         academicBackground: p.academicBackground || '',
+        priorityPreset: p.priorityPreset || 'balanced',
         priorityWeights: p.priorityWeights || {
-          affordability: 30,
+          affordability: 25,
           ranking: 20,
           employability: 20,
           admissionMatch: 15,
           location: 10,
-          scholarship: 5,
+          scholarship: 10,
         },
       });
     }
@@ -107,6 +120,17 @@ export default function ProfilePage() {
       toast.error('Failed to update profile');
     },
   });
+
+  const handlePresetChange = (presetId: string) => {
+    const preset = PRESETS.find(p => p.id === presetId);
+    if (preset) {
+      setFormData(prev => ({
+        ...prev,
+        priorityPreset: presetId as any,
+        priorityWeights: { ...preset.weights }
+      }));
+    }
+  };
 
   const handleWeightChange = (key: keyof IPriorityWeights, value: number) => {
     const otherKeys = (Object.keys(formData.priorityWeights) as Array<keyof IPriorityWeights>).filter(k => k !== key);
@@ -131,7 +155,11 @@ export default function ProfilePage() {
       newWeights[otherKeys[0]] += diff;
     }
 
-    setFormData(prev => ({ ...prev, priorityWeights: newWeights }));
+    setFormData(prev => ({ 
+      ...prev, 
+      priorityWeights: newWeights,
+      priorityPreset: 'balanced' // Clear preset if manual adjustment is made (or a special 'custom' one if you prefer)
+    }));
   };
 
   const totalWeight = Object.values(formData.priorityWeights).reduce((a, b) => a + b, 0);
@@ -274,44 +302,90 @@ export default function ProfilePage() {
           </CardContent>
         </Card>
 
-        {/* Priority Weights */}
-        <Card className="border-border/60 shadow-sm">
+        {/* Priority Preset */}
+        <Card className="border-border/60 shadow-sm overflow-hidden">
           <CardHeader className="bg-muted/30">
-            <div className="flex justify-between items-start">
-              <div>
-                <CardTitle className="text-xl">Priority Weights</CardTitle>
-                <CardDescription>Adjust how much each factor influences your fit score.</CardDescription>
-              </div>
-              <div className={`px-3 py-1 rounded-full text-xs font-bold font-mono border ${totalWeight === 100 ? 'bg-green-500/10 text-green-500 border-green-500/20' : 'bg-red-500/10 text-red-500 border-red-500/20'}`}>
-                Total: {totalWeight}%
-              </div>
-            </div>
+            <CardTitle className="text-xl">Priority Recommendation</CardTitle>
+            <CardDescription>Select a priority preset that best reflects your goals.</CardDescription>
           </CardHeader>
           <CardContent className="p-6 space-y-6">
-            <div className="rounded-lg bg-blue-500/5 border border-blue-500/10 p-4 flex gap-3 items-start">
-              <InfoIcon className="h-5 w-5 text-blue-500 mt-0.5 flex-shrink-0" />
-              <p className="text-sm text-blue-700/80">
-                Weights must sum to 100%. As you adjust one slider, the others will automatically redistribute to maintain the balance.
-              </p>
-            </div>
-
-            <div className="space-y-8 py-4">
-              {Object.entries(formData.priorityWeights).map(([key, value]) => (
-                <div key={key} className="space-y-4">
-                  <div className="flex justify-between items-center">
-                    <Label className="capitalize font-semibold text-foreground/80">{key.replace(/([A-Z])/g, ' $1')}</Label>
-                    <span className="font-bold text-primary font-mono">{value}%</span>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              {PRESETS.map((preset) => (
+                <div 
+                  key={preset.id}
+                  onClick={() => handlePresetChange(preset.id)}
+                  className={`
+                    p-4 rounded-xl border-2 cursor-pointer transition-all hover:shadow-md
+                    ${formData.priorityPreset === preset.id 
+                      ? 'border-primary bg-primary/5 shadow-sm' 
+                      : 'border-border/50 bg-card hover:border-border hover:bg-muted/30'}
+                  `}
+                >
+                  <div className="flex justify-between items-start mb-1">
+                    <span className={`font-bold ${formData.priorityPreset === preset.id ? 'text-primary' : 'text-foreground'}`}>
+                      {preset.label}
+                    </span>
+                    {formData.priorityPreset === preset.id && (
+                      <CheckCircle2 className="h-5 w-5 text-primary" />
+                    )}
                   </div>
-                  <input 
-                    type="range" 
-                    min="0" 
-                    max="100" 
-                    value={value}
-                    onChange={(e) => handleWeightChange(key as keyof IPriorityWeights, parseInt(e.target.value))}
-                    className="w-full h-2 bg-muted rounded-lg appearance-none cursor-pointer accent-primary"
-                  />
+                  <p className="text-xs text-muted-foreground leading-relaxed">
+                    {preset.description}
+                  </p>
                 </div>
               ))}
+            </div>
+
+            <div className="mt-6 p-4 rounded-lg bg-muted/30 border border-border/50">
+              <h4 className="text-xs font-bold uppercase tracking-wider text-muted-foreground mb-3">Weight Summary for {formData.priorityPreset.replace('-', ' ')}</h4>
+              <div className="flex flex-wrap gap-2">
+                {Object.entries(formData.priorityWeights).map(([key, value]) => (
+                  <div key={key} className="bg-background border border-border/50 px-2 py-1 rounded text-xs">
+                    <span className="capitalize text-muted-foreground">{key.replace(/([A-Z])/g, ' $1')}:</span>
+                    <span className="ml-1 font-bold font-mono">{value}%</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div className="pt-4">
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                onClick={() => setShowAdvanced(!showAdvanced)}
+                className="text-xs text-muted-foreground hover:text-primary"
+              >
+                {showAdvanced ? 'Hide Advanced Weight Controls' : 'Show Advanced Weight Controls'}
+              </Button>
+
+              {showAdvanced && (
+                <div className="space-y-6 pt-6 border-t border-dashed mt-4">
+                  <div className="rounded-lg bg-blue-500/5 border border-blue-500/10 p-4 flex gap-3 items-start">
+                    <InfoIcon className="h-5 w-5 text-blue-500 mt-0.5 flex-shrink-0" />
+                    <p className="text-sm text-blue-700/80">
+                      Manual adjustments will clear the preset selection. Total must sum to 100%.
+                    </p>
+                  </div>
+                  <div className="grid gap-6">
+                    {Object.entries(formData.priorityWeights).map(([key, value]) => (
+                      <div key={key} className="space-y-2">
+                        <div className="flex justify-between items-center">
+                          <Label className="capitalize font-semibold text-foreground/80">{key.replace(/([A-Z])/g, ' $1')}</Label>
+                          <span className="font-bold text-primary font-mono">{value}%</span>
+                        </div>
+                        <input 
+                          type="range" 
+                          min="0" 
+                          max="100" 
+                          value={value}
+                          onChange={(e) => handleWeightChange(key as keyof IPriorityWeights, parseInt(e.target.value))}
+                          className="w-full h-2 bg-muted rounded-lg appearance-none cursor-pointer accent-primary"
+                        />
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
           </CardContent>
         </Card>

@@ -4,6 +4,9 @@ import { University } from '../../models/University.model';
 import { StagedChange } from '../../models/StagedChange.model';
 import { SyncJob } from '../../models/SyncJob.model';
 import { universityOfficialConnector } from '../../services/connectors/universityOfficial.connector';
+import { QSRankingsConnector } from '../../services/connectors/qsRankings.connector';
+import { QILTOutcomesConnector } from '../../services/connectors/qiltOutcomes.connector';
+import { ScholarshipScraperConnector } from '../../services/connectors/scholarshipScraper.connector';
 
 export interface UniversitySyncJobData {
   universityId: string;
@@ -36,9 +39,19 @@ export const universitySyncWorker = new Worker<UniversitySyncJobData>(
 
       const website = university.officialWebsite || university.website;
 
-      // 3. Run the connector
-      const results = await universityOfficialConnector.execute(universityId, { website });
+      // 3. Run the connectors
+      const qs = new QSRankingsConnector();
+      const qilt = new QILTOutcomesConnector();
+      const sch = new ScholarshipScraperConnector();
+
+      const [officialRes, qsRes, qiltRes, schRes] = await Promise.all([
+        universityOfficialConnector.execute(universityId, { website }),
+        qs.fetch(universityId, university.name),
+        qilt.fetch(universityId, university.name),
+        sch.fetch(universityId, university.name),
+      ]);
       
+      const results = [...officialRes]; // capture from official
       const successfulResults = results.filter(r => r.success && r.data && Object.keys(r.data).length > 0);
       
       let stagedChangesCreated = 0;
@@ -80,7 +93,7 @@ export const universitySyncWorker = new Worker<UniversitySyncJobData>(
       syncJob.stats = {
         recordsFound: successfulResults.length,
         recordsChanged: stagedChangesCreated,
-        errors: 0
+        errorCount: 0,
       };
       await syncJob.save();
 
@@ -90,7 +103,7 @@ export const universitySyncWorker = new Worker<UniversitySyncJobData>(
       syncJob.status = 'failed';
       syncJob.finishedAt = new Date();
       syncJob.logs = [error.message];
-      syncJob.stats = { ...syncJob.stats, errors: 1 };
+      syncJob.stats = { ...syncJob.stats, errorCount: 1 };
       await syncJob.save();
       throw error;
     }

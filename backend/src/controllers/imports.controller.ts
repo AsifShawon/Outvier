@@ -58,4 +58,16 @@ export const importsController = {
       next(error);
     }
   },
+
+  /** POST /api/v1/admin/imports/:id/cancel
+   */
+  async cancelImport(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const { id } = req.params;
+      const job = await seedImportService.cancel(id);
+      res.status(200).json({ success: true, data: job });
+    } catch (error) {
+      next(error);
+    }
+  },
 };

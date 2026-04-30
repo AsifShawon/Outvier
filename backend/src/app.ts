@@ -12,6 +12,10 @@ import comparisonRoutes from './routes/comparison.routes';
 import studentProfileRoutes from './routes/studentProfile.routes';
 import analyticsRoutes from './routes/analytics.routes';
 import aiRoutes from './routes/ai.routes';
+import aiSettingsRoutes from './routes/aiSettings.routes';
+import recommendationsRoutes from './routes/recommendations.routes';
+import publicAnalyticsRoutes from './routes/publicAnalytics.routes';
+import trackerRoutes from './routes/applicationTracker.routes';
 import { errorHandler, notFound } from './middleware/error.middleware';
 
 dotenv.config();
@@ -31,20 +35,24 @@ app.get('/health', (req, res) => {
   res.status(200).json({ status: 'ok', timestamp: new Date().toISOString() });
 });
 
-// API Routes — existing (untouched)
+// Public routes
 app.use('/api/v1/auth', authRoutes);
 app.use('/api/v1/universities', universityRoutes);
 app.use('/api/v1/programs', programRoutes);
-app.use('/api/v1/admin', adminRoutes);
 app.use('/api/v1/comparison', comparisonRoutes);
 app.use('/api/v1/profile', studentProfileRoutes);
 app.use('/api/v1/copilot', aiRoutes);
+app.use('/api/v1/recommendations', recommendationsRoutes);
+app.use('/api/v1/analytics', publicAnalyticsRoutes);
+app.use('/api/v1/tracker', trackerRoutes);
 
-// API Routes — Phase 1 & 2 additions
+// Admin routes (all require auth + admin role)
+app.use('/api/v1/admin', adminRoutes);
 app.use('/api/v1/admin/imports', importsRoutes);
 app.use('/api/v1/admin/staged-changes', stagedChangesRoutes);
 app.use('/api/v1/admin/sync', syncRoutes);
 app.use('/api/v1/admin/analytics', analyticsRoutes);
+app.use('/api/v1/admin/settings/ai', aiSettingsRoutes);
 
 // Error handling
 app.use(notFound);

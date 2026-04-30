@@ -6,6 +6,13 @@ const router = Router();
 
 router.use(protect, adminOnly);
 
-router.get('/powerbi/token', analyticsController.getPowerBiToken);
+// Analytics config (Metabase vs PowerBI)
+router.get('/config', analyticsController.getAnalyticsConfig);
+
+// Built-in aggregation stats
+router.get('/native', analyticsController.getNativeStats);
+
+// Admin business dashboard stats
+router.get('/', analyticsController.getAdminAnalytics);
 
 export default router;

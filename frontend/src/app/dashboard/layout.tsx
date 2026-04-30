@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { Skeleton } from '@/components/ui/skeleton';
 import { authApi } from '@/lib/api/auth.api';
 import Link from 'next/link';
-import { GraduationCap, User, Bookmark, BarChart2, LogOut } from 'lucide-react';
+import { GraduationCap, User, Bookmark, BarChart2, LogOut, DollarSign } from 'lucide-react';
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
@@ -89,6 +89,14 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           <Link href="/dashboard/saved" className="flex items-center gap-3 px-3 py-2 text-slate-600 rounded-lg hover:bg-slate-100 transition-colors">
             <Bookmark className="h-4 w-4" />
             <span className="text-sm font-medium">Saved Items</span>
+          </Link>
+          <Link href="/dashboard/tracker" className="flex items-center gap-3 px-3 py-2 text-slate-600 rounded-lg hover:bg-slate-100 transition-colors">
+            <BarChart2 className="h-4 w-4 text-blue-500" />
+            <span className="text-sm font-medium">Application Tracker</span>
+          </Link>
+          <Link href="/dashboard/budget" className="flex items-center gap-3 px-3 py-2 text-slate-600 rounded-lg hover:bg-slate-100 transition-colors">
+            <DollarSign className="h-4 w-4 text-emerald-500" />
+            <span className="text-sm font-medium">Budget Calculator</span>
           </Link>
         </nav>
         <div className="p-4 border-t">

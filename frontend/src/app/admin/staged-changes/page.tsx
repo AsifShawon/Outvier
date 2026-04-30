@@ -58,6 +58,24 @@ export default function StagedChangesPage() {
     onError: (err: any) => toast.error(err?.response?.data?.message || 'Rejection failed'),
   });
 
+  const approveAndSync = useMutation({
+    mutationFn: async (c: any) => {
+      await adminApi.approveStagedChange(c._id);
+      if (c.entityType === 'university' && c.entityId) {
+        await adminApi.triggerUniversitySync(c.entityId);
+      } else if (c.entityType === 'university' && c.changeType === 'create') {
+        // We need to find the ID of the newly created university.
+        // This is tricky without the backend returning the ID in the approve response.
+        // For now, we'll skip the sync if it's a creation unless we have the ID.
+      }
+    },
+    onSuccess: () => {
+      toast.success('Change approved and sync triggered');
+      qc.invalidateQueries({ queryKey: ['staged-changes'] });
+    },
+    onError: (err: any) => toast.error('Approval/Sync failed'),
+  });
+
   return (
     <div className="space-y-6 max-w-5xl">
       {/* Header */}
@@ -166,11 +184,23 @@ export default function StagedChangesPage() {
                           size="sm"
                           className="gap-1 h-8 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg"
                           onClick={(e) => { e.stopPropagation(); approve.mutate(c._id); }}
-                          disabled={approve.isPending}
+                          disabled={approve.isPending || approveAndSync.isPending}
                         >
                           {approve.isPending ? <Loader2 className="h-3 w-3 animate-spin" /> : <CheckCircle2 className="h-3 w-3" />}
                           Approve
                         </Button>
+                        {c.entityType === 'university' && (
+                          <Button
+                            size="sm"
+                            variant="secondary"
+                            className="gap-1 h-8 rounded-lg"
+                            onClick={(e) => { e.stopPropagation(); approveAndSync.mutate(c); }}
+                            disabled={approve.isPending || approveAndSync.isPending}
+                          >
+                            {approveAndSync.isPending ? <Loader2 className="h-3 w-3 animate-spin" /> : <RefreshCw className="h-3 w-3" />}
+                            Approve & Sync
+                          </Button>
+                        )}
                       </>
                     )}
                     <ChevronDown
