@@ -13,7 +13,6 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Badge } from '@/components/ui/badge';
 import { programsApi } from '@/lib/api/programs.api';
 import { Program } from '@/types/program';
-import { useDebounce } from '@/hooks/useDebounce';
 
 const LEVELS = [
   { value: 'bachelor', label: 'Bachelor' },
@@ -30,11 +29,15 @@ const CAMPUS_MODES = [
   { value: 'hybrid', label: 'Hybrid' },
 ];
 
+import { useDebounce } from '@/hooks/useDebounce';
+import { useSearchParams } from 'next/navigation';
+
 export default function ProgramsPage() {
-  const [search, setSearch] = useState('');
-  const [level, setLevel] = useState('');
-  const [campusMode, setCampusMode] = useState('');
-  const [page, setPage] = useState(1);
+  const searchParams = useSearchParams();
+  const [search, setSearch] = useState(searchParams.get('search') ?? '');
+  const [level, setLevel] = useState(searchParams.get('level') ?? '');
+  const [campusMode, setCampusMode] = useState(searchParams.get('campusMode') ?? '');
+  const [page, setPage] = useState(parseInt(searchParams.get('page') ?? '1'));
   const debouncedSearch = useDebounce(search, 350);
 
   const { data, isLoading } = useQuery({

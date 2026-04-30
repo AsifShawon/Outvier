@@ -14,7 +14,7 @@ export interface ISyncJobStats {
   pagesVisited?: number;
   recordsFound?: number;
   recordsChanged?: number;
-  errors?: number;
+  errorCount?: number;
 }
 
 export interface ISyncJob extends Document {
@@ -34,7 +34,7 @@ const SyncJobStatsSchema = new Schema<ISyncJobStats>(
     pagesVisited: { type: Number, default: 0 },
     recordsFound: { type: Number, default: 0 },
     recordsChanged: { type: Number, default: 0 },
-    errors: { type: Number, default: 0 },
+    errorCount: { type: Number, default: 0 },
   },
   { _id: false }
 );

@@ -70,11 +70,13 @@ export const fitScoreService = {
       }
 
       // 3. Location
-      const university = program.universityId as any;
-      if (university && profile.preferredStates && profile.preferredStates.length > 0) {
-        if (profile.preferredStates.includes(university.state)) {
+      const universityData = (program.universityId || program.university) as any;
+      const universityState = universityData?.state || '';
+      
+      if (universityState && profile.preferredStates && profile.preferredStates.length > 0) {
+        if (profile.preferredStates.includes(universityState)) {
           breakdown.location = 100;
-          reasons.push(`Located in your preferred state (${university.state}).`);
+          reasons.push(`Located in your preferred state (${universityState}).`);
         } else {
           breakdown.location = 50;
         }
@@ -95,6 +97,8 @@ export const fitScoreService = {
 
       return {
         programId: String(program._id),
+        programName: program.name,
+        universityName: universityData?.name || 'Unknown',
         totalScore: Math.round(totalScore),
         breakdown,
         reasons,

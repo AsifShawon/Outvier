@@ -32,7 +32,10 @@ export function ComparisonProvider({ children }: { children: React.ReactNode }) 
         setHash(currentHash);
 
         const sessionRes = await comparisonApi.getSession(currentHash!);
-        setSelectedIds(sessionRes.data.data.selectedProgramIds.map((p: any) => p._id || p));
+        const ids = sessionRes.data.data.selectedProgramIds.map((p: any) => 
+          typeof p === 'object' ? p._id : p
+        );
+        setSelectedIds(ids);
       } catch (err) {
         console.error('Failed to init comparison session', err);
       } finally {

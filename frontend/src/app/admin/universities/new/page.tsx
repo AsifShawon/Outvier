@@ -22,8 +22,8 @@ const schema = z.object({
   state: z.string().min(2),
   website: z.string().url(),
   logo: z.string().optional(),
-  establishedYear: z.any(),
-  ranking: z.any(),
+  establishedYear: z.coerce.number().int().min(1800).max(2030).optional().or(z.literal('')),
+  ranking: z.coerce.number().int().min(1).optional().or(z.literal('')),
   type: z.enum(['public', 'private']),
   campuses: z.string().optional(),
   internationalStudents: z.boolean().optional(),
@@ -79,7 +79,7 @@ export default function NewUniversityPage() {
         <h1 className="text-2xl font-bold font-display">Add University</h1>
       </div>
 
-      <form onSubmit={handleSubmit((data: any) => mutation.mutate(data))} className="space-y-5">
+      <form onSubmit={handleSubmit((data) => mutation.mutate(data as FormData))} className="space-y-5">
         <div className="rounded-xl border border-border/60 bg-card p-6 space-y-5">
           <h2 className="font-semibold text-sm uppercase tracking-wide text-muted-foreground">Basic Information</h2>
 

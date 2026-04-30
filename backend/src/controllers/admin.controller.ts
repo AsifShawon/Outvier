@@ -4,6 +4,7 @@ import { programService } from '../services/program.service';
 import { University } from '../models/University.model';
 import { Program } from '../models/Program.model';
 import { User } from '../models/User.model';
+import { powerbiService } from '../services/powerbi.service';
 
 export const adminController = {
   // Dashboard stats
@@ -92,6 +93,16 @@ export const adminController = {
     try {
       const users = await User.find().select('-passwordHash');
       res.status(200).json({ success: true, data: users });
+    } catch (error) {
+      next(error);
+    }
+  },
+
+  // Analytics
+  async getEmbedToken(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const embedConfig = await powerbiService.getEmbedToken();
+      res.status(200).json({ success: true, data: embedConfig });
     } catch (error) {
       next(error);
     }

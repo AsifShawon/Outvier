@@ -39,7 +39,7 @@ const PriorityWeightsSchema = new Schema<IPriorityWeights>(
 
 const StudentProfileSchema = new Schema<IStudentProfile>(
   {
-    userId: { type: Schema.Types.ObjectId, ref: 'User', sparse: true },
+    userId: { type: Schema.Types.ObjectId, ref: 'User', sparse: true, index: true },
     preferredField: String,
     preferredLevel: String,
     budgetMaxAud: Number,
@@ -54,6 +54,6 @@ const StudentProfileSchema = new Schema<IStudentProfile>(
   { timestamps: true }
 );
 
-StudentProfileSchema.index({ userId: 1 });
+// Indexes are now defined in the schema fields above
 
 export const StudentProfile = mongoose.model<IStudentProfile>('StudentProfile', StudentProfileSchema);

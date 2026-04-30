@@ -12,8 +12,8 @@ export interface IComparisonSession extends Document {
 
 const ComparisonSessionSchema = new Schema<IComparisonSession>(
   {
-    userId: { type: Schema.Types.ObjectId, ref: 'User', sparse: true },
-    sessionKey: { type: String, sparse: true },
+    userId: { type: Schema.Types.ObjectId, ref: 'User', sparse: true, index: true },
+    sessionKey: { type: String, sparse: true, index: true },
     selectedUniversityIds: [{ type: Schema.Types.ObjectId, ref: 'University' }],
     selectedProgramIds: [{ type: Schema.Types.ObjectId, ref: 'Program' }],
     generatedScores: { type: Schema.Types.Mixed },
@@ -22,6 +22,6 @@ const ComparisonSessionSchema = new Schema<IComparisonSession>(
 );
 
 ComparisonSessionSchema.index({ userId: 1, createdAt: -1 });
-ComparisonSessionSchema.index({ sessionKey: 1 });
+// sessionKey index is now defined in the schema field above
 
 export const ComparisonSession = mongoose.model<IComparisonSession>('ComparisonSession', ComparisonSessionSchema);

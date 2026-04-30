@@ -12,6 +12,7 @@
   "dependencies": {
     "@azure/msal-node": "^5.1.4",
     "@langchain/groq": "^1.2.0",
+    "axios": "^1.15.2",
     "bcryptjs": "^2.4.3",
     "bullmq": "^5.76.2",
     "cheerio": "^1.2.0",

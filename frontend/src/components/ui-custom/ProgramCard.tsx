@@ -1,9 +1,12 @@
 import Link from 'next/link';
-import { Clock, DollarSign, GraduationCap, Monitor } from 'lucide-react';
+import { Clock, DollarSign, GraduationCap, Monitor, Bookmark, BookmarkCheck } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Program } from '@/types/program';
 import { cn } from '@/lib/utils';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { profileApi } from '@/lib/api/profile.api';
+import { toast } from 'sonner';
 
 interface ProgramCardProps {
   program: Program;
@@ -40,6 +43,23 @@ import { Plus, Check } from 'lucide-react';
 export function ProgramCard({ program }: ProgramCardProps) {
   const { selectedIds, addToCompare, removeFromCompare } = useComparison();
   const isSelected = selectedIds.includes(program._id);
+  const qc = useQueryClient();
+
+  const { data: profileRes } = useQuery({ 
+    queryKey: ['profile'], 
+    queryFn: () => profileApi.getProfile(),
+    staleTime: 60000 
+  });
+  
+  const isSaved = profileRes?.data?.data?.savedPrograms?.some((p: any) => (p._id || p) === program._id);
+
+  const saveMutation = useMutation({
+    mutationFn: () => isSaved ? profileApi.unsaveProgram(program._id) : profileApi.saveProgram(program._id),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['profile'] });
+      toast.success(isSaved ? 'Removed from shortlist' : 'Saved to shortlist');
+    }
+  });
 
   const handleCompareClick = (e: React.MouseEvent) => {
     e.preventDefault();
@@ -49,6 +69,12 @@ export function ProgramCard({ program }: ProgramCardProps) {
     } else {
       addToCompare(program._id);
     }
+  };
+
+  const handleSaveClick = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    saveMutation.mutate();
   };
 
   return (
@@ -106,13 +132,13 @@ export function ProgramCard({ program }: ProgramCardProps) {
             </div>
           )}
 
-          {/* Compare Button */}
-          <div className="mt-4 pt-3 border-t border-border/50">
+          {/* Compare & Save Buttons */}
+          <div className="mt-4 pt-3 border-t border-border/50 flex gap-2">
             <Button
               size="sm"
               variant={isSelected ? "secondary" : "outline"}
               className={cn(
-                "w-full gap-2 text-[11px] h-8 rounded-lg transition-all",
+                "flex-1 gap-2 text-[11px] h-8 rounded-lg transition-all",
                 isSelected && "bg-primary/10 text-primary border-primary/20 hover:bg-primary/20"
               )}
               onClick={handleCompareClick}
@@ -126,6 +152,18 @@ export function ProgramCard({ program }: ProgramCardProps) {
                   <Plus className="h-3 w-3" /> Compare
                 </>
               )}
+            </Button>
+            <Button
+              size="sm"
+              variant="ghost"
+              className={cn(
+                "h-8 w-8 p-0 rounded-lg border border-border/50",
+                isSaved && "text-primary bg-primary/5 border-primary/20"
+              )}
+              onClick={handleSaveClick}
+              disabled={saveMutation.isPending}
+            >
+              {isSaved ? <BookmarkCheck className="h-4 w-4" /> : <Bookmark className="h-4 w-4" />}
             </Button>
           </div>
         </CardContent>

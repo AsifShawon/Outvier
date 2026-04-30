@@ -32,7 +32,7 @@ async function parseCSV(buffer: Buffer): Promise<Record<string, string>[]> {
 
 export const uploadService = {
   async processUniversitiesCSV(buffer: Buffer, filename: string) {
-    const job = await UploadJob.create({ entity: 'universities', filename, status: 'processing' });
+    const job = await UploadJob.create({ entity: 'universities', originalFilename: filename, filename, status: 'processing' });
     const records = await parseCSV(buffer);
     job.totalRows = records.length;
 
@@ -68,7 +68,9 @@ export const uploadService = {
     }
 
     job.validRows = successCount;
+    job.successCount = successCount;
     job.invalidRows = rowErrors.length;
+    job.errorCount = rowErrors.length;
     job.rowErrors = rowErrors;
     job.status = rowErrors.length === records.length ? 'failed' : 'completed';
     await job.save();
@@ -76,7 +78,7 @@ export const uploadService = {
   },
 
   async processProgramsCSV(buffer: Buffer, filename: string) {
-    const job = await UploadJob.create({ entity: 'programs', filename, status: 'processing' });
+    const job = await UploadJob.create({ entity: 'programs', originalFilename: filename, filename, status: 'processing' });
     const records = await parseCSV(buffer);
     job.totalRows = records.length;
 
@@ -144,7 +146,9 @@ export const uploadService = {
     }
 
     job.validRows = successCount;
+    job.successCount = successCount;
     job.invalidRows = rowErrors.length;
+    job.errorCount = rowErrors.length;
     job.rowErrors = rowErrors;
     job.status = rowErrors.length === records.length ? 'failed' : 'completed';
     await job.save();

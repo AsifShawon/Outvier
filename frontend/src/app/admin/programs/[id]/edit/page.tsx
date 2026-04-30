@@ -27,14 +27,14 @@ const schema = z.object({
   field: z.string().min(2),
   description: z.string().min(10),
   duration: z.string().min(1),
-  tuitionFeeLocal: z.any(),
-  tuitionFeeInternational: z.any(),
+  tuitionFeeLocal: z.coerce.number().optional().or(z.literal('')),
+  tuitionFeeInternational: z.coerce.number().optional().or(z.literal('')),
   intakeMonths: z.string().optional(),
   englishRequirements: z.string().optional(),
   academicRequirements: z.string().optional(),
   careerPathways: z.string().optional(),
   campusMode: z.enum(['on-campus', 'online', 'hybrid']),
-  website: z.any(),
+  website: z.string().url().optional().or(z.literal('')),
 });
 
 type FormData = z.infer<typeof schema>;
@@ -85,8 +85,8 @@ export default function EditProgramPage() {
         field: program.field,
         description: program.description,
         duration: program.duration,
-        tuitionFeeLocal: program.tuitionFeeLocal || ('' as unknown as number),
-        tuitionFeeInternational: program.tuitionFeeInternational || ('' as unknown as number),
+        tuitionFeeLocal: program.tuitionFeeLocal || '',
+        tuitionFeeInternational: program.tuitionFeeInternational || '',
         intakeMonths: program.intakeMonths?.join(', ') || '',
         englishRequirements: program.englishRequirements || '',
         academicRequirements: program.academicRequirements || '',
@@ -140,7 +140,7 @@ export default function EditProgramPage() {
           {Array.from({ length: 8 }).map((_, i) => <Skeleton key={i} className="h-10 w-full" />)}
         </div>
       ) : (
-        <form onSubmit={handleSubmit((data: any) => mutation.mutate(data))} className="space-y-5">
+        <form onSubmit={handleSubmit((data) => mutation.mutate(data as FormData))} className="space-y-5">
           <div className="rounded-xl border border-border/60 bg-card p-6 space-y-4">
             <h2 className="font-semibold text-sm uppercase tracking-wide text-muted-foreground">Program Details</h2>
             <div className="space-y-1.5">

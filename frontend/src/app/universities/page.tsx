@@ -14,14 +14,16 @@ import { Badge } from '@/components/ui/badge';
 import { universitiesApi } from '@/lib/api/universities.api';
 import { University } from '@/types/university';
 import { useDebounce } from '@/hooks/useDebounce';
+import { useSearchParams } from 'next/navigation';
 
 const SA_STATES = ['SA', 'QLD', 'VIC', 'NSW', 'WA', 'TAS', 'NT', 'ACT'];
 
 export default function UniversitiesPage() {
-  const [search, setSearch] = useState('');
-  const [state, setState] = useState('');
-  const [type, setType] = useState('');
-  const [page, setPage] = useState(1);
+  const searchParams = useSearchParams();
+  const [search, setSearch] = useState(searchParams.get('search') ?? '');
+  const [state, setState] = useState(searchParams.get('state') ?? '');
+  const [type, setType] = useState(searchParams.get('type') ?? '');
+  const [page, setPage] = useState(parseInt(searchParams.get('page') ?? '1'));
   const debouncedSearch = useDebounce(search, 350);
 
   const { data, isLoading } = useQuery({

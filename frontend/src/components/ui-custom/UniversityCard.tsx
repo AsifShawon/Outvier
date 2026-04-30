@@ -1,9 +1,13 @@
 import Link from 'next/link';
-import { MapPin, Globe, GraduationCap, Award } from 'lucide-react';
+import { MapPin, Globe, GraduationCap, Award, Bookmark, BookmarkCheck } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { University } from '@/types/university';
 import { cn } from '@/lib/utils';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { profileApi } from '@/lib/api/profile.api';
+import { toast } from 'sonner';
+import { Button } from '@/components/ui/button';
 
 interface UniversityCardProps {
   university: University;
@@ -18,6 +22,29 @@ const stateColors: Record<string, string> = {
 };
 
 export function UniversityCard({ university }: UniversityCardProps) {
+  const qc = useQueryClient();
+  const { data: profileRes } = useQuery({ 
+    queryKey: ['profile'], 
+    queryFn: () => profileApi.getProfile(),
+    staleTime: 60000 
+  });
+  
+  const isSaved = profileRes?.data?.data?.savedUniversities?.some((u: any) => (u._id || u) === university._id);
+
+  const saveMutation = useMutation({
+    mutationFn: () => isSaved ? profileApi.unsaveUniversity(university._id) : profileApi.saveUniversity(university._id),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['profile'] });
+      toast.success(isSaved ? 'Removed from shortlist' : 'Saved to shortlist');
+    }
+  });
+
+  const handleSaveClick = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    saveMutation.mutate();
+  };
+
   const initials = university.name
     .split(' ')
     .map((w) => w[0])
@@ -36,9 +63,23 @@ export function UniversityCard({ university }: UniversityCardProps) {
               {initials}
             </div>
             <div className="min-w-0 flex-1">
-              <h3 className="font-semibold text-sm leading-snug group-hover:text-primary transition-colors line-clamp-2">
-                {university.name}
-              </h3>
+              <div className="flex justify-between items-start">
+                <h3 className="font-semibold text-sm leading-snug group-hover:text-primary transition-colors line-clamp-2">
+                  {university.name}
+                </h3>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  className={cn(
+                    "h-8 w-8 p-0 -mt-1 -mr-1 rounded-lg",
+                    isSaved && "text-primary bg-primary/5"
+                  )}
+                  onClick={handleSaveClick}
+                  disabled={saveMutation.isPending}
+                >
+                  {isSaved ? <BookmarkCheck className="h-4 w-4" /> : <Bookmark className="h-4 w-4" />}
+                </Button>
+              </div>
               <div className="flex items-center gap-1 mt-1">
                 <MapPin className="h-3 w-3 text-muted-foreground shrink-0" />
                 <span className="text-xs text-muted-foreground truncate">{university.location}</span>

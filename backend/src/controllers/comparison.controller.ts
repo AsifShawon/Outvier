@@ -34,7 +34,11 @@ export const comparisonController = {
   async getSession(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       const { hash } = req.params;
-      const session = await ComparisonSession.findOne({ sessionKey: hash }).populate('selectedProgramIds');
+      const session = await ComparisonSession.findOne({ sessionKey: hash })
+        .populate({
+          path: 'selectedProgramIds',
+          populate: { path: 'university', select: 'name slug state' }
+        });
       
       if (!session) {
         res.status(404).json({ success: false, message: 'Session not found' });
@@ -58,7 +62,10 @@ export const comparisonController = {
         { sessionKey: hash },
         { $set: updateData },
         { new: true }
-      ).populate('selectedProgramIds');
+      ).populate({
+        path: 'selectedProgramIds',
+        populate: { path: 'university', select: 'name slug state' }
+      });
       
       if (!session) {
         res.status(404).json({ success: false, message: 'Session not found' });
@@ -82,7 +89,10 @@ export const comparisonController = {
         { sessionKey: hash },
         { $addToSet: { selectedProgramIds: new Types.ObjectId(programId) } },
         { new: true }
-      ).populate('selectedProgramIds');
+      ).populate({
+        path: 'selectedProgramIds',
+        populate: { path: 'university', select: 'name slug state' }
+      });
 
       if (!session) {
         res.status(404).json({ success: false, message: 'Session not found' });
@@ -106,7 +116,10 @@ export const comparisonController = {
         { sessionKey: hash },
         { $pull: { selectedProgramIds: new Types.ObjectId(programId) } },
         { new: true }
-      ).populate('selectedProgramIds');
+      ).populate({
+        path: 'selectedProgramIds',
+        populate: { path: 'university', select: 'name slug state' }
+      });
 
       if (!session) {
         res.status(404).json({ success: false, message: 'Session not found' });
@@ -134,7 +147,7 @@ export const comparisonController = {
 
       // Fetch the programs with university details
       const programs = await Program.find({ _id: { $in: session.selectedProgramIds } })
-        .populate('universityId')
+        .populate('university')
         .lean();
 
       // Fetch or mock student profile

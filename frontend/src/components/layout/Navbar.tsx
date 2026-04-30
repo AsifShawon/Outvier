@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { GraduationCap, Menu, X } from 'lucide-react';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 
@@ -19,6 +19,11 @@ import { User, LogIn, LayoutDashboard } from 'lucide-react';
 export function Navbar() {
   const pathname = usePathname();
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   const { data: userData, isLoading } = useQuery({
     queryKey: ['me'],
@@ -63,7 +68,9 @@ export function Navbar() {
 
           {/* Actions */}
           <div className="hidden md:flex items-center gap-3">
-            {isLoading ? (
+            {!mounted ? (
+              <div className="h-8 w-20 bg-muted/20 animate-pulse rounded-lg" />
+            ) : isLoading ? (
               <div className="h-8 w-20 bg-muted animate-pulse rounded-lg" />
             ) : user ? (
               <div className="flex items-center gap-3">
@@ -74,7 +81,7 @@ export function Navbar() {
                     ) : (
                       <User className="h-3.5 w-3.5 text-primary" />
                     )}
-                    {user.name.split(' ')[0]}
+                    {user?.name?.split(' ')[0] || 'User'}
                   </Button>
                 </Link>
               </div>
@@ -116,11 +123,13 @@ export function Navbar() {
                 {link.label}
               </Link>
             ))}
-            {user ? (
+            {!mounted ? (
+              <div className="h-10 w-full bg-muted/20 animate-pulse rounded-xl mt-2" />
+            ) : user ? (
               <Link href={user.role === 'admin' ? '/admin' : '/dashboard'} onClick={() => setMobileOpen(false)}>
                 <Button variant="outline" size="sm" className="w-full mt-2 gap-2 rounded-xl">
                    {user.role === 'admin' ? <LayoutDashboard className="h-4 w-4" /> : <User className="h-4 w-4" />}
-                   {user.name}
+                   {user?.name || 'User'}
                 </Button>
               </Link>
             ) : (

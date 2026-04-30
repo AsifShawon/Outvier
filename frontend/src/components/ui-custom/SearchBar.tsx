@@ -11,7 +11,7 @@ interface SearchBarProps {
   className?: string;
 }
 
-export function SearchBar({ value, onChange, placeholder = 'Search...', className }: SearchBarProps) {
+export function SearchBar({ value = '', onChange, placeholder = 'Search...', className }: SearchBarProps) {
   const inputRef = useRef<HTMLInputElement>(null);
 
   return (

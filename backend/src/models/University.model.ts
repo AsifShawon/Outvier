@@ -89,8 +89,8 @@ const UniversitySchema = new Schema<IUniversity>(
     state: { type: String, trim: true },
     city: { type: String, trim: true },
     campusDetails: [CampusSchema],
-    officialWebsite: { type: String, trim: true },
-    cricosProviderCode: { type: String, trim: true, sparse: true },
+    officialWebsite: { type: String, trim: true, index: true },
+    cricosProviderCode: { type: String, trim: true, sparse: true, index: true },
     logoUrl: String,
     providerType: String,
     status: { type: String, enum: ['active', 'inactive', 'draft'], default: 'active' },
@@ -101,8 +101,6 @@ const UniversitySchema = new Schema<IUniversity>(
 
 // Full-text index
 UniversitySchema.index({ name: 'text', shortName: 'text', description: 'text', city: 'text', state: 'text' });
-UniversitySchema.index({ cricosProviderCode: 1 }, { sparse: true });
-UniversitySchema.index({ officialWebsite: 1 }, { sparse: true });
 UniversitySchema.index({ status: 1 });
 
 export const University = mongoose.model<IUniversity>('University', UniversitySchema);
