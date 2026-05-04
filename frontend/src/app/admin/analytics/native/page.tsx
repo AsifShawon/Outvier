@@ -3,6 +3,7 @@
 import { useQuery } from '@tanstack/react-query';
 import api from '@/lib/api';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
 import { 
   BarChart, 
   Bar, 

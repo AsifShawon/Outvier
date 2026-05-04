@@ -80,7 +80,7 @@ export default function AdminImportsNewPage() {
     if (!preview) return;
     setStep('confirming');
     try {
-      const res = await adminApi.confirmImport(preview.jobId, preview.rows);
+      const res = await adminApi.confirmImport(preview.jobId);
       const json = res.data;
       if (!json.success) throw new Error(json.message || 'Confirm failed');
       toast.success(`Import complete — ${json.data.successCount} universities created/updated`);

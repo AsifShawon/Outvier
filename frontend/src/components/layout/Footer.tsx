@@ -1,39 +1,46 @@
 import Link from 'next/link';
-import { GraduationCap, Globe } from 'lucide-react';
+import { Globe, MapPin, Mail, Phone } from 'lucide-react';
 
 export function Footer() {
   return (
-    <footer className="border-t border-border/60 bg-card/50 mt-auto">
-      <div className="container mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-12">
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
-          {/* Brand */}
-          <div className="md:col-span-2">
-            <Link href="/" className="flex items-center gap-2.5 mb-4">
-              <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary shadow-lg shadow-primary/25">
-                <GraduationCap className="h-5 w-5 text-primary-foreground" />
+    <footer className="border-t border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 mt-auto pt-16 pb-8">
+      <div className="container mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-12 lg:gap-8 mb-16">
+          {/* Brand & Description */}
+          <div className="lg:col-span-2">
+            <Link href="/" className="flex items-center gap-3 mb-6 group">
+              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-600 text-white shadow-lg shadow-blue-600/20 group-hover:shadow-blue-600/40 transition-all duration-300">
+                <Globe className="h-6 w-6" />
               </div>
-              <span className="text-xl font-bold font-display">
-                Out<span className="text-primary">vier</span>
+              <span className="text-2xl font-bold font-display tracking-tight text-slate-900 dark:text-white">
+                Out<span className="text-blue-600 dark:text-blue-400">vier</span>
               </span>
             </Link>
-            <p className="text-sm text-muted-foreground max-w-xs leading-relaxed">
-              A comparative analytics dashboard for discovering and comparing university programs across Australia.
+            <p className="text-slate-500 dark:text-slate-400 max-w-md leading-relaxed mb-6">
+              Empowering students worldwide to make data-driven decisions about their study-abroad journey. Find the right university, compare programs, and plan your budget.
             </p>
+            <div className="flex items-center gap-4">
+              {/* Social icons placeholders */}
+              {['twitter', 'linkedin', 'facebook'].map((social) => (
+                <a key={social} href={`#${social}`} className="w-10 h-10 rounded-full bg-slate-200 dark:bg-slate-800 flex items-center justify-center text-slate-500 hover:bg-blue-100 hover:text-blue-600 dark:hover:bg-blue-900/30 dark:hover:text-blue-400 transition-colors">
+                  <Globe className="w-4 h-4" />
+                </a>
+              ))}
+            </div>
           </div>
 
-          {/* Explore */}
+          {/* Product Links */}
           <div>
-            <h3 className="font-semibold text-sm mb-4">Explore</h3>
-            <ul className="space-y-2.5">
+            <h3 className="font-bold text-slate-900 dark:text-white mb-6 uppercase tracking-wider text-sm">Product</h3>
+            <ul className="space-y-4">
               {[
                 { href: '/universities', label: 'Universities' },
                 { href: '/programs', label: 'Programs' },
+                { href: '/compare', label: 'Compare Tool' },
+                { href: '/budget', label: 'Cost Estimator' },
               ].map((link) => (
                 <li key={link.href}>
-                  <Link
-                    href={link.href}
-                    className="text-sm text-muted-foreground hover:text-primary transition-colors"
-                  >
+                  <Link href={link.href} className="text-slate-500 dark:text-slate-400 hover:text-blue-600 dark:hover:text-blue-400 transition-colors font-medium">
                     {link.label}
                   </Link>
                 </li>
@@ -41,41 +48,49 @@ export function Footer() {
             </ul>
           </div>
 
-          {/* Admin */}
+          {/* Destinations */}
           <div>
-            <h3 className="font-semibold text-sm mb-4">Admin</h3>
-            <ul className="space-y-2.5">
-              {[
-                { href: '/login', label: 'Login' },
-                { href: '/admin', label: 'Dashboard' },
-                { href: '/admin/uploads', label: 'CSV Upload' },
-              ].map((link) => (
-                <li key={link.href}>
-                  <Link
-                    href={link.href}
-                    className="text-sm text-muted-foreground hover:text-primary transition-colors"
-                  >
-                    {link.label}
+            <h3 className="font-bold text-slate-900 dark:text-white mb-6 uppercase tracking-wider text-sm">Study In</h3>
+            <ul className="space-y-4">
+              {['Australia', 'Canada', 'United Kingdom', 'United States', 'New Zealand'].map((country) => (
+                <li key={country}>
+                  <Link href={`/universities?country=${country.toLowerCase()}`} className="text-slate-500 dark:text-slate-400 hover:text-blue-600 dark:hover:text-blue-400 transition-colors font-medium">
+                    {country}
                   </Link>
                 </li>
               ))}
+            </ul>
+          </div>
+
+          {/* Contact */}
+          <div>
+            <h3 className="font-bold text-slate-900 dark:text-white mb-6 uppercase tracking-wider text-sm">Contact Us</h3>
+            <ul className="space-y-4">
+              <li className="flex items-start gap-3 text-slate-500 dark:text-slate-400 font-medium">
+                <MapPin className="w-5 h-5 shrink-0 text-slate-400" />
+                <span>123 Global Education Blvd<br />Sydney, NSW 2000</span>
+              </li>
+              <li className="flex items-center gap-3 text-slate-500 dark:text-slate-400 font-medium hover:text-blue-600 transition-colors cursor-pointer">
+                <Mail className="w-5 h-5 shrink-0 text-slate-400" />
+                <span>hello@outvier.com</span>
+              </li>
+              <li className="flex items-center gap-3 text-slate-500 dark:text-slate-400 font-medium hover:text-blue-600 transition-colors cursor-pointer">
+                <Phone className="w-5 h-5 shrink-0 text-slate-400" />
+                <span>+61 2 1234 5678</span>
+              </li>
             </ul>
           </div>
         </div>
 
-        <div className="border-t border-border/60 mt-10 pt-8 flex flex-col sm:flex-row items-center justify-between gap-4">
-          <p className="text-xs text-muted-foreground">
-            © {new Date().getFullYear()} Outvier. Built for ICT801 research.
+        {/* Bottom Bar */}
+        <div className="border-t border-slate-200 dark:border-slate-800 pt-8 flex flex-col md:flex-row items-center justify-between gap-4">
+          <p className="text-sm text-slate-500 dark:text-slate-400 font-medium">
+            &copy; {new Date().getFullYear()} Outvier. All rights reserved.
           </p>
-          <div className="flex items-center gap-4">
-            <a
-              href="https://australia.gov.au"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-muted-foreground hover:text-primary transition-colors"
-            >
-              <Globe className="h-4 w-4" />
-            </a>
+          <div className="flex items-center gap-6 text-sm font-medium text-slate-500 dark:text-slate-400">
+            <Link href="/privacy" className="hover:text-slate-900 dark:hover:text-white transition-colors">Privacy Policy</Link>
+            <Link href="/terms" className="hover:text-slate-900 dark:hover:text-white transition-colors">Terms of Service</Link>
+            <Link href="/admin" className="hover:text-slate-900 dark:hover:text-white transition-colors">Admin Login</Link>
           </div>
         </div>
       </div>

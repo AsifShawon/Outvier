@@ -1,12 +1,13 @@
 import Link from 'next/link';
-import { Clock, DollarSign, GraduationCap, Monitor, Bookmark, BookmarkCheck } from 'lucide-react';
+import { Clock, DollarSign, GraduationCap, Monitor, Bookmark, BookmarkCheck, Building, Check, Plus, Calendar, ArrowRight } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
 import { Program } from '@/types/program';
 import { cn } from '@/lib/utils';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { profileApi } from '@/lib/api/profile.api';
 import { toast } from 'sonner';
+import { useComparison } from '@/context/ComparisonContext';
+import { Button } from '@/components/ui/button';
 
 interface ProgramCardProps {
   program: Program;
@@ -30,15 +31,11 @@ const levelLabels: Record<string, string> = {
   graduate_certificate: 'Grad. Certificate',
 };
 
-const campusModeIcons: Record<string, string> = {
-  'on-campus': '🏛️',
-  online: '💻',
-  hybrid: '🔄',
+const campusModeIcons: Record<string, React.ElementType> = {
+  'on-campus': Building,
+  online: Monitor,
+  hybrid: Clock,
 };
-
-import { useComparison } from '@/context/ComparisonContext';
-import { Button } from '@/components/ui/button';
-import { Plus, Check } from 'lucide-react';
 
 export function ProgramCard({ program }: ProgramCardProps) {
   const { selectedIds, addToCompare, removeFromCompare } = useComparison();
@@ -51,7 +48,7 @@ export function ProgramCard({ program }: ProgramCardProps) {
     staleTime: 60000 
   });
   
-  const isSaved = profileRes?.data?.data?.savedPrograms?.some((p: any) => (p._id || p) === program._id);
+  const isSaved = profileRes?.data?.data?.savedPrograms?.some((p: { _id: string } | string) => (typeof p === 'string' ? p : p._id) === program._id);
 
   const saveMutation = useMutation({
     mutationFn: () => isSaved ? profileApi.unsaveProgram(program._id) : profileApi.saveProgram(program._id),
@@ -77,94 +74,100 @@ export function ProgramCard({ program }: ProgramCardProps) {
     saveMutation.mutate();
   };
 
+  const ModeIcon = campusModeIcons[program.campusMode] || Building;
+
   return (
-    <Link href={`/programs/${program.slug}`}>
-      <Card className="card-hover group h-full overflow-hidden border-border/60 hover:border-primary/30 bg-card flex flex-col">
-        <div className="h-2 bg-gradient-to-r from-violet-500 via-primary to-primary/40" />
-        <CardContent className="p-5 flex-1 flex flex-col">
-          {/* Level & Field */}
-          <div className="flex items-center gap-2 mb-3">
+    <Link href={`/programs/${program.slug}`} className="block h-full group">
+      <Card className="h-full overflow-hidden border-slate-200 dark:border-slate-800 hover:border-indigo-500/50 bg-white dark:bg-slate-900 transition-all duration-300 shadow-sm hover:shadow-xl flex flex-col relative">
+        
+        {/* Subtle top border gradient line on hover */}
+        <div className="absolute top-0 inset-x-0 h-1 bg-gradient-to-r from-blue-500 to-indigo-500 opacity-0 group-hover:opacity-100 transition-opacity" />
+
+        <CardContent className="p-6 flex-1 flex flex-col pt-8">
+          
+          {/* Top Actions: Level & Save */}
+          <div className="flex items-start justify-between mb-4">
             <span
               className={cn(
-                'inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-semibold uppercase tracking-wide',
-                levelColors[program.level]
+                'inline-flex items-center px-2.5 py-1 rounded-md text-[11px] font-bold uppercase tracking-wide',
+                levelColors[program.level] || 'bg-slate-100 text-slate-600'
               )}
             >
-              {levelLabels[program.level]}
+              <GraduationCap className="w-3 h-3 mr-1" />
+              {levelLabels[program.level] || program.level}
             </span>
-            <span className="text-[10px] text-muted-foreground truncate">{program.field}</span>
-            <span className="ml-auto text-sm">{campusModeIcons[program.campusMode]}</span>
-          </div>
-
-          {/* Name */}
-          <h3 className="font-semibold text-sm leading-snug group-hover:text-primary transition-colors line-clamp-2 mb-1">
-            {program.name}
-          </h3>
-          <p className="text-xs text-muted-foreground mb-3">{program.universityName}</p>
-
-          {/* Description */}
-          <p className="text-xs text-muted-foreground line-clamp-2 leading-relaxed mb-4">
-            {program.description}
-          </p>
-
-          {/* Meta */}
-          <div className="grid grid-cols-2 gap-2 mt-auto">
-            <div className="flex items-center gap-1.5">
-              <Clock className="h-3 w-3 text-muted-foreground shrink-0" />
-              <span className="text-[11px] text-muted-foreground truncate">{program.duration}</span>
-            </div>
-            {program.tuitionFeeInternational && (
-              <div className="flex items-center gap-1.5">
-                <DollarSign className="h-3 w-3 text-muted-foreground shrink-0" />
-                <span className="text-[11px] text-muted-foreground">
-                  ${program.tuitionFeeInternational.toLocaleString()}/yr
-                </span>
-              </div>
-            )}
-          </div>
-
-          {/* Intake months */}
-          {program.intakeMonths && program.intakeMonths.length > 0 && (
-            <div className="mt-3 pt-3 border-t border-border/50">
-              <span className="text-[10px] text-muted-foreground">
-                Intake: {program.intakeMonths.join(', ')}
-              </span>
-            </div>
-          )}
-
-          {/* Compare & Save Buttons */}
-          <div className="mt-4 pt-3 border-t border-border/50 flex gap-2">
-            <Button
-              size="sm"
-              variant={isSelected ? "secondary" : "outline"}
-              className={cn(
-                "flex-1 gap-2 text-[11px] h-8 rounded-lg transition-all",
-                isSelected && "bg-primary/10 text-primary border-primary/20 hover:bg-primary/20"
-              )}
-              onClick={handleCompareClick}
-            >
-              {isSelected ? (
-                <>
-                  <Check className="h-3 w-3" /> Compared
-                </>
-              ) : (
-                <>
-                  <Plus className="h-3 w-3" /> Compare
-                </>
-              )}
-            </Button>
+            
             <Button
               size="sm"
               variant="ghost"
               className={cn(
-                "h-8 w-8 p-0 rounded-lg border border-border/50",
-                isSaved && "text-primary bg-primary/5 border-primary/20"
+                "h-8 w-8 p-0 rounded-full bg-slate-50 dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors shadow-sm",
+                isSaved ? "text-indigo-600 dark:text-indigo-400" : "text-slate-400"
               )}
               onClick={handleSaveClick}
               disabled={saveMutation.isPending}
             >
               {isSaved ? <BookmarkCheck className="h-4 w-4" /> : <Bookmark className="h-4 w-4" />}
             </Button>
+          </div>
+
+          {/* Name & University */}
+          <h3 className="font-bold text-lg leading-tight group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors line-clamp-2 mb-2">
+            {program.name}
+          </h3>
+          <p className="text-sm font-medium text-slate-500 dark:text-slate-400 mb-6 flex items-center gap-1.5">
+            <Building className="w-4 h-4" /> {program.universityName}
+          </p>
+
+          {/* Key Details Grid */}
+          <div className="grid grid-cols-2 gap-y-4 gap-x-2 mb-6">
+            <div className="flex flex-col">
+              <span className="text-[10px] uppercase font-bold text-slate-400 mb-1 flex items-center gap-1"><DollarSign className="w-3 h-3" /> Tuition / Yr</span>
+              <span className="text-sm font-semibold text-slate-900 dark:text-white">
+                {program.tuitionFeeInternational ? `$${program.tuitionFeeInternational.toLocaleString()}` : 'N/A'}
+              </span>
+            </div>
+            <div className="flex flex-col">
+              <span className="text-[10px] uppercase font-bold text-slate-400 mb-1 flex items-center gap-1"><Clock className="w-3 h-3" /> Duration</span>
+              <span className="text-sm font-semibold text-slate-900 dark:text-white">
+                {program.duration || 'N/A'}
+              </span>
+            </div>
+            <div className="flex flex-col">
+              <span className="text-[10px] uppercase font-bold text-slate-400 mb-1 flex items-center gap-1"><Calendar className="w-3 h-3" /> Intakes</span>
+              <span className="text-sm font-semibold text-slate-900 dark:text-white truncate">
+                {program.intakeMonths?.join(', ') || 'Varies'}
+              </span>
+            </div>
+            <div className="flex flex-col">
+              <span className="text-[10px] uppercase font-bold text-slate-400 mb-1 flex items-center gap-1"><ModeIcon className="w-3 h-3" /> Mode</span>
+              <span className="text-sm font-semibold text-slate-900 dark:text-white capitalize">
+                {program.campusMode || 'On-campus'}
+              </span>
+            </div>
+          </div>
+
+          {/* Bottom Actions */}
+          <div className="mt-auto pt-4 border-t border-slate-100 dark:border-slate-800 flex gap-3">
+            <Button
+              size="sm"
+              variant={isSelected ? "secondary" : "outline"}
+              className={cn(
+                "flex-1 h-10 rounded-xl font-semibold transition-all border-slate-200 dark:border-slate-700",
+                isSelected && "bg-indigo-50 dark:bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border-indigo-200 dark:border-indigo-500/30"
+              )}
+              onClick={handleCompareClick}
+            >
+              {isSelected ? (
+                <><Check className="w-4 h-4 mr-2" /> Compared</>
+              ) : (
+                <><Plus className="w-4 h-4 mr-2" /> Compare</>
+              )}
+            </Button>
+            
+            <div className="flex items-center justify-center w-10 h-10 rounded-xl bg-slate-50 dark:bg-slate-800 text-slate-400 group-hover:bg-indigo-600 group-hover:text-white transition-colors">
+               <ArrowRight className="w-4 h-4" />
+            </div>
           </div>
         </CardContent>
       </Card>
