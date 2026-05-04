@@ -46,8 +46,8 @@ export default function NativeAnalyticsPage() {
           title="Total Programs" 
           value={stats?.programsByLevel.reduce((a: any, b: any) => a + b.count, 0) || 0}
           icon={GraduationCap}
-          color="text-blue-500"
-          bg="bg-blue-50"
+          color="text-primary-500"
+          bg="bg-primary-50"
         />
         <StatCard 
           title="Total Universities" 
@@ -79,8 +79,8 @@ export default function NativeAnalyticsPage() {
             <CardTitle className="text-lg">Programs by Degree Level</CardTitle>
             <CardDescription>Distribution of academic offerings.</CardDescription>
           </CardHeader>
-          <CardContent className="h-[300px]">
-            <ResponsiveContainer width="100%" height="100%">
+          <CardContent className="h-[300px] w-full min-h-0 min-w-0 relative">
+            <ResponsiveContainer width="100%" height="100%" debounce={1}>
               <BarChart data={stats?.programsByLevel}>
                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
                 <XAxis dataKey="_id" axisLine={false} tickLine={false} fontSize={10} tick={{ fill: '#64748b' }} />
@@ -101,8 +101,8 @@ export default function NativeAnalyticsPage() {
             <CardTitle className="text-lg">Tuition Fee Distribution (International)</CardTitle>
             <CardDescription>Number of programs per price bucket.</CardDescription>
           </CardHeader>
-          <CardContent className="h-[300px]">
-            <ResponsiveContainer width="100%" height="100%">
+          <CardContent className="h-[300px] w-full min-h-0 min-w-0 relative">
+            <ResponsiveContainer width="100%" height="100%" debounce={1}>
               <AreaChart data={stats?.tuitionDistribution}>
                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
                 <XAxis dataKey="_id" axisLine={false} tickLine={false} fontSize={10} tick={{ fill: '#64748b' }} />
@@ -120,8 +120,8 @@ export default function NativeAnalyticsPage() {
             <CardTitle className="text-lg">Universities by State</CardTitle>
             <CardDescription>Geographic distribution across Australia.</CardDescription>
           </CardHeader>
-          <CardContent className="h-[300px]">
-            <ResponsiveContainer width="100%" height="100%">
+          <CardContent className="h-[300px] w-full min-h-0 min-w-0 relative">
+            <ResponsiveContainer width="100%" height="100%" debounce={1}>
               <PieChart>
                 <Pie
                   data={stats?.universitiesByState}

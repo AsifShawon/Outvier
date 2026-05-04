@@ -58,8 +58,8 @@ export default function HomePage() {
       <section className="relative pt-12 pb-16 lg:pt-20 lg:pb-24 overflow-hidden bg-white dark:bg-slate-950">
         {/* Subtle background glow */}
         <div className="absolute top-0 inset-x-0 h-full overflow-hidden pointer-events-none">
-          <div className="absolute -top-24 -right-24 w-[600px] h-[600px] rounded-full bg-blue-50/50 dark:bg-blue-900/10 blur-3xl opacity-40" />
-          <div className="absolute -bottom-24 -left-24 w-[400px] h-[400px] rounded-full bg-indigo-50/50 dark:bg-indigo-900/10 blur-3xl opacity-40" />
+          <div className="absolute -top-24 -right-24 w-[600px] h-[600px] rounded-full bg-primary-50/50 dark:bg-primary-900/10 blur-3xl opacity-40" />
+          <div className="absolute -bottom-24 -left-24 w-[400px] h-[400px] rounded-full bg-primary-50/50 dark:bg-primary-900/10 blur-3xl opacity-40" />
         </div>
 
         <div className="container mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 relative z-10">
@@ -73,14 +73,14 @@ export default function HomePage() {
                 transition={{ duration: 0.5 }}
                 className="w-full"
               >
-                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-50 text-blue-700 dark:bg-blue-500/10 dark:text-blue-400 border border-blue-100 dark:border-blue-500/20 text-xs font-bold uppercase tracking-wider mb-6">
+                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary-50 text-primary-700 dark:bg-primary-500/10 dark:text-primary-400 border border-primary-100 dark:border-primary-500/20 text-xs font-bold uppercase tracking-wider mb-6">
                   <Sparkles className="w-3.5 h-3.5" />
                   Focused on Australia
                 </div>
                 
                 <h1 className="text-4xl sm:text-5xl lg:text-6xl font-black font-display mb-4 leading-[1.15] tracking-tight text-slate-900 dark:text-white">
                   Find your best <br className="hidden sm:block" />
-                  <span className="text-blue-600 dark:text-blue-400">
+                  <span className="text-primary-600 dark:text-primary-400">
                     Australian university match.
                   </span>
                 </h1>
@@ -93,7 +93,7 @@ export default function HomePage() {
                 <div className="flex flex-wrap gap-2 mb-10">
                   {['Australian universities', 'Program comparison', 'Budget estimate', 'Scholarships'].map((chip, idx) => (
                     <div key={idx} className="flex items-center text-[11px] sm:text-xs font-semibold text-slate-600 dark:text-slate-400 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 px-2.5 py-1.5 rounded-lg shadow-sm">
-                      <CheckCircle2 className="w-3 h-3 text-blue-500 mr-2" />
+                      <CheckCircle2 className="w-3 h-3 text-primary-500 mr-2" />
                       {chip}
                     </div>
                   ))}
@@ -149,7 +149,7 @@ export default function HomePage() {
               <h2 className="text-3xl md:text-4xl font-bold font-display text-slate-900 dark:text-white mb-4">Featured Destinations</h2>
               <p className="text-slate-500 dark:text-slate-400">Explore the most popular countries for international students.</p>
             </div>
-            <Link href="/universities" className="hidden md:flex items-center text-blue-600 dark:text-blue-400 font-semibold hover:underline">
+            <Link href="/universities" className="hidden md:flex items-center text-primary-600 dark:text-primary-400 font-semibold hover:underline">
               View all countries <ArrowRight className="w-4 h-4 ml-2" />
             </Link>
           </div>
@@ -194,7 +194,7 @@ export default function HomePage() {
               <h2 className="text-3xl md:text-4xl font-bold font-display text-slate-900 dark:text-white mb-4">Top Universities</h2>
               <p className="text-slate-500 dark:text-slate-400">Discover highly-ranked institutions matching global standards.</p>
             </div>
-            <Link href="/universities" className="hidden md:flex items-center text-blue-600 dark:text-blue-400 font-semibold hover:underline">
+            <Link href="/universities" className="hidden md:flex items-center text-primary-600 dark:text-primary-400 font-semibold hover:underline">
               View all universities <ArrowRight className="w-4 h-4 ml-2" />
             </Link>
           </div>
@@ -203,7 +203,7 @@ export default function HomePage() {
             {uniLoading ? (
               Array.from({ length: 4 }).map((_, i) => <SkeletonCard key={i} />)
             ) : universities.length > 0 ? (
-              universities.map(uni => <UniversityCard key={uni._id} university={uni} />)
+              universities.map((uni: any) => <UniversityCard key={uni._id} university={uni} />)
             ) : (
               <p className="text-slate-500 col-span-4">No universities available.</p>
             )}
@@ -219,7 +219,7 @@ export default function HomePage() {
               <h2 className="text-3xl md:text-4xl font-bold font-display text-slate-900 dark:text-white mb-4">Popular Programs</h2>
               <p className="text-slate-500 dark:text-slate-400">Explore degrees with the best career outcomes and student satisfaction.</p>
             </div>
-            <Link href="/programs" className="hidden md:flex items-center text-blue-600 dark:text-blue-400 font-semibold hover:underline">
+            <Link href="/programs" className="hidden md:flex items-center text-primary-600 dark:text-primary-400 font-semibold hover:underline">
               View all programs <ArrowRight className="w-4 h-4 ml-2" />
             </Link>
           </div>
@@ -228,7 +228,7 @@ export default function HomePage() {
             {progLoading ? (
               Array.from({ length: 4 }).map((_, i) => <SkeletonCard key={i} />)
             ) : programs.length > 0 ? (
-              programs.map(prog => <ProgramCard key={prog._id} program={prog} />)
+              programs.map((prog: any) => <ProgramCard key={prog._id} program={prog} />)
             ) : (
               <p className="text-slate-500 col-span-4">No programs available.</p>
             )}
@@ -261,7 +261,7 @@ export default function HomePage() {
           <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
             {valueProps.map((vp, i) => (
               <div key={i} className="text-center">
-                <div className="w-16 h-16 mx-auto bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 rounded-2xl flex items-center justify-center mb-6 shadow-sm">
+                <div className="w-16 h-16 mx-auto bg-primary-50 dark:bg-primary-900/20 text-primary-600 dark:text-primary-400 rounded-2xl flex items-center justify-center mb-6 shadow-sm">
                   <vp.icon className="w-8 h-8" />
                 </div>
                 <h3 className="text-xl font-bold text-slate-900 dark:text-white mb-3">{vp.title}</h3>
@@ -304,16 +304,16 @@ export default function HomePage() {
       </section>
 
       {/* Final CTA */}
-      <section className="py-32 relative overflow-hidden bg-blue-600 dark:bg-blue-900 text-white">
+      <section className="py-32 relative overflow-hidden bg-primary-600 dark:bg-primary-900 text-white">
         <div className="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1523050854058-8df90110c9f1?q=80&w=2070&auto=format&fit=crop')] bg-cover bg-center opacity-10 mix-blend-overlay" />
         <div className="container mx-auto max-w-4xl px-4 sm:px-6 lg:px-8 relative z-10 text-center">
           <h2 className="text-4xl md:text-5xl font-bold font-display mb-6">Ready to plan your study-abroad journey?</h2>
-          <p className="text-xl text-blue-100 mb-10 max-w-2xl mx-auto">
+          <p className="text-xl text-primary-100 mb-10 max-w-2xl mx-auto">
             Join thousands of students making data-driven degree decisions. Start exploring today.
           </p>
           <div className="flex flex-col sm:flex-row justify-center gap-4">
             <Link href="/programs">
-              <Button size="lg" className="w-full sm:w-auto h-14 px-8 bg-white text-blue-600 hover:bg-slate-100 font-bold rounded-full text-lg shadow-xl">
+              <Button size="lg" className="w-full sm:w-auto h-14 px-8 bg-white text-primary-600 hover:bg-slate-100 font-bold rounded-full text-lg shadow-xl">
                 Start Exploring
               </Button>
             </Link>

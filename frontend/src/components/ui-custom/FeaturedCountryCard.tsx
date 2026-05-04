@@ -43,7 +43,7 @@ export function FeaturedCountryCard({ country, image, budget, programs, intakes 
         </div>
 
         <Link href="/universities" className="w-full">
-          <button className="w-full py-3 rounded-xl bg-blue-50 hover:bg-blue-600 text-blue-600 hover:text-white dark:bg-slate-800 dark:text-blue-400 dark:hover:bg-blue-600 dark:hover:text-white font-semibold flex items-center justify-center gap-2 transition-colors">
+          <button className="w-full py-3 rounded-xl bg-primary-50 hover:bg-primary-600 text-primary-600 hover:text-white dark:bg-slate-800 dark:text-primary-400 dark:hover:bg-primary-600 dark:hover:text-white font-semibold flex items-center justify-center gap-2 transition-colors">
             Explore {country} <ArrowRight className="w-4 h-4" />
           </button>
         </Link>

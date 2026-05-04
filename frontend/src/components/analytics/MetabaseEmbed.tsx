@@ -8,12 +8,12 @@ export function MetabaseEmbed() {
 
   return (
     <div className="space-y-6">
-      <div className="rounded-xl border border-blue-500/20 bg-blue-500/5 p-4 flex gap-3 items-start">
-        <InfoIcon className="h-5 w-5 text-blue-400 mt-0.5 flex-shrink-0" />
-        <div className="text-sm text-blue-300">
-          <strong className="text-blue-200">Analytics powered by Metabase (Open Source).</strong>{' '}
+      <div className="rounded-xl border border-primary-500/20 bg-primary-500/5 p-4 flex gap-3 items-start">
+        <InfoIcon className="h-5 w-5 text-primary-400 mt-0.5 flex-shrink-0" />
+        <div className="text-sm text-primary-300">
+          <strong className="text-primary-200">Analytics powered by Metabase (Open Source).</strong>{' '}
           Access full dashboard at{' '}
-          <a href="http://localhost:3001" target="_blank" className="underline inline-flex items-center gap-1 hover:text-blue-100 transition-colors">
+          <a href="http://localhost:3001" target="_blank" className="underline inline-flex items-center gap-1 hover:text-primary-100 transition-colors">
             localhost:3001
             <ExternalLink className="h-3 w-3" />
           </a>. Connect to MongoDB using the Metabase MongoDB connector.

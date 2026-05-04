@@ -188,7 +188,7 @@ export default function ProfilePage() {
                 <Label htmlFor="preferredField">Preferred Field of Study</Label>
                 <Select 
                   value={formData.preferredField} 
-                  onValueChange={(v) => setFormData(prev => ({ ...prev, preferredField: v }))}
+                  onValueChange={(v) => v && setFormData(prev => ({ ...prev, preferredField: v }))}
                 >
                   <SelectTrigger id="preferredField">
                     <SelectValue placeholder="Select a field" />
@@ -205,7 +205,7 @@ export default function ProfilePage() {
                 <Label htmlFor="preferredLevel">Study Level</Label>
                 <Select 
                   value={formData.preferredLevel} 
-                  onValueChange={(v) => setFormData(prev => ({ ...prev, preferredLevel: v }))}
+                  onValueChange={(v) => v && setFormData(prev => ({ ...prev, preferredLevel: v }))}
                 >
                   <SelectTrigger id="preferredLevel">
                     <SelectValue placeholder="Select level" />
@@ -360,9 +360,9 @@ export default function ProfilePage() {
 
               {showAdvanced && (
                 <div className="space-y-6 pt-6 border-t border-dashed mt-4">
-                  <div className="rounded-lg bg-blue-500/5 border border-blue-500/10 p-4 flex gap-3 items-start">
-                    <InfoIcon className="h-5 w-5 text-blue-500 mt-0.5 flex-shrink-0" />
-                    <p className="text-sm text-blue-700/80">
+                  <div className="rounded-lg bg-primary-500/5 border border-primary-500/10 p-4 flex gap-3 items-start">
+                    <InfoIcon className="h-5 w-5 text-primary-500 mt-0.5 flex-shrink-0" />
+                    <p className="text-sm text-primary-700/80">
                       Manual adjustments will clear the preset selection. Total must sum to 100%.
                     </p>
                   </div>

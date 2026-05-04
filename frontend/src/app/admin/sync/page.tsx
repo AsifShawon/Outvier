@@ -13,7 +13,7 @@ import { format } from 'date-fns';
 
 const statusConfig: Record<string, { label: string; icon: any; badgeCls: string; iconCls: string }> = {
   pending:    { label: 'Pending',    icon: RefreshCw,    badgeCls: 'border-amber-500/30 text-amber-400 bg-amber-500/5',   iconCls: 'text-amber-400 animate-spin' },
-  running:    { label: 'Running',    icon: RefreshCw,    badgeCls: 'border-blue-500/30 text-blue-400 bg-blue-500/5',     iconCls: 'text-blue-400 animate-spin' },
+  running:    { label: 'Running',    icon: RefreshCw,    badgeCls: 'border-primary-500/30 text-primary-400 bg-primary-500/5',     iconCls: 'text-primary-400 animate-spin' },
   completed:  { label: 'Completed',  icon: CheckCircle2, badgeCls: 'border-emerald-500/30 text-emerald-400 bg-emerald-500/5', iconCls: 'text-emerald-400' },
   failed:     { label: 'Failed',     icon: XCircle,      badgeCls: 'border-red-500/30 text-red-400 bg-red-500/5',       iconCls: 'text-red-400' },
 };
@@ -55,7 +55,7 @@ export default function SyncJobsPage() {
           <Button 
             onClick={() => syncAll.mutate()} 
             disabled={syncAll.isPending}
-            className="gap-2 rounded-xl bg-blue-600 hover:bg-blue-700"
+            className="gap-2 rounded-xl bg-primary-600 hover:bg-primary-700"
           >
             {syncAll.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <PlayCircle className="h-4 w-4" />}
             Sync All Universities
@@ -64,11 +64,11 @@ export default function SyncJobsPage() {
       </div>
 
       {/* Info callout */}
-      <div className="rounded-xl border border-blue-500/20 bg-blue-500/5 p-4 flex gap-3 items-start">
-        <AlertCircle className="h-5 w-5 text-blue-400 mt-0.5 flex-shrink-0" />
-        <div className="text-sm text-blue-300">
-          <strong className="text-blue-200">How it works:</strong> Sync jobs run in the background using BullMQ and Redis.
-          They use connectors to scrape or fetch data. Any extracted data is saved as a <strong className="text-blue-200">Staged Change</strong> for your approval.
+      <div className="rounded-xl border border-primary-500/20 bg-primary-500/5 p-4 flex gap-3 items-start">
+        <AlertCircle className="h-5 w-5 text-primary-400 mt-0.5 flex-shrink-0" />
+        <div className="text-sm text-primary-300">
+          <strong className="text-primary-200">How it works:</strong> Sync jobs run in the background using BullMQ and Redis.
+          They use connectors to scrape or fetch data. Any extracted data is saved as a <strong className="text-primary-200">Staged Change</strong> for your approval.
         </div>
       </div>
 

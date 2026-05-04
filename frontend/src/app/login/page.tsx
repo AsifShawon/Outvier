@@ -122,7 +122,7 @@ export default function LoginPage() {
             <Button
               type="submit"
               disabled={mutation.isPending}
-              className="w-full bg-white text-blue-900 hover:bg-slate-100 font-semibold h-11 text-base shadow-lg transition-all"
+              className="w-full bg-white text-primary-900 hover:bg-slate-100 font-semibold h-11 text-base shadow-lg transition-all"
             >
               {mutation.isPending ? 'Signing in...' : 'Sign In'}
             </Button>
@@ -131,7 +131,7 @@ export default function LoginPage() {
           <div className="mt-6 text-center">
             <p className="text-sm text-white/70">
               Don't have an account?{' '}
-              <Link href="/signup" className="text-white font-medium hover:underline hover:text-blue-100 transition-colors">
+              <Link href="/signup" className="text-white font-medium hover:underline hover:text-primary-100 transition-colors">
                 Sign up
               </Link>
             </p>

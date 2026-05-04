@@ -9,8 +9,8 @@ const slides = [
     image: 'https://images.unsplash.com/photo-1541339907198-e08756dedf3f?q=80&w=2070&auto=format&fit=crop',
     floatingCard: {
       icon: CheckCircle2,
-      color: 'text-blue-500',
-      bgColor: 'bg-blue-100 dark:bg-blue-500/20',
+      color: 'text-primary-500',
+      bgColor: 'bg-primary-100 dark:bg-primary-500/20',
       title: 'Fit score ready',
       subtitle: '94% Match'
     }

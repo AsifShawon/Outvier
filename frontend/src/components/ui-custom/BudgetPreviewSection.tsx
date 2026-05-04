@@ -46,7 +46,7 @@ export function BudgetPreviewSection() {
           </button>
         </div>
 
-        <Button size="lg" className="rounded-full w-full sm:w-auto h-12 text-base shadow-lg shadow-blue-500/25 bg-blue-600 hover:bg-blue-700 text-white">
+        <Button size="lg" className="rounded-full w-full sm:w-auto h-12 text-base shadow-lg shadow-primary-500/25 bg-primary-600 hover:bg-primary-700 text-white">
           Try Full Calculator
         </Button>
       </div>
@@ -59,15 +59,15 @@ export function BudgetPreviewSection() {
             key={total}
             initial={{ scale: 0.9, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
-            className="text-5xl font-display font-bold text-blue-600 dark:text-blue-400"
+            className="text-5xl font-display font-bold text-primary-600 dark:text-primary-400"
           >
             ${total.toLocaleString()} <span className="text-2xl text-slate-400 font-medium">AUD</span>
           </motion.div>
         </div>
 
         <div className="space-y-4">
-          <CostItem icon={GraduationCap} label="Tuition Fees" amount={currentCost.tuition} total={total} color="bg-blue-500" />
-          <CostItem icon={Home} label="Accommodation" amount={currentCost.housing} total={total} color="bg-indigo-500" />
+          <CostItem icon={GraduationCap} label="Tuition Fees" amount={currentCost.tuition} total={total} color="bg-primary-500" />
+          <CostItem icon={Home} label="Accommodation" amount={currentCost.housing} total={total} color="bg-primary-500" />
           <CostItem icon={DollarSign} label="Living Expenses" amount={currentCost.living} total={total} color="bg-emerald-500" />
           <CostItem icon={HeartPulse} label="Insurance & Other" amount={currentCost.other} total={total} color="bg-amber-500" />
         </div>

@@ -14,7 +14,7 @@ interface ProgramCardProps {
 }
 
 const levelColors: Record<string, string> = {
-  bachelor: 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300',
+  bachelor: 'bg-primary-100 text-primary-800 dark:bg-primary-900/30 dark:text-primary-300',
   master: 'bg-violet-100 text-violet-800 dark:bg-violet-900/30 dark:text-violet-300',
   phd: 'bg-rose-100 text-rose-800 dark:bg-rose-900/30 dark:text-rose-300',
   diploma: 'bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300',
@@ -78,10 +78,10 @@ export function ProgramCard({ program }: ProgramCardProps) {
 
   return (
     <Link href={`/programs/${program.slug}`} className="block h-full group">
-      <Card className="h-full overflow-hidden border-slate-200 dark:border-slate-800 hover:border-indigo-500/50 bg-white dark:bg-slate-900 transition-all duration-300 shadow-sm hover:shadow-xl flex flex-col relative">
+      <Card className="h-full overflow-hidden border-slate-200 dark:border-slate-800 hover:border-primary-500/50 bg-white dark:bg-slate-900 transition-all duration-300 shadow-sm hover:shadow-xl flex flex-col relative">
         
         {/* Subtle top border gradient line on hover */}
-        <div className="absolute top-0 inset-x-0 h-1 bg-gradient-to-r from-blue-500 to-indigo-500 opacity-0 group-hover:opacity-100 transition-opacity" />
+        <div className="absolute top-0 inset-x-0 h-1 bg-gradient-to-r from-primary-500 to-primary-500 opacity-0 group-hover:opacity-100 transition-opacity" />
 
         <CardContent className="p-6 flex-1 flex flex-col pt-8">
           
@@ -102,7 +102,7 @@ export function ProgramCard({ program }: ProgramCardProps) {
               variant="ghost"
               className={cn(
                 "h-8 w-8 p-0 rounded-full bg-slate-50 dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors shadow-sm",
-                isSaved ? "text-indigo-600 dark:text-indigo-400" : "text-slate-400"
+                isSaved ? "text-primary-600 dark:text-primary-400" : "text-slate-400"
               )}
               onClick={handleSaveClick}
               disabled={saveMutation.isPending}
@@ -112,7 +112,7 @@ export function ProgramCard({ program }: ProgramCardProps) {
           </div>
 
           {/* Name & University */}
-          <h3 className="font-bold text-lg leading-tight group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors line-clamp-2 mb-2">
+          <h3 className="font-bold text-lg leading-tight group-hover:text-primary-600 dark:group-hover:text-primary-400 transition-colors line-clamp-2 mb-2">
             {program.name}
           </h3>
           <p className="text-sm font-medium text-slate-500 dark:text-slate-400 mb-6 flex items-center gap-1.5">
@@ -154,7 +154,7 @@ export function ProgramCard({ program }: ProgramCardProps) {
               variant={isSelected ? "secondary" : "outline"}
               className={cn(
                 "flex-1 h-10 rounded-xl font-semibold transition-all border-slate-200 dark:border-slate-700",
-                isSelected && "bg-indigo-50 dark:bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border-indigo-200 dark:border-indigo-500/30"
+                isSelected && "bg-primary-50 dark:bg-primary-500/10 text-primary-600 dark:text-primary-400 border-primary-200 dark:border-primary-500/30"
               )}
               onClick={handleCompareClick}
             >
@@ -165,7 +165,7 @@ export function ProgramCard({ program }: ProgramCardProps) {
               )}
             </Button>
             
-            <div className="flex items-center justify-center w-10 h-10 rounded-xl bg-slate-50 dark:bg-slate-800 text-slate-400 group-hover:bg-indigo-600 group-hover:text-white transition-colors">
+            <div className="flex items-center justify-center w-10 h-10 rounded-xl bg-slate-50 dark:bg-slate-800 text-slate-400 group-hover:bg-primary-600 group-hover:text-white transition-colors">
                <ArrowRight className="w-4 h-4" />
             </div>
           </div>

@@ -16,6 +16,7 @@ import {
   BarChart3,
   RefreshCw,
   ExternalLink,
+  X,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
@@ -39,7 +40,7 @@ const navItems = [
   { href: '/admin/analytics/native', label: 'Native Stats', icon: LayoutDashboard },
 ];
 
-export function AdminSidebar() {
+export function AdminSidebar({ onClose }: { onClose?: () => void }) {
   const pathname = usePathname();
   const router = useRouter();
 
@@ -50,9 +51,9 @@ export function AdminSidebar() {
   };
 
   return (
-    <aside className="w-64 min-h-screen bg-sidebar border-r border-sidebar-border flex flex-col">
+    <aside className="w-64 h-full bg-sidebar border-r border-sidebar-border flex flex-col">
       {/* Brand */}
-      <div className="px-6 py-5 border-b border-sidebar-border">
+      <div className="px-6 py-5 border-b border-sidebar-border flex items-center justify-between">
         <Link href="/" className="flex items-center gap-2.5">
           <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-sidebar-primary shadow-lg shadow-sidebar-primary/25">
             <GraduationCap className="h-5 w-5 text-sidebar-primary-foreground" />
@@ -64,6 +65,11 @@ export function AdminSidebar() {
             <div className="text-[10px] text-sidebar-foreground/50 font-medium">Admin Panel</div>
           </div>
         </Link>
+        {onClose && (
+          <button onClick={onClose} className="lg:hidden p-1 text-sidebar-foreground/70 hover:text-sidebar-foreground">
+            <X className="h-5 w-5" />
+          </button>
+        )}
       </div>
 
       {/* Nav */}

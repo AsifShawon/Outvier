@@ -72,7 +72,7 @@ export default function EditProgramPage() {
   const program = programsData;
 
   const { register, handleSubmit, setValue, watch, reset, formState: { errors } } = useForm<FormData>({
-    resolver: zodResolver(schema),
+    resolver: zodResolver(schema) as any,
     defaultValues: { level: 'bachelor', campusMode: 'on-campus' },
   });
 

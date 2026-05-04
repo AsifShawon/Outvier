@@ -9,6 +9,7 @@ import { Label } from '@/components/ui/label';
 import { toast } from 'sonner';
 import { Trophy, Trash2, Plus, Search, ExternalLink } from 'lucide-react';
 import { useState } from 'react';
+import { Badge } from '@/components/ui/badge';
 
 export default function AdminRankingsPage() {
   const qc = useQueryClient();
@@ -93,7 +94,7 @@ export default function AdminRankingsPage() {
                         {rank.universityId?.name || 'Unknown'}
                       </td>
                       <td className="px-4 py-4">
-                        <Badge variant="secondary" className="bg-blue-50 text-blue-700 hover:bg-blue-100 border-none">
+                        <Badge variant="secondary" className="bg-primary-50 text-primary-700 hover:bg-primary-100 border-none">
                           {rank.source}
                         </Badge>
                       </td>

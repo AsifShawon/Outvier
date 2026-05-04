@@ -47,7 +47,7 @@ export default function AiProvidersPage() {
               <Bot className="h-4 w-4 text-primary" />
               AI Provider
             </label>
-            <Select value={provider} onValueChange={setProvider}>
+            <Select value={provider} onValueChange={(v) => v && setProvider(v)}>
               <SelectTrigger>
                 <SelectValue placeholder="Select a provider" />
               </SelectTrigger>

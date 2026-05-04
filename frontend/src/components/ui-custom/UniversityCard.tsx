@@ -15,7 +15,7 @@ interface UniversityCardProps {
 const stateColors: Record<string, string> = {
   SA: 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-300',
   QLD: 'bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300',
-  VIC: 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300',
+  VIC: 'bg-primary-100 text-primary-800 dark:bg-primary-900/30 dark:text-primary-300',
   NSW: 'bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-300',
   WA: 'bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-300',
 };
@@ -65,7 +65,7 @@ export function UniversityCard({ university }: UniversityCardProps) {
 
   return (
     <Link href={`/universities/${university.slug}`} className="group block h-full">
-      <Card className="h-full overflow-hidden border-slate-200 dark:border-slate-800 hover:border-blue-500/50 dark:hover:border-blue-500/50 bg-white dark:bg-slate-900 transition-all duration-300 shadow-sm hover:shadow-xl flex flex-col relative">
+      <Card className="h-full overflow-hidden border-slate-200 dark:border-slate-800 hover:border-primary-500/50 dark:hover:border-primary-500/50 bg-white dark:bg-slate-900 transition-all duration-300 shadow-sm hover:shadow-xl flex flex-col relative">
         
         {/* Fit Score Badge Placeholder */}
         <div className="absolute top-3 left-3 z-20 bg-white/90 dark:bg-slate-900/90 backdrop-blur border border-green-500/30 text-green-600 dark:text-green-400 text-xs font-bold px-2 py-1 rounded-md shadow-sm flex items-center gap-1">
@@ -78,7 +78,7 @@ export function UniversityCard({ university }: UniversityCardProps) {
           variant="ghost"
           className={cn(
             "absolute top-3 right-3 z-20 h-8 w-8 p-0 rounded-full bg-white/80 dark:bg-slate-900/80 backdrop-blur hover:bg-white dark:hover:bg-slate-800 transition-colors shadow-sm",
-            isSaved ? "text-blue-600 dark:text-blue-400" : "text-slate-600 dark:text-slate-400"
+            isSaved ? "text-primary-600 dark:text-primary-400" : "text-slate-600 dark:text-slate-400"
           )}
           onClick={handleSaveClick}
           disabled={saveMutation.isPending}
@@ -98,7 +98,7 @@ export function UniversityCard({ university }: UniversityCardProps) {
         <CardContent className="p-5 flex-1 flex flex-col -mt-8 relative z-10">
           {/* Logo / Initials */}
           <div className="flex justify-between items-end mb-4">
-            <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-white dark:bg-slate-800 text-blue-600 dark:text-blue-400 font-bold text-xl font-display shadow-md border-4 border-white dark:border-slate-900">
+            <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-white dark:bg-slate-800 text-primary-600 dark:text-primary-400 font-bold text-xl font-display shadow-md border-4 border-white dark:border-slate-900">
               {initials}
             </div>
             
@@ -112,7 +112,7 @@ export function UniversityCard({ university }: UniversityCardProps) {
             </div>
           </div>
 
-          <h3 className="font-bold text-base leading-snug group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors line-clamp-2 mb-1">
+          <h3 className="font-bold text-base leading-snug group-hover:text-primary-600 dark:group-hover:text-primary-400 transition-colors line-clamp-2 mb-1">
             {university.name}
           </h3>
           
@@ -132,7 +132,7 @@ export function UniversityCard({ university }: UniversityCardProps) {
               </div>
             )}
             <div className="flex items-center gap-2 bg-slate-50 dark:bg-slate-800/50 p-2 rounded-lg">
-              <Building className="h-4 w-4 text-indigo-500" />
+              <Building className="h-4 w-4 text-primary-500" />
               <div>
                 <div className="text-[10px] text-slate-500 dark:text-slate-400 uppercase font-semibold">Campuses</div>
                 <div className="text-xs font-bold text-slate-900 dark:text-white">{university.campuses?.length || 1}</div>
@@ -141,7 +141,7 @@ export function UniversityCard({ university }: UniversityCardProps) {
           </div>
 
           <div className="mt-auto pt-4 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between">
-             <div className="flex items-center gap-1 text-sm font-semibold text-blue-600 dark:text-blue-400 group-hover:underline">
+             <div className="flex items-center gap-1 text-sm font-semibold text-primary-600 dark:text-primary-400 group-hover:underline">
                Explore Programs <span className="ml-1 transition-transform group-hover:translate-x-1">→</span>
              </div>
           </div>

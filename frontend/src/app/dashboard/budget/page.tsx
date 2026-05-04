@@ -82,7 +82,7 @@ export default function BudgetCalculatorPage() {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label>Preferred State</Label>
-                  <Select value={state} onValueChange={setState}>
+                  <Select value={state} onValueChange={(v) => v && setState(v)}>
                     <SelectTrigger>
                       <SelectValue />
                     </SelectTrigger>
@@ -162,7 +162,7 @@ export default function BudgetCalculatorPage() {
         </div>
 
         <div className="space-y-6">
-          <Card className="border-none bg-blue-900 text-white shadow-xl overflow-hidden sticky top-8">
+          <Card className="border-none bg-primary-900 text-white shadow-xl overflow-hidden sticky top-8">
             <CardHeader className="pb-2">
               <CardTitle className="text-lg font-display opacity-80 uppercase tracking-widest">Yearly Estimate</CardTitle>
               <div className="text-5xl font-black font-display tracking-tighter">

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef } from 'react';
+import { useState, useRef, Suspense } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Navbar } from '@/components/layout/Navbar';
 import { Footer } from '@/components/layout/Footer';
@@ -18,7 +18,7 @@ import { useSearchParams } from 'next/navigation';
 
 const SA_STATES = ['SA', 'QLD', 'VIC', 'NSW', 'WA', 'TAS', 'NT', 'ACT'];
 
-export default function UniversitiesPage() {
+function UniversitiesContent() {
   const searchParams = useSearchParams();
   const [search, setSearch] = useState(searchParams.get('search') ?? '');
   const [state, setState] = useState(searchParams.get('state') ?? '');
@@ -126,5 +126,13 @@ export default function UniversitiesPage() {
       </main>
       <Footer />
     </div>
+  );
+}
+
+export default function UniversitiesPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen flex items-center justify-center">Loading...</div>}>
+      <UniversitiesContent />
+    </Suspense>
   );
 }

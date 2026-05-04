@@ -5,10 +5,13 @@ import { useRouter } from 'next/navigation';
 import { AdminSidebar } from '@/components/layout/AdminSidebar';
 import { Skeleton } from '@/components/ui/skeleton';
 import { authApi } from '@/lib/api/auth.api';
+import { Menu } from 'lucide-react';
+import { cn } from '@/lib/utils';
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const [isAuthed, setIsAuthed] = useState<boolean | null>(null);
+  const [isMobileOpen, setIsMobileOpen] = useState(false);
 
   useEffect(() => {
     const checkAuth = async () => {
@@ -56,11 +59,41 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   if (!isAuthed) return null;
 
   return (
-    <div className="flex h-screen overflow-hidden">
-      <AdminSidebar />
-      <main className="flex-1 overflow-auto p-8 bg-background">
-        {children}
-      </main>
+    <div className="flex h-[100dvh] overflow-hidden bg-background">
+      {/* Mobile Backdrop */}
+      {isMobileOpen && (
+        <div 
+          className="fixed inset-0 bg-foreground/20 backdrop-blur-sm z-40 lg:hidden"
+          onClick={() => setIsMobileOpen(false)}
+        />
+      )}
+      
+      {/* Sidebar Container */}
+      <div className={cn(
+        "fixed inset-y-0 left-0 z-50 transition-transform duration-300 ease-in-out lg:static lg:translate-x-0",
+        isMobileOpen ? "translate-x-0" : "-translate-x-full"
+      )}>
+        <AdminSidebar onClose={() => setIsMobileOpen(false)} />
+      </div>
+
+      <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
+        {/* Mobile Topbar */}
+        <header className="lg:hidden flex h-16 items-center gap-4 px-4 border-b border-border bg-card shrink-0">
+          <button 
+            className="p-2 -ml-2 text-foreground/70 hover:text-primary"
+            onClick={() => setIsMobileOpen(true)}
+          >
+            <Menu className="h-6 w-6" />
+          </button>
+          <div className="font-display font-semibold text-lg text-foreground">Admin Panel</div>
+        </header>
+
+        <main className="flex-1 overflow-y-auto p-4 md:p-6 lg:p-8 bg-background">
+          <div className="mx-auto max-w-7xl">
+            {children}
+          </div>
+        </main>
+      </div>
     </div>
   );
 }

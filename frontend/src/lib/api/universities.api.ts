@@ -24,4 +24,12 @@ export const universitiesApi = {
 
   delete: (id: string): Promise<{ data: ApiResponse<null> }> =>
     api.delete(`/admin/universities/${id}`),
+
+  bulkUpload: (file: File): Promise<{ data: any }> => {
+    const formData = new FormData();
+    formData.append('file', file);
+    return api.post('/admin/universities/bulk-upload', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    });
+  },
 };

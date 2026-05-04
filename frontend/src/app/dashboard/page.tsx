@@ -19,7 +19,8 @@ import {
   Circle,
   ChevronRight,
   TrendingUp,
-  MapPin
+  MapPin,
+  GraduationCap
 } from 'lucide-react';
 import Link from 'next/link';
 

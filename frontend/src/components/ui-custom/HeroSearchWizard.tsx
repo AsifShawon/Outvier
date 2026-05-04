@@ -59,7 +59,7 @@ export function HeroSearchWizard() {
     <div className="bg-white dark:bg-slate-900 rounded-3xl p-6 shadow-2xl border border-slate-200 dark:border-slate-800 w-full max-w-xl mx-auto relative z-20">
       <div className="flex justify-between items-center mb-6">
         <h3 className="text-lg font-bold text-slate-900 dark:text-white">Find Your Match</h3>
-        <span className="text-sm font-medium text-blue-600 dark:text-blue-400">
+        <span className="text-sm font-medium text-primary-600 dark:text-primary-400">
           Step {Math.min(currentStep + 1, steps.length)} of {steps.length}
         </span>
       </div>
@@ -67,7 +67,7 @@ export function HeroSearchWizard() {
       {/* Progress Bar */}
       <div className="h-2 w-full bg-slate-100 dark:bg-slate-800 rounded-full mb-8 overflow-hidden">
         <motion.div 
-          className="h-full bg-blue-600 dark:bg-blue-500 rounded-full"
+          className="h-full bg-primary-600 dark:bg-primary-500 rounded-full"
           initial={{ width: '0%' }}
           animate={{ width: `${((currentStep) / steps.length) * 100}%` }}
           transition={{ duration: 0.5, ease: 'easeInOut' }}
@@ -95,13 +95,13 @@ export function HeroSearchWizard() {
                     onClick={() => handleSelect(opt.value)}
                     className={`p-3 rounded-xl border text-sm font-medium transition-all text-left flex justify-between items-center ${
                       selections[steps[currentStep].id] === opt.value
-                        ? 'border-blue-600 bg-blue-50 dark:bg-blue-500/10 text-blue-700 dark:text-blue-400 ring-2 ring-blue-600/20'
-                        : 'border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:border-blue-400 hover:bg-blue-50/50 dark:hover:bg-slate-700'
+                        ? 'border-primary-600 bg-primary-50 dark:bg-primary-500/10 text-primary-700 dark:text-primary-400 ring-2 ring-primary-600/20'
+                        : 'border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:border-primary-400 hover:bg-primary-50/50 dark:hover:bg-slate-700'
                     }`}
                   >
                     {opt.label}
                     {selections[steps[currentStep].id] === opt.value && (
-                      <CheckCircle2 className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+                      <CheckCircle2 className="w-4 h-4 text-primary-600 dark:text-primary-400" />
                     )}
                   </button>
                 ))}
@@ -123,7 +123,7 @@ export function HeroSearchWizard() {
               </p>
               <Button 
                 onClick={handleSubmit}
-                className="w-full h-12 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-semibold text-base shadow-lg shadow-blue-600/20"
+                className="w-full h-12 rounded-xl bg-primary-600 hover:bg-primary-700 text-white font-semibold text-base shadow-lg shadow-primary-600/20"
               >
                 Find My Best Options <Search className="w-5 h-5 ml-2" />
               </Button>

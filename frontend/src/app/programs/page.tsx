@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, Suspense } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Navbar } from '@/components/layout/Navbar';
 import { Footer } from '@/components/layout/Footer';
@@ -32,7 +32,7 @@ const CAMPUS_MODES = [
 import { useDebounce } from '@/hooks/useDebounce';
 import { useSearchParams } from 'next/navigation';
 
-export default function ProgramsPage() {
+function ProgramsContent() {
   const searchParams = useSearchParams();
   const [search, setSearch] = useState(searchParams.get('search') ?? '');
   const [level, setLevel] = useState(searchParams.get('level') ?? '');
@@ -136,5 +136,13 @@ export default function ProgramsPage() {
       </main>
       <Footer />
     </div>
+  );
+}
+
+export default function ProgramsPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen flex items-center justify-center">Loading...</div>}>
+      <ProgramsContent />
+    </Suspense>
   );
 }

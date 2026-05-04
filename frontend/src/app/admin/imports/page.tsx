@@ -12,7 +12,7 @@ import { format } from 'date-fns';
 
 const statusConfig: Record<string, { label: string; icon: React.ElementType; badgeCls: string; iconCls: string }> = {
   pending:    { label: 'Pending',    icon: Clock,        badgeCls: 'border-amber-500/30 text-amber-400',   iconCls: 'text-amber-400' },
-  processing: { label: 'Processing', icon: AlertCircle,  badgeCls: 'border-blue-500/30 text-blue-400',     iconCls: 'text-blue-400' },
+  processing: { label: 'Processing', icon: AlertCircle,  badgeCls: 'border-primary-500/30 text-primary-400',     iconCls: 'text-primary-400' },
   completed:  { label: 'Completed',  icon: CheckCircle2, badgeCls: 'border-emerald-500/30 text-emerald-400', iconCls: 'text-emerald-400' },
   failed:     { label: 'Failed',     icon: XCircle,      badgeCls: 'border-red-500/30 text-red-400',       iconCls: 'text-red-400' },
 };
@@ -44,12 +44,12 @@ export default function AdminImportsPage() {
       </div>
 
       {/* Info callout */}
-      <div className="rounded-xl border border-blue-500/20 bg-blue-500/5 p-4 flex gap-3 items-start">
-        <AlertCircle className="h-5 w-5 text-blue-400 mt-0.5 flex-shrink-0" />
-        <div className="text-sm text-blue-300">
-          <strong className="text-blue-200">Seed upload captures static identity only</strong> — name, location, website, CRICOS code.
+      <div className="rounded-xl border border-primary-500/20 bg-primary-500/5 p-4 flex gap-3 items-start">
+        <AlertCircle className="h-5 w-5 text-primary-400 mt-0.5 flex-shrink-0" />
+        <div className="text-sm text-primary-300">
+          <strong className="text-primary-200">Seed upload captures static identity only</strong> — name, location, website, CRICOS code.
           Ranking, tuition, scholarships, and outcomes are fetched automatically via connectors and go through{' '}
-          <strong className="text-blue-200">staging → admin approval</strong> before being shown to students.
+          <strong className="text-primary-200">staging → admin approval</strong> before being shown to students.
         </div>
       </div>
 

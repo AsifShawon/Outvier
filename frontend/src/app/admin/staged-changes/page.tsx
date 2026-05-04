@@ -242,7 +242,7 @@ export default function StagedChangesPage() {
                             href={c.sourceUrl}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="text-xs text-blue-400 underline underline-offset-2 hover:text-blue-300"
+                            className="text-xs text-primary-400 underline underline-offset-2 hover:text-primary-300"
                           >
                             Source: {c.sourceUrl}
                           </a>

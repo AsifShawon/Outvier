@@ -39,7 +39,7 @@ export default function NewUniversityPage() {
   const qc = useQueryClient();
 
   const { register, handleSubmit, setValue, watch, formState: { errors } } = useForm<FormData>({
-    resolver: zodResolver(schema),
+    resolver: zodResolver(schema) as any,
     defaultValues: { type: 'public' },
   });
 
@@ -60,7 +60,7 @@ export default function NewUniversityPage() {
         cricosProviderCode: data.cricosProviderCode,
         city: data.city,
         country: data.country,
-      }),
+      } as any),
     onSuccess: () => {
       toast.success('University created!');
       qc.invalidateQueries({ queryKey: ['admin-universities'] });

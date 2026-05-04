@@ -9,11 +9,11 @@ export function Footer() {
           {/* Brand & Description */}
           <div className="lg:col-span-2">
             <Link href="/" className="flex items-center gap-3 mb-6 group">
-              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-600 text-white shadow-lg shadow-blue-600/20 group-hover:shadow-blue-600/40 transition-all duration-300">
+              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary-600 text-white shadow-lg shadow-primary-600/20 group-hover:shadow-primary-600/40 transition-all duration-300">
                 <Globe className="h-6 w-6" />
               </div>
               <span className="text-2xl font-bold font-display tracking-tight text-slate-900 dark:text-white">
-                Out<span className="text-blue-600 dark:text-blue-400">vier</span>
+                Out<span className="text-primary-600 dark:text-primary-400">vier</span>
               </span>
             </Link>
             <p className="text-slate-500 dark:text-slate-400 max-w-md leading-relaxed mb-6">
@@ -22,7 +22,7 @@ export function Footer() {
             <div className="flex items-center gap-4">
               {/* Social icons placeholders */}
               {['twitter', 'linkedin', 'facebook'].map((social) => (
-                <a key={social} href={`#${social}`} className="w-10 h-10 rounded-full bg-slate-200 dark:bg-slate-800 flex items-center justify-center text-slate-500 hover:bg-blue-100 hover:text-blue-600 dark:hover:bg-blue-900/30 dark:hover:text-blue-400 transition-colors">
+                <a key={social} href={`#${social}`} className="w-10 h-10 rounded-full bg-slate-200 dark:bg-slate-800 flex items-center justify-center text-slate-500 hover:bg-primary-100 hover:text-primary-600 dark:hover:bg-primary-900/30 dark:hover:text-primary-400 transition-colors">
                   <Globe className="w-4 h-4" />
                 </a>
               ))}
@@ -40,7 +40,7 @@ export function Footer() {
                 { href: '/budget', label: 'Cost Estimator' },
               ].map((link) => (
                 <li key={link.href}>
-                  <Link href={link.href} className="text-slate-500 dark:text-slate-400 hover:text-blue-600 dark:hover:text-blue-400 transition-colors font-medium">
+                  <Link href={link.href} className="text-slate-500 dark:text-slate-400 hover:text-primary-600 dark:hover:text-primary-400 transition-colors font-medium">
                     {link.label}
                   </Link>
                 </li>
@@ -54,7 +54,7 @@ export function Footer() {
             <ul className="space-y-4">
               {['Australia', 'Canada', 'United Kingdom', 'United States', 'New Zealand'].map((country) => (
                 <li key={country}>
-                  <Link href={`/universities?country=${country.toLowerCase()}`} className="text-slate-500 dark:text-slate-400 hover:text-blue-600 dark:hover:text-blue-400 transition-colors font-medium">
+                  <Link href={`/universities?country=${country.toLowerCase()}`} className="text-slate-500 dark:text-slate-400 hover:text-primary-600 dark:hover:text-primary-400 transition-colors font-medium">
                     {country}
                   </Link>
                 </li>
@@ -70,11 +70,11 @@ export function Footer() {
                 <MapPin className="w-5 h-5 shrink-0 text-slate-400" />
                 <span>123 Global Education Blvd<br />Sydney, NSW 2000</span>
               </li>
-              <li className="flex items-center gap-3 text-slate-500 dark:text-slate-400 font-medium hover:text-blue-600 transition-colors cursor-pointer">
+              <li className="flex items-center gap-3 text-slate-500 dark:text-slate-400 font-medium hover:text-primary-600 transition-colors cursor-pointer">
                 <Mail className="w-5 h-5 shrink-0 text-slate-400" />
                 <span>hello@outvier.com</span>
               </li>
-              <li className="flex items-center gap-3 text-slate-500 dark:text-slate-400 font-medium hover:text-blue-600 transition-colors cursor-pointer">
+              <li className="flex items-center gap-3 text-slate-500 dark:text-slate-400 font-medium hover:text-primary-600 transition-colors cursor-pointer">
                 <Phone className="w-5 h-5 shrink-0 text-slate-400" />
                 <span>+61 2 1234 5678</span>
               </li>

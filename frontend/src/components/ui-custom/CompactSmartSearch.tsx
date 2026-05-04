@@ -106,7 +106,7 @@ export function CompactSmartSearch() {
         </div>
         <Button 
           onClick={handleSearch}
-          className="h-14 px-8 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-2xl shadow-lg shadow-blue-500/20 transition-all active:scale-95 text-base"
+          className="h-14 px-8 bg-primary-600 hover:bg-primary-700 text-white font-bold rounded-2xl shadow-lg shadow-primary-500/20 transition-all active:scale-95 text-base"
         >
           Find Matches
         </Button>
@@ -160,13 +160,13 @@ export function CompactSmartSearch() {
             <Badge 
               key={key} 
               variant="secondary" 
-              className="pl-3 pr-1 py-1 gap-1 bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300 border border-blue-100/50 dark:border-blue-500/20 rounded-lg shadow-sm"
+              className="pl-3 pr-1 py-1 gap-1 bg-primary-50 text-primary-700 dark:bg-primary-900/30 dark:text-primary-300 border border-primary-100/50 dark:border-primary-500/20 rounded-lg shadow-sm"
             >
               <span className="capitalize opacity-60 text-[10px] mr-1">{key}:</span>
               <span className="font-semibold text-xs tracking-tight">{key === 'budget' ? budgets.find(b => b.value === value)?.label : value}</span>
               <button 
                 onClick={() => removeFilter(key)}
-                className="hover:bg-blue-200 dark:hover:bg-blue-800 rounded p-0.5 transition-colors ml-1"
+                className="hover:bg-primary-200 dark:hover:bg-primary-800 rounded p-0.5 transition-colors ml-1"
               >
                 <X className="w-3 h-3" />
               </button>
@@ -202,7 +202,7 @@ function FilterSelect({ label, icon: Icon, options, value, onSelect }: FilterSel
         className={cn(
           "inline-flex items-center gap-2 px-4 py-2 h-10 rounded-xl text-[13px] font-semibold transition-all border shadow-xs group whitespace-nowrap outline-none",
           value 
-            ? "bg-blue-50 border-blue-200 text-blue-700 dark:bg-blue-900/40 dark:border-blue-800 dark:text-blue-300" 
+            ? "bg-primary-50 border-primary-200 text-primary-700 dark:bg-primary-900/40 dark:border-primary-800 dark:text-primary-300" 
             : "bg-white border-slate-200 text-slate-600 hover:bg-slate-50 hover:border-slate-300 dark:bg-slate-900 dark:border-slate-800 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:border-slate-700"
         )}
       >
@@ -228,7 +228,7 @@ function FilterSelect({ label, icon: Icon, options, value, onSelect }: FilterSel
               className={cn(
                 "w-full text-left px-3 py-2 text-sm rounded-xl transition-all flex items-center justify-between",
                 value === opt 
-                  ? "bg-blue-50 text-blue-700 font-bold dark:bg-blue-900/50 dark:text-blue-300" 
+                  ? "bg-primary-50 text-primary-700 font-bold dark:bg-primary-900/50 dark:text-primary-300" 
                   : "hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300"
               )}
             >
@@ -256,7 +256,7 @@ function FilterCombobox({ label, icon: Icon, options, value, onSelect, searchPla
         className={cn(
           "inline-flex items-center gap-2 px-4 py-2 h-10 rounded-xl text-[13px] font-semibold transition-all border shadow-xs group whitespace-nowrap outline-none",
           value 
-            ? "bg-blue-50 border-blue-200 text-blue-700 dark:bg-blue-900/40 dark:border-blue-800 dark:text-blue-300" 
+            ? "bg-primary-50 border-primary-200 text-primary-700 dark:bg-primary-900/40 dark:border-primary-800 dark:text-primary-300" 
             : "bg-white border-slate-200 text-slate-600 hover:bg-slate-50 hover:border-slate-300 dark:bg-slate-900 dark:border-slate-800 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:border-slate-700"
         )}
       >
@@ -283,7 +283,7 @@ function FilterCombobox({ label, icon: Icon, options, value, onSelect, searchPla
                   onSelect={() => { onSelect(opt); setOpen(false); }}
                   className={cn(
                     "rounded-xl cursor-pointer py-2.5",
-                    value === opt && "bg-blue-50 text-blue-700 font-bold dark:bg-blue-900/50 dark:text-blue-300"
+                    value === opt && "bg-primary-50 text-primary-700 font-bold dark:bg-primary-900/50 dark:text-primary-300"
                   )}
                 >
                   <Check className={cn("mr-2 h-4 w-4 opacity-0", value === opt && "opacity-100")} />

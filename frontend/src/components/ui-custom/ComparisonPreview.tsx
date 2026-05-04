@@ -26,7 +26,7 @@ export function ComparisonPreview() {
 
           {/* Uni 1 */}
           <div className="bg-slate-50 dark:bg-slate-800/50 rounded-2xl p-4 border border-slate-100 dark:border-slate-800 relative">
-            <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-blue-600 text-white text-xs font-bold px-3 py-1 rounded-full shadow-md">Best Match</div>
+            <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-primary-600 text-white text-xs font-bold px-3 py-1 rounded-full shadow-md">Best Match</div>
             <div className="h-12 flex items-center justify-center font-bold text-slate-900 dark:text-white mb-4">University of Sydney</div>
             <div className="space-y-4 text-center">
               <div className="h-12 flex items-center justify-center font-semibold text-slate-700 dark:text-slate-300">Top 20</div>

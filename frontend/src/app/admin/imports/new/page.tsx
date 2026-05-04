@@ -36,7 +36,7 @@ type Step = 'upload' | 'preview' | 'confirming';
 
 const ACTION_COLORS: Record<string, string> = {
   create:    'border-emerald-500/30 text-emerald-400 bg-emerald-500/5',
-  update:    'border-blue-500/30 text-blue-400 bg-blue-500/5',
+  update:    'border-primary-500/30 text-primary-400 bg-primary-500/5',
   duplicate: 'border-amber-500/30 text-amber-400 bg-amber-500/5',
   invalid:   'border-red-500/30 text-red-400 bg-red-500/5',
 };
@@ -187,7 +187,7 @@ export default function AdminImportsNewPage() {
                 { label: 'Total Rows',  value: preview.totalRows,  color: '' },
                 { label: 'Valid',       value: preview.validRows,  color: 'text-emerald-400' },
                 { label: 'Invalid',     value: preview.invalidRows,color: 'text-red-400' },
-                { label: 'To Create',   value: preview.toCreate,   color: 'text-blue-400' },
+                { label: 'To Create',   value: preview.toCreate,   color: 'text-primary-400' },
                 { label: 'To Update',   value: preview.toUpdate,   color: 'text-amber-400' },
                 { label: 'Duplicates',  value: preview.duplicates, color: 'text-orange-400' },
               ].map((s) => (

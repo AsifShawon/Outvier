@@ -89,10 +89,10 @@ export default function StudentFitPage() {
 
       <div className="grid gap-8">
         {/* Help Info */}
-        <div className="rounded-xl border border-blue-500/20 bg-blue-500/5 p-4 flex gap-3 items-start">
-          <InfoIcon className="h-5 w-5 text-blue-500 mt-0.5 flex-shrink-0" />
-          <div className="text-sm text-blue-700/80">
-            <strong className="text-blue-900">How we calculate this:</strong> We use your preferred budget, English scores (IELTS/PTE), and state preferences to determine a weighted score for each program. A score above 80 indicates an excellent match for your current profile.
+        <div className="rounded-xl border border-primary-500/20 bg-primary-500/5 p-4 flex gap-3 items-start">
+          <InfoIcon className="h-5 w-5 text-primary-500 mt-0.5 flex-shrink-0" />
+          <div className="text-sm text-primary-700/80">
+            <strong className="text-primary-900">How we calculate this:</strong> We use your preferred budget, English scores (IELTS/PTE), and state preferences to determine a weighted score for each program. A score above 80 indicates an excellent match for your current profile.
           </div>
         </div>
 

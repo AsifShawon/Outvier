@@ -50,11 +50,11 @@ export function Navbar() {
         <div className="flex h-20 items-center justify-between">
           {/* Logo */}
           <Link href="/" className="flex items-center gap-3 group">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-600 text-white shadow-lg shadow-blue-600/20 group-hover:shadow-blue-600/40 transition-all duration-300">
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary-600 text-white shadow-lg shadow-primary-600/20 group-hover:shadow-primary-600/40 transition-all duration-300">
               <Globe className="h-6 w-6" />
             </div>
             <span className="text-2xl font-bold font-display tracking-tight text-slate-900 dark:text-white">
-              Out<span className="text-blue-600 dark:text-blue-400">vier</span>
+              Out<span className="text-primary-600 dark:text-primary-400">vier</span>
             </span>
           </Link>
 
@@ -67,7 +67,7 @@ export function Navbar() {
                 className={cn(
                   'px-4 py-2.5 rounded-full text-sm font-semibold transition-all duration-200',
                   pathname.startsWith(link.href)
-                    ? 'bg-blue-50 text-blue-700 dark:bg-blue-500/10 dark:text-blue-400'
+                    ? 'bg-primary-50 text-primary-700 dark:bg-primary-500/10 dark:text-primary-400'
                     : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-50 dark:hover:bg-slate-800'
                 )}
               >
@@ -79,18 +79,18 @@ export function Navbar() {
           {/* Actions */}
           <div className="hidden md:flex items-center gap-3">
             <Link href="/compare" className="relative group">
-               <Button variant="outline" className="h-10 rounded-full border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 gap-2 hover:border-blue-300 hover:text-blue-600 dark:hover:border-blue-700 dark:hover:text-blue-400">
+               <Button variant="outline" className="h-10 rounded-full border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 gap-2 hover:border-primary-300 hover:text-primary-600 dark:hover:border-primary-700 dark:hover:text-primary-400">
                  <BarChart2 className="w-4 h-4" /> Compare
                </Button>
                {mounted && compareCount > 0 && (
-                 <span className="absolute -top-2 -right-2 w-5 h-5 bg-blue-600 text-white text-[10px] font-bold rounded-full flex items-center justify-center border-2 border-white dark:border-slate-950">
+                 <span className="absolute -top-2 -right-2 w-5 h-5 bg-primary-600 text-white text-[10px] font-bold rounded-full flex items-center justify-center border-2 border-white dark:border-slate-950">
                    {compareCount}
                  </span>
                )}
             </Link>
 
             <Link href="/programs">
-              <Button className="h-10 rounded-full bg-blue-600 hover:bg-blue-700 text-white font-semibold px-6 hidden lg:flex shadow-md shadow-blue-600/20">
+              <Button className="h-10 rounded-full bg-primary-600 hover:bg-primary-700 text-white font-semibold px-6 hidden lg:flex shadow-md shadow-primary-600/20">
                 Explore Programs
               </Button>
             </Link>
@@ -104,7 +104,7 @@ export function Navbar() {
             ) : user ? (
               <Link href={user.role === 'admin' ? '/admin' : '/dashboard'}>
                 <Button variant="ghost" className="h-10 px-4 gap-2 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800">
-                  <div className="w-6 h-6 rounded-full bg-blue-100 dark:bg-blue-900 text-blue-600 dark:text-blue-400 flex items-center justify-center font-bold text-xs">
+                  <div className="w-6 h-6 rounded-full bg-primary-100 dark:bg-primary-900 text-primary-600 dark:text-primary-400 flex items-center justify-center font-bold text-xs">
                      {user?.name?.charAt(0)}
                   </div>
                   <span className="font-semibold text-sm text-slate-700 dark:text-slate-300">
@@ -143,7 +143,7 @@ export function Navbar() {
                   className={cn(
                     'flex items-center px-4 py-3 rounded-xl text-base font-semibold transition-colors',
                     pathname.startsWith(link.href)
-                      ? 'bg-blue-50 text-blue-700 dark:bg-blue-500/10 dark:text-blue-400'
+                      ? 'bg-primary-50 text-primary-700 dark:bg-primary-500/10 dark:text-primary-400'
                       : 'text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-white'
                   )}
                   onClick={() => setMobileOpen(false)}
@@ -160,7 +160,7 @@ export function Navbar() {
                  <Button variant="outline" className="w-full h-12 rounded-xl border-slate-200 dark:border-slate-700 justify-start px-4">
                    <BarChart2 className="w-5 h-5 mr-3 text-slate-400" /> Compare
                    {mounted && compareCount > 0 && (
-                     <Badge className="ml-auto bg-blue-600">{compareCount}</Badge>
+                     <Badge className="ml-auto bg-primary-600">{compareCount}</Badge>
                    )}
                  </Button>
                </Link>
@@ -176,7 +176,7 @@ export function Navbar() {
                 </Link>
               ) : (
                 <Link href="/login" onClick={() => setMobileOpen(false)} className="block">
-                  <Button className="w-full h-12 rounded-xl bg-blue-600 text-white justify-start px-4">
+                  <Button className="w-full h-12 rounded-xl bg-primary-600 text-white justify-start px-4">
                     <LogIn className="h-5 w-5 mr-3" /> Sign In
                   </Button>
                 </Link>

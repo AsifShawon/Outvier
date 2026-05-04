@@ -14,7 +14,7 @@ import api from '@/lib/api';
 
 const ACTION_COLORS: Record<string, string> = {
   create: 'bg-emerald-500/10 text-emerald-600 border-emerald-500/20',
-  update: 'bg-blue-500/10 text-blue-600 border-blue-500/20',
+  update: 'bg-primary-500/10 text-primary-600 border-primary-500/20',
   duplicate: 'bg-amber-500/10 text-amber-600 border-amber-500/20',
   invalid: 'bg-red-500/10 text-red-600 border-red-500/20',
 };
@@ -91,7 +91,7 @@ export default function ImportPreviewPage() {
             <Button 
               onClick={() => confirmMutation.mutate()} 
               disabled={confirmMutation.isPending || cancelMutation.isPending}
-              className="rounded-xl bg-blue-600 hover:bg-blue-700 text-white"
+              className="rounded-xl bg-primary-600 hover:bg-primary-700 text-white"
             >
               {confirmMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <CheckCircle2 className="h-4 w-4 mr-2" />}
               Confirm Import

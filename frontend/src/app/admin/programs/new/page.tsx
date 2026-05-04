@@ -57,7 +57,7 @@ export default function NewProgramPage() {
   const universities: University[] = uniData?.data?.universities || [];
 
   const { register, handleSubmit, setValue, watch, formState: { errors } } = useForm<FormData>({
-    resolver: zodResolver(schema),
+    resolver: zodResolver(schema) as any,
     defaultValues: { level: 'bachelor', campusMode: 'on-campus' },
   });
 

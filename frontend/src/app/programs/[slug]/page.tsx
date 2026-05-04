@@ -12,7 +12,7 @@ import { programsApi } from '@/lib/api/programs.api';
 import { Program } from '@/types/program';
 
 const levelColors: Record<string, string> = {
-  bachelor: 'bg-blue-100 text-blue-800',
+  bachelor: 'bg-primary-100 text-primary-800',
   master: 'bg-violet-100 text-violet-800',
   phd: 'bg-rose-100 text-rose-800',
   diploma: 'bg-amber-100 text-amber-800',

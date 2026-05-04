@@ -30,7 +30,7 @@ import { format } from 'date-fns';
 const COLUMNS = [
   { id: 'researching', title: 'Researching', icon: Search, color: 'text-slate-500' },
   { id: 'preparing', title: 'Preparing', icon: FileText, color: 'text-amber-500' },
-  { id: 'submitted', title: 'Submitted', icon: Send, color: 'text-blue-500' },
+  { id: 'submitted', title: 'Submitted', icon: Send, color: 'text-primary-500' },
   { id: 'accepted', title: 'Accepted/Outcome', icon: CheckCircle, color: 'text-emerald-500' },
 ];
 
@@ -110,10 +110,8 @@ export default function ApplicationTrackerPage() {
                           </div>
                         </div>
                         <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" size="icon" className="h-7 w-7 -mr-2">
+                          <DropdownMenuTrigger className="h-7 w-7 -mr-2 inline-flex items-center justify-center rounded-md hover:bg-muted text-muted-foreground hover:text-foreground">
                               <MoreHorizontal className="h-4 w-4" />
-                            </Button>
                           </DropdownMenuTrigger>
                           <DropdownMenuContent align="end" className="w-40">
                             <DropdownMenuItem className="text-xs" onClick={() => {}}>

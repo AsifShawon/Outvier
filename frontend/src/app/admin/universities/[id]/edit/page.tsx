@@ -49,7 +49,7 @@ export default function EditUniversityPage() {
   });
 
   const { register, handleSubmit, setValue, watch, reset, formState: { errors } } = useForm<FormData>({
-    resolver: zodResolver(schema),
+    resolver: zodResolver(schema) as any,
     defaultValues: { type: 'public' },
   });
 
@@ -83,7 +83,7 @@ export default function EditUniversityPage() {
         ranking: formData.ranking ? Number(formData.ranking) : undefined,
         type: formData.type,
         campuses: formData.campuses ? formData.campuses.split(',').map((c) => c.trim()).filter(Boolean) : [],
-      }),
+      } as any),
     onSuccess: () => {
       toast.success('University updated!');
       qc.invalidateQueries({ queryKey: ['admin-universities'] });
