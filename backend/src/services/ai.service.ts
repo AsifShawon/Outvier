@@ -1,4 +1,5 @@
 import { ChatGroq } from '@langchain/groq';
+import { ChatOllama } from '@langchain/ollama';
 import { HumanMessage, SystemMessage } from '@langchain/core/messages';
 import { AIProviderSetting } from '../models/AIProviderSetting.model';
 import { decryptText } from '../utils/encryption';
@@ -12,7 +13,10 @@ export const aiService = {
   async getModel() {
     let provider = process.env.DEFAULT_AI_PROVIDER || 'groq';
     let apiKey = process.env.GROQ_API_KEY;
-    let modelName = 'llama-3.3-70b-versatile'; // Default groq model
+    let modelName = process.env.DEFAULT_AI_PROVIDER === 'ollama' 
+      ? (process.env.OLLAMA_MODEL || 'llama3')
+      : 'llama-3.3-70b-versatile'; 
+    let baseUrl = process.env.OLLAMA_BASE_URL || 'http://localhost:11434';
 
     // Check DB for active setting
     const activeSetting = await AIProviderSetting.findOne({ isActive: true }).select('+encryptedApiKey');
@@ -26,6 +30,14 @@ export const aiService = {
           console.error('Failed to decrypt API key from DB, falling back to ENV variables if available');
         }
       }
+    }
+
+    if (provider === 'ollama') {
+      return new ChatOllama({
+        baseUrl: baseUrl,
+        model: modelName || 'llama3', // Default to llama3 if not specified
+        temperature: 0.1, // Lower temperature for more stable extraction
+      });
     }
 
     if (!apiKey) {

@@ -16,6 +16,7 @@ import aiSettingsRoutes from './routes/aiSettings.routes';
 import recommendationsRoutes from './routes/recommendations.routes';
 import publicAnalyticsRoutes from './routes/publicAnalytics.routes';
 import trackerRoutes from './routes/applicationTracker.routes';
+import ingestionRoutes from './routes/ingestion.routes';
 import { errorHandler, notFound } from './middleware/error.middleware';
 
 dotenv.config();
@@ -53,6 +54,7 @@ app.use('/api/v1/admin/staged-changes', stagedChangesRoutes);
 app.use('/api/v1/admin/sync', syncRoutes);
 app.use('/api/v1/admin/analytics', analyticsRoutes);
 app.use('/api/v1/admin/settings/ai', aiSettingsRoutes);
+app.use('/api/v1/admin', ingestionRoutes);
 
 // Error handling
 app.use(notFound);

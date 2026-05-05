@@ -7,7 +7,7 @@ export interface ApiResponse<T> {
 export interface PaginatedResponse<T> {
   success: boolean;
   data?: T[];
-  pagination: {
+  meta: {
     page: number;
     limit: number;
     total: number;

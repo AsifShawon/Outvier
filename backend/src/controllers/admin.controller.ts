@@ -1,4 +1,5 @@
 import { Request, Response, NextFunction } from 'express';
+import { Types } from 'mongoose';
 import { universityService } from '../services/university.service';
 import { programService } from '../services/program.service';
 import { University } from '../models/University.model';
@@ -7,6 +8,9 @@ import { User } from '../models/User.model';
 import { RankingRecord } from '../models/RankingRecord.model';
 import { Scholarship } from '../models/Scholarship.model';
 import { OutcomeMetric } from '../models/OutcomeMetric.model';
+import { IngestionJob } from '../models/IngestionJob.model';
+import { programDiscoveryQueue } from '../jobs/queue';
+import { UniversityIngestionJobSchema } from '../schemas/ingestion.schema';
 
 export const adminController = {
   // Dashboard stats
@@ -37,8 +41,56 @@ export const adminController = {
   // University CRUD
   async createUniversity(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
-      const university = await universityService.create(req.body);
-      res.status(201).json({ success: true, data: university });
+      const { autoDiscoverPrograms, ...universityData } = req.body;
+      const university = await universityService.create({
+        ...universityData,
+        autoDiscoverPrograms: !!autoDiscoverPrograms,
+        ingestionStatus: autoDiscoverPrograms ? 'queued' : 'not_started',
+      });
+
+      let ingestionJobId: string | undefined;
+
+      if (autoDiscoverPrograms && (university.officialWebsite || university.website)) {
+        const officialWebsite = (university.officialWebsite || university.website) as string;
+        const triggeredBy = (req as any).user?.username || 'admin';
+
+        // Create IngestionJob record
+        const ingestionJob = await IngestionJob.create({
+          jobType: 'single_university',
+          universityId: university._id,
+          universityName: university.name,
+          uploadedBy: triggeredBy,
+          status: 'queued',
+          progress: { percent: 0, stage: 'queued' },
+          logs: [{
+            timestamp: new Date(),
+            step: 'queued',
+            status: 'info',
+            message: `Discovery queued by ${triggeredBy} after manual university creation`,
+          }],
+        });
+
+        ingestionJobId = ingestionJob._id.toString();
+
+        const jobData = UniversityIngestionJobSchema.parse({
+          universityId: university._id.toString(),
+          universityName: university.name,
+          officialWebsite: officialWebsite.startsWith('http') ? officialWebsite : `https://${officialWebsite}`,
+          triggeredBy,
+          isRefresh: false,
+          ingestionJobId,
+        });
+
+        const bullJob = await programDiscoveryQueue.add('discover', jobData);
+        ingestionJob.bullmqJobId = bullJob.id || undefined;
+        await ingestionJob.save();
+      }
+
+      res.status(201).json({
+        success: true,
+        data: university,
+        ...(ingestionJobId && { ingestionJobId, message: 'Program discovery job queued' }),
+      });
     } catch (error) {
       next(error);
     }
@@ -113,10 +165,61 @@ export const adminController = {
       res.status(201).json({ success: true, data: ranking });
     } catch (error) { next(error); }
   },
+  async updateRanking(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const ranking = await RankingRecord.findByIdAndUpdate(req.params.id, req.body, { new: true });
+      res.json({ success: true, data: ranking });
+    } catch (error) { next(error); }
+  },
   async deleteRanking(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       await RankingRecord.findByIdAndDelete(req.params.id);
       res.json({ success: true, message: 'Ranking deleted' });
+    } catch (error) { next(error); }
+  },
+  async recheckRanking(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const { id } = req.params;
+      const ranking = await RankingRecord.findById(id).populate('universityId');
+      if (!ranking) {
+        res.status(404).json({ success: false, message: 'Ranking not found' });
+        return;
+      }
+      
+      const university = ranking.universityId as any;
+      
+      // Trigger sync job
+      const { rankingSyncQueue } = require('../jobs/queue');
+      await rankingSyncQueue.add('recheck-single', {
+        rankingId: ranking._id,
+        universityId: university._id,
+        universityName: university.name,
+        source: ranking.source,
+        year: ranking.year
+      });
+
+      res.json({ success: true, message: 'Recheck job queued' });
+    } catch (error) { next(error); }
+  },
+  async recheckAllRankings(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const rankings = await RankingRecord.find({ source: { $ne: 'Manual' } }).populate('universityId');
+      const { rankingSyncQueue } = require('../jobs/queue');
+      
+      for (const ranking of rankings) {
+        const university = ranking.universityId as any;
+        if (university) {
+          await rankingSyncQueue.add('recheck-single', {
+            rankingId: ranking._id,
+            universityId: university._id,
+            universityName: university.name,
+            source: ranking.source,
+            year: ranking.year
+          });
+        }
+      }
+
+      res.json({ success: true, message: `${rankings.length} recheck jobs queued` });
     } catch (error) { next(error); }
   },
 

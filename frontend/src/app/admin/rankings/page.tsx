@@ -7,13 +7,23 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { toast } from 'sonner';
-import { Trophy, Trash2, Plus, Search, ExternalLink } from 'lucide-react';
+import { Trophy, Trash2, Plus, Search, ExternalLink, RefreshCw, Pencil, RotateCw } from 'lucide-react';
 import { useState } from 'react';
 import { Badge } from '@/components/ui/badge';
+import { 
+  Dialog, 
+  DialogContent, 
+  DialogHeader, 
+  DialogTitle, 
+  DialogFooter,
+  DialogTrigger
+} from '@/components/ui/dialog';
 
 export default function AdminRankingsPage() {
   const qc = useQueryClient();
   const [search, setSearch] = useState('');
+  const [editingRank, setEditingRank] = useState<any>(null);
+  const [editFormData, setEditFormData] = useState<any>({});
 
   const { data: rankingsRes, isLoading } = useQuery({
     queryKey: ['admin-rankings'],
@@ -28,6 +38,49 @@ export default function AdminRankingsPage() {
     },
   });
 
+  const recheckAllMutation = useMutation({
+    mutationFn: () => api.post('/admin/rankings/recheck'),
+    onSuccess: (res) => {
+      toast.success(res.data.message || 'Recheck jobs queued');
+    },
+    onError: (err: any) => {
+      toast.error(err.response?.data?.message || 'Failed to trigger recheck');
+    }
+  });
+
+  const recheckMutation = useMutation({
+    mutationFn: (id: string) => api.post(`/admin/rankings/${id}/recheck`),
+    onSuccess: (res) => {
+      toast.success(res.data.message || 'Recheck job queued');
+    },
+    onError: (err: any) => {
+      toast.error(err.response?.data?.message || 'Failed to trigger recheck');
+    }
+  });
+
+  const updateMutation = useMutation({
+    mutationFn: (data: any) => api.put(`/admin/rankings/${data._id}`, data),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['admin-rankings'] });
+      toast.success('Ranking updated');
+      setEditingRank(null);
+    },
+    onError: (err: any) => {
+      toast.error(err.response?.data?.message || 'Failed to update ranking');
+    }
+  });
+
+  const handleEditClick = (rank: any) => {
+    setEditingRank(rank);
+    setEditFormData({
+      _id: rank._id,
+      globalRank: rank.globalRank || '',
+      nationalRank: rank.nationalRank || '',
+      year: rank.year,
+      source: rank.source,
+    });
+  };
+
   const rankings = rankingsRes?.data || [];
   const filteredRankings = rankings.filter((r: any) => 
     r.universityId?.name?.toLowerCase().includes(search.toLowerCase()) ||
@@ -41,9 +94,17 @@ export default function AdminRankingsPage() {
           <h1 className="text-2xl font-bold font-display">University Rankings</h1>
           <p className="text-sm text-muted-foreground mt-1">Manage global and national university rankings.</p>
         </div>
-        <Button className="gap-2">
-          <Plus className="h-4 w-4" />
-          Add Ranking
+        <Button 
+          className="gap-2 bg-emerald-600 hover:bg-emerald-700"
+          onClick={() => recheckAllMutation.mutate()}
+          disabled={recheckAllMutation.isPending}
+        >
+          {recheckAllMutation.isPending ? (
+            <RotateCw className="h-4 w-4 animate-spin" />
+          ) : (
+            <RefreshCw className="h-4 w-4" />
+          )}
+          Recheck
         </Button>
       </div>
 
@@ -107,14 +168,36 @@ export default function AdminRankingsPage() {
                       </td>
                       <td className="px-4 py-4 font-medium text-slate-600">#{rank.nationalRank || '—'}</td>
                       <td className="px-4 py-4 text-right">
-                        <Button 
-                          variant="ghost" 
-                          size="icon" 
-                          className="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10"
-                          onClick={() => deleteMutation.mutate(rank._id)}
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
+                        <div className="flex justify-end gap-2">
+                          <Button 
+                            variant="ghost" 
+                            size="icon" 
+                            className="h-8 w-8 text-primary hover:text-primary hover:bg-primary/10"
+                            title="Edit"
+                            onClick={() => handleEditClick(rank)}
+                          >
+                            <Pencil className="h-4 w-4" />
+                          </Button>
+                          <Button 
+                            variant="ghost" 
+                            size="icon" 
+                            className="h-8 w-8 text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50"
+                            title="Recheck"
+                            onClick={() => recheckMutation.mutate(rank._id)}
+                            disabled={recheckMutation.isPending}
+                          >
+                            <RefreshCw className={`h-4 w-4 ${recheckMutation.isPending ? 'animate-spin' : ''}`} />
+                          </Button>
+                          <Button 
+                            variant="ghost" 
+                            size="icon" 
+                            className="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10"
+                            title="Delete"
+                            onClick={() => deleteMutation.mutate(rank._id)}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
                       </td>
                     </tr>
                   ))
@@ -124,6 +207,38 @@ export default function AdminRankingsPage() {
           </div>
         </CardContent>
       </Card>
+
+      <Dialog open={!!editingRank} onOpenChange={(open) => !open && setEditingRank(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Edit Ranking: {editingRank?.universityId?.name}</DialogTitle>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="source" className="text-right">Source</Label>
+              <Input id="source" value={editFormData.source} disabled className="col-span-3 bg-muted" />
+            </div>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="year" className="text-right">Year</Label>
+              <Input id="year" type="number" value={editFormData.year} onChange={(e) => setEditFormData({...editFormData, year: parseInt(e.target.value)})} className="col-span-3" />
+            </div>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="globalRank" className="text-right">Global Rank</Label>
+              <Input id="globalRank" type="number" value={editFormData.globalRank} onChange={(e) => setEditFormData({...editFormData, globalRank: parseInt(e.target.value)})} className="col-span-3" />
+            </div>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="nationalRank" className="text-right">National Rank</Label>
+              <Input id="nationalRank" type="number" value={editFormData.nationalRank} onChange={(e) => setEditFormData({...editFormData, nationalRank: parseInt(e.target.value)})} className="col-span-3" />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setEditingRank(null)}>Cancel</Button>
+            <Button onClick={() => updateMutation.mutate(editFormData)} disabled={updateMutation.isPending}>
+              {updateMutation.isPending ? 'Saving...' : 'Save Changes'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

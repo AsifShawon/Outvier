@@ -3,10 +3,10 @@ import { RankingRecord } from '../../models/RankingRecord.model';
 import axios from 'axios';
 import * as cheerio from 'cheerio';
 
-export class QSRankingsConnector extends BaseConnector {
+export class QSRankingsConnector extends BaseConnector<any> {
   public name = 'QS World University Rankings';
 
-  async fetch(universityId: string, universityName: string): Promise<ConnectorResult> {
+  async fetch(universityId: string, universityName: string): Promise<ConnectorResult<any>> {
     try {
       // In a real scenario, we would search the QS website or use an API
       // For this implementation, we'll simulate the scrape or use a public dataset URL if known

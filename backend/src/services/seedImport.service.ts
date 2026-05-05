@@ -1,9 +1,13 @@
 import { parse } from 'csv-parse';
 import { Readable } from 'stream';
 import slugify from 'slugify';
+import { Types } from 'mongoose';
 import { University } from '../models/University.model';
 import { UploadJob, IUploadJob } from '../models/UploadJob.model';
 import { validateSeedRow, SeedUniversityRow } from '../validators/seedUniversity.validator';
+import { programDiscoveryQueue } from '../jobs/queue';
+import { IngestionJob } from '../models/IngestionJob.model';
+import { UniversityIngestionJobSchema } from '../schemas/ingestion.schema';
 
 // --------------------------------------------------------------------------
 // Types
@@ -180,6 +184,7 @@ export const seedImportService = {
   /**
    * Confirm and apply the import.
    * Reads the preview data from the job, re-validates, and writes to the database.
+   * After writing, queues one discovery job per created/updated university.
    */
   async confirm(jobId: string, uploadedBy?: string): Promise<IUploadJob> {
     const job = await UploadJob.findById(jobId);
@@ -201,6 +206,7 @@ export const seedImportService = {
         const data: SeedUniversityRow = row.data;
         const changeType = row.action === 'create' ? 'create' : 'update';
         
+        // 1. Create staged change for the university record itself
         await StagedChange.create({
           entityType: 'university',
           changeType,
@@ -210,6 +216,77 @@ export const seedImportService = {
           status: 'pending',
           sourceUrl: 'csv_upload',
         });
+
+        // 2. Upsert the university record directly (CSV data is admin-verified)
+        let universityId: string | undefined;
+        let universityName = data.universityName;
+        let officialWebsite = (data as any).officialWebsite || (data as any).website;
+
+        if (row.existingId) {
+          await University.findByIdAndUpdate(row.existingId, {
+            name: data.universityName,
+            officialWebsite,
+            state: (data as any).state,
+            city: (data as any).city,
+            cricosProviderCode: (data as any).cricosProviderCode,
+            ingestionStatus: 'queued',
+          });
+          universityId = row.existingId;
+        } else {
+          const slug = slugify(data.universityName, { lower: true, strict: true });
+          const created = await University.findOneAndUpdate(
+            { slug },
+            {
+              name: data.universityName,
+              slug,
+              officialWebsite,
+              state: (data as any).state,
+              city: (data as any).city,
+              cricosProviderCode: (data as any).cricosProviderCode,
+              country: 'Australia',
+              status: 'active',
+              ingestionStatus: 'queued',
+              sourceMetadata: { createdVia: 'csv', createdBy: uploadedBy },
+            },
+            { upsert: true, new: true }
+          );
+          universityId = String(created._id);
+          universityName = created.name;
+          officialWebsite = created.officialWebsite || officialWebsite;
+        }
+
+        // 3. Queue discovery job if website available
+        if (universityId && officialWebsite) {
+          const ingestionJob = await IngestionJob.create({
+            jobType: 'bulk_university',
+            universityId: new Types.ObjectId(universityId),
+            universityName,
+            uploadedBy: uploadedBy || 'csv_import',
+            status: 'queued',
+            progress: { percent: 0, stage: 'queued' },
+            logs: [{
+              timestamp: new Date(),
+              step: 'queued',
+              status: 'info',
+              message: `Queued via bulk CSV import (job ${jobId})`,
+            }],
+          });
+
+          const jobData = UniversityIngestionJobSchema.parse({
+            universityId,
+            universityName,
+            officialWebsite: officialWebsite.startsWith('http') ? officialWebsite : `https://${officialWebsite}`,
+            triggeredBy: uploadedBy || 'csv_import',
+            isRefresh: false,
+            ingestionJobId: ingestionJob._id.toString(),
+          });
+
+          const bullJob = await programDiscoveryQueue.add('discover', jobData, {
+            delay: successCount * 2000, // stagger jobs by 2s each
+          });
+          ingestionJob.bullmqJobId = bullJob.id || undefined;
+          await ingestionJob.save();
+        }
 
         successCount++;
       } catch (err: unknown) {
@@ -222,6 +299,7 @@ export const seedImportService = {
 
     job.status = 'confirmed';
     job.confirmedAt = new Date();
+    job.successCount = successCount;
     await job.save();
 
     return job;

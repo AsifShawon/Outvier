@@ -51,12 +51,16 @@ export const stagedChangesController = {
    *  Approve a staged change — writes the approved data to the target collection
    */
   async approve(req: Request, res: Response, next: NextFunction): Promise<void> {
-    let session = null;
-    try {
-      session = await StagedChange.startSession();
-      session.startTransaction();
-    } catch (e) {
-      // Fallback for standalone MongoDB
+    let session: mongoose.mongo.ClientSession | null = null;
+    const isStandalone = mongoose.connection.getClient().topology?.description?.type === 'Single';
+
+    if (!isStandalone) {
+      try {
+        session = await StagedChange.startSession();
+        session.startTransaction();
+      } catch (e) {
+        session = null;
+      }
     }
     try {
       const change = await StagedChange.findById(req.params.id).session(session);
@@ -73,7 +77,7 @@ export const stagedChangesController = {
       const approvedAt = new Date();
 
       // Apply the change to the appropriate collection
-      await applyApprovedChange(change.entityType, change.changeType, change.newValue, change.entityId, approvedAt, session);
+      await applyApprovedChange(change.entityType, change.changeType, change.newValue, change.entityId, approvedAt, session ?? undefined);
 
       change.status = 'approved';
       change.reviewedBy = reviewer;
@@ -120,12 +124,16 @@ export const stagedChangesController = {
    *  Edit the new value and approve
    */
   async editAndApprove(req: Request, res: Response, next: NextFunction): Promise<void> {
-    let session = null;
-    try {
-      session = await StagedChange.startSession();
-      session.startTransaction();
-    } catch (e) {
-      // Fallback for standalone MongoDB
+    let session: mongoose.mongo.ClientSession | null = null;
+    const isStandalone = mongoose.connection.getClient().topology?.description?.type === 'Single';
+
+    if (!isStandalone) {
+      try {
+        session = await StagedChange.startSession();
+        session.startTransaction();
+      } catch (e) {
+        session = null;
+      }
     }
     try {
       const change = await StagedChange.findById(req.params.id).session(session);
@@ -144,7 +152,7 @@ export const stagedChangesController = {
       const approvedAt = new Date();
 
       change.newValue = newValue;
-      await applyApprovedChange(change.entityType, change.changeType, newValue, change.entityId, approvedAt, session);
+      await applyApprovedChange(change.entityType, change.changeType, newValue, change.entityId, approvedAt, session ?? undefined);
 
       change.status = 'edited';
       change.reviewedBy = reviewer;
@@ -165,12 +173,16 @@ export const stagedChangesController = {
    *  Approve multiple staged changes
    */
   async bulkApprove(req: Request, res: Response, next: NextFunction): Promise<void> {
-    let session = null;
-    try {
-      session = await StagedChange.startSession();
-      session.startTransaction();
-    } catch (e) {
-      // Fallback for standalone MongoDB
+    let session: mongoose.mongo.ClientSession | null = null;
+    const isStandalone = mongoose.connection.getClient().topology?.description?.type === 'Single';
+
+    if (!isStandalone) {
+      try {
+        session = await StagedChange.startSession();
+        session.startTransaction();
+      } catch (e) {
+        session = null;
+      }
     }
     try {
       const { ids } = req.body as { ids: string[] };
@@ -184,7 +196,7 @@ export const stagedChangesController = {
       const approvedAt = new Date();
 
       for (const change of changes) {
-        await applyApprovedChange(change.entityType, change.changeType, change.newValue, change.entityId, approvedAt, session);
+        await applyApprovedChange(change.entityType, change.changeType, change.newValue, change.entityId, approvedAt, session ?? undefined);
         change.status = 'approved';
         change.reviewedBy = reviewer;
         change.reviewedAt = approvedAt;

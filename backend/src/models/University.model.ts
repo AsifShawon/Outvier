@@ -1,3 +1,7 @@
+/**
+ * University.model.ts — extended with ingestion tracking fields.
+ * All legacy fields preserved for backward compatibility.
+ */
 import mongoose, { Document, Schema } from 'mongoose';
 
 // Campus sub-document
@@ -13,10 +17,12 @@ export interface ICampus {
 // Source metadata sub-document
 export interface ISourceMetadata {
   createdBy?: string;
-  createdVia: 'csv' | 'manual' | 'connector';
+  createdVia: 'csv' | 'manual' | 'connector' | 'ai_ingestion';
   lastVerifiedAt?: Date;
   notes?: string;
 }
+
+export type IngestionStatus = 'not_started' | 'queued' | 'running' | 'completed' | 'failed' | 'partial';
 
 export interface IUniversity extends Document {
   // --- Legacy fields kept for backward compat ---
@@ -31,7 +37,7 @@ export interface IUniversity extends Document {
   type?: 'public' | 'private';
   campuses?: string[];         // legacy string array; new: campusDetails
   internationalStudents?: boolean;
-  // --- New fields ---
+  // --- Existing new fields ---
   shortName?: string;
   country: string;
   state: string;
@@ -43,6 +49,12 @@ export interface IUniversity extends Document {
   providerType?: string;
   status: 'active' | 'inactive' | 'draft';
   sourceMetadata?: ISourceMetadata;
+  // --- Ingestion tracking fields (new) ---
+  teqsaProviderId?: string;
+  sourceUrls?: string[];
+  ingestionStatus?: IngestionStatus;
+  lastSyncedAt?: Date;
+  autoDiscoverPrograms?: boolean;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -62,7 +74,7 @@ const CampusSchema = new Schema<ICampus>(
 const SourceMetadataSchema = new Schema<ISourceMetadata>(
   {
     createdBy: String,
-    createdVia: { type: String, enum: ['csv', 'manual', 'connector'], default: 'manual' },
+    createdVia: { type: String, enum: ['csv', 'manual', 'connector', 'ai_ingestion'], default: 'manual' },
     lastVerifiedAt: Date,
     notes: String,
   },
@@ -95,6 +107,16 @@ const UniversitySchema = new Schema<IUniversity>(
     providerType: String,
     status: { type: String, enum: ['active', 'inactive', 'draft'], default: 'active' },
     sourceMetadata: SourceMetadataSchema,
+    // Ingestion tracking
+    teqsaProviderId: { type: String, trim: true, sparse: true, index: true },
+    sourceUrls: [{ type: String }],
+    ingestionStatus: {
+      type: String,
+      enum: ['not_started', 'queued', 'running', 'completed', 'failed', 'partial'],
+      default: 'not_started',
+    },
+    lastSyncedAt: Date,
+    autoDiscoverPrograms: { type: Boolean, default: false },
   },
   { timestamps: true }
 );
@@ -102,5 +124,6 @@ const UniversitySchema = new Schema<IUniversity>(
 // Full-text index
 UniversitySchema.index({ name: 'text', shortName: 'text', description: 'text', city: 'text', state: 'text' });
 UniversitySchema.index({ status: 1 });
+UniversitySchema.index({ ingestionStatus: 1 });
 
 export const University = mongoose.model<IUniversity>('University', UniversitySchema);

@@ -1,8 +1,18 @@
+/**
+ * StagedChange.model.ts — extended with AI ingestion metadata.
+ * All legacy fields preserved for backward compatibility.
+ */
 import mongoose, { Document, Schema, Types } from 'mongoose';
 
 export type EntityType = 'university' | 'program' | 'ranking' | 'tuition' | 'outcome' | 'scholarship';
 export type ChangeType = 'create' | 'update' | 'delete' | 'possible_duplicate';
 export type StagedChangeStatus = 'pending' | 'approved' | 'rejected' | 'edited';
+
+export interface IStagedChangeWarning {
+  field: string;
+  message: string;
+  severity: 'low' | 'medium' | 'high';
+}
 
 export interface IStagedChange extends Document {
   entityType: EntityType;
@@ -12,14 +22,31 @@ export interface IStagedChange extends Document {
   changeType: ChangeType;
   oldValue?: Record<string, unknown>;
   newValue: Record<string, unknown>;
+  diff?: Record<string, { old: unknown; new: unknown }>; // per-field diff
   sourceUrl?: string;
+  sourceUrls?: string[];           // multiple source URLs
   confidence: number;
+  confidenceScore?: number;        // 0-100 alias
+  sourceEvidence?: Record<string, unknown>; // per-field evidence map
+  warnings?: IStagedChangeWarning[];
+  missingFields?: string[];
+  aiSummary?: string;
+  ingestionJobId?: Types.ObjectId; // link to IngestionJob
   status: StagedChangeStatus;
   reviewedBy?: string;
   reviewedAt?: Date;
   createdAt: Date;
   updatedAt: Date;
 }
+
+const StagedChangeWarningSchema = new Schema<IStagedChangeWarning>(
+  {
+    field: String,
+    message: String,
+    severity: { type: String, enum: ['low', 'medium', 'high'], default: 'low' },
+  },
+  { _id: false }
+);
 
 const StagedChangeSchema = new Schema<IStagedChange>(
   {
@@ -38,8 +65,16 @@ const StagedChangeSchema = new Schema<IStagedChange>(
     },
     oldValue: { type: Schema.Types.Mixed },
     newValue: { type: Schema.Types.Mixed, required: true },
+    diff: { type: Schema.Types.Mixed },
     sourceUrl: String,
+    sourceUrls: [{ type: String }],
     confidence: { type: Number, required: true, min: 0, max: 1 },
+    confidenceScore: { type: Number, min: 0, max: 100, index: true },
+    sourceEvidence: { type: Schema.Types.Mixed },
+    warnings: [StagedChangeWarningSchema],
+    missingFields: [{ type: String }],
+    aiSummary: String,
+    ingestionJobId: { type: Schema.Types.ObjectId, ref: 'IngestionJob', index: true },
     status: {
       type: String,
       enum: ['pending', 'approved', 'rejected', 'edited'],

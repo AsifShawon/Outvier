@@ -1,10 +1,10 @@
 import { BaseConnector, ConnectorResult } from './base.connector';
 import { OutcomeMetric } from '../../models/OutcomeMetric.model';
 
-export class QILTOutcomesConnector extends BaseConnector {
+export class QILTOutcomesConnector extends BaseConnector<any> {
   public name = 'QILT Graduate Outcomes';
 
-  async fetch(universityId: string, universityName: string): Promise<ConnectorResult> {
+  async fetch(universityId: string, universityName: string): Promise<ConnectorResult<any>> {
     try {
       // Simulate fetching from QILT.edu.au
       const mockEmployment = 70 + Math.floor(Math.random() * 20);

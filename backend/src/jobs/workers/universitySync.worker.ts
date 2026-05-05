@@ -44,14 +44,15 @@ export const universitySyncWorker = new Worker<UniversitySyncJobData>(
       const qilt = new QILTOutcomesConnector();
       const sch = new ScholarshipScraperConnector();
 
-      const [officialRes, qsRes, qiltRes, schRes] = await Promise.all([
+      const [officialRes, , ,] = await Promise.allSettled([
         universityOfficialConnector.execute(universityId, { website }),
         qs.fetch(universityId, university.name),
         qilt.fetch(universityId, university.name),
         sch.fetch(universityId, university.name),
       ]);
       
-      const results = [...officialRes]; // capture from official
+      const officialResRaw = officialRes.status === 'fulfilled' ? officialRes.value : [];
+      const results = [...officialResRaw]; // capture from official
       const successfulResults = results.filter(r => r.success && r.data && Object.keys(r.data).length > 0);
       
       let stagedChangesCreated = 0;

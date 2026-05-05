@@ -13,6 +13,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { BrainCircuit } from 'lucide-react';
 import { universitiesApi } from '@/lib/api/universities.api';
 
 const schema = z.object({
@@ -30,6 +31,7 @@ const schema = z.object({
   cricosProviderCode: z.string().optional(),
   city: z.string().optional(),
   country: z.string().default('Australia'),
+  autoDiscoverPrograms: z.boolean().default(true),
 });
 
 type FormData = z.infer<typeof schema>;
@@ -40,7 +42,7 @@ export default function NewUniversityPage() {
 
   const { register, handleSubmit, setValue, watch, formState: { errors } } = useForm<FormData>({
     resolver: zodResolver(schema) as any,
-    defaultValues: { type: 'public' },
+    defaultValues: { type: 'public', autoDiscoverPrograms: true },
   });
 
   const mutation = useMutation({
@@ -60,6 +62,7 @@ export default function NewUniversityPage() {
         cricosProviderCode: data.cricosProviderCode,
         city: data.city,
         country: data.country,
+        autoDiscoverPrograms: data.autoDiscoverPrograms,
       } as any),
     onSuccess: () => {
       toast.success('University created!');
@@ -165,6 +168,33 @@ export default function NewUniversityPage() {
           <div className="space-y-1.5">
             <Label htmlFor="uni-campuses">Campuses (comma separated)</Label>
             <Input id="uni-campuses" {...register('campuses')} placeholder="North Terrace, Mawson Lakes" />
+          </div>
+        </div>
+
+        <div className="rounded-xl border border-indigo-500/30 bg-indigo-500/5 p-6 flex gap-4 items-start">
+          <div className="mt-1 bg-indigo-500/20 p-2 rounded-lg">
+            <BrainCircuit className="h-5 w-5 text-indigo-500" />
+          </div>
+          <div className="flex-1">
+            <h3 className="font-semibold text-foreground mb-1">AI Program Discovery</h3>
+            <p className="text-sm text-muted-foreground mb-4">
+              Automatically trigger the AI crawler to find, extract, and stage programs/courses from the official university website immediately after creation.
+            </p>
+            <div className="flex items-center space-x-2">
+              <input 
+                type="checkbox"
+                id="autoDiscover" 
+                className="h-4 w-4 rounded border-border text-indigo-600 focus:ring-indigo-600 cursor-pointer"
+                checked={watch('autoDiscoverPrograms')}
+                onChange={(e) => setValue('autoDiscoverPrograms', e.target.checked)}
+              />
+              <label
+                htmlFor="autoDiscover"
+                className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer"
+              >
+                Enable automated program discovery for this university
+              </label>
+            </div>
           </div>
         </div>
 

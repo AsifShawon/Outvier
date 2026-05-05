@@ -1,16 +1,17 @@
-export interface ConnectorResult<T> {
+export interface ConnectorResult<T = unknown> {
   success: boolean;
   data?: T;
   error?: string;
-  sourceUrl: string;
-  confidence: number;
+  message?: string; // legacy alias for error/info
+  sourceUrl?: string;
+  confidence?: number;
 }
 
-export abstract class BaseConnector<T> {
+export abstract class BaseConnector<T = unknown> {
   protected sourceName: string;
 
-  constructor(sourceName: string) {
-    this.sourceName = sourceName;
+  constructor(sourceName?: string) {
+    this.sourceName = sourceName || 'BaseConnector';
   }
 
   /**
@@ -18,7 +19,10 @@ export abstract class BaseConnector<T> {
    * @param targetId The ID of the entity (e.g. university ID, program ID)
    * @param context Additional context needed for scraping (e.g. specific URLs)
    */
-  abstract execute(targetId: string, context?: Record<string, any>): Promise<ConnectorResult<T>[]>;
+  execute(targetId: string, context?: Record<string, any>): Promise<ConnectorResult<T>[]> {
+    // Default implementation — subclasses that use fetch() instead can override
+    return Promise.resolve([]);
+  }
 
   /**
    * Normalizes URLs, fetches HTML, handles retries, etc.
@@ -26,7 +30,8 @@ export abstract class BaseConnector<T> {
   protected async fetchHtml(url: string): Promise<string> {
     const response = await fetch(url, {
       headers: {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
+        'User-Agent': process.env.CRAWLER_USER_AGENT ||
+          'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
       },
     });
 

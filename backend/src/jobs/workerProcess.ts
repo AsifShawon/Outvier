@@ -3,7 +3,7 @@
  * Usage: npm run dev:worker
  *
  * This process connects to MongoDB and Redis, then starts all BullMQ workers.
- * Workers process queued jobs (sync, crawl, ranking, outcome, etc.) asynchronously.
+ * Workers process queued jobs (sync, crawl, ranking, outcome, ingestion, etc.) asynchronously.
  */
 import dotenv from 'dotenv';
 dotenv.config();
@@ -15,7 +15,8 @@ import './workers'; // initialise all workers
 const startWorkers = async () => {
   await connectDB();
   console.log('👷 Outvier worker process started');
-  console.log('   Queues: university-sync, program-sync, tuition-sync, scholarship-sync, ranking-sync, outcome-sync');
+  console.log('   Sync queues: university-sync, program-sync, tuition-sync, scholarship-sync, ranking-sync, outcome-sync');
+  console.log('   Ingestion queues: program-discovery, batch-import');
 };
 
 process.on('SIGTERM', async () => {

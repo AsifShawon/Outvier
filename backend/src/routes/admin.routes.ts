@@ -38,6 +38,9 @@ router.get('/uploads', uploadController.getUploadHistory);
 // Rankings
 router.get('/rankings', adminController.getRankings);
 router.post('/rankings', adminController.createRanking);
+router.put('/rankings/:id', adminController.updateRanking);
+router.post('/rankings/recheck', adminController.recheckAllRankings);
+router.post('/rankings/:id/recheck', adminController.recheckRanking);
 router.delete('/rankings/:id', adminController.deleteRanking);
 
 // Scholarships

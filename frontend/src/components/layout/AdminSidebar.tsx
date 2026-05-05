@@ -17,6 +17,7 @@ import {
   RefreshCw,
   ExternalLink,
   X,
+  BrainCircuit,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
@@ -34,6 +35,7 @@ const navItems = [
   { divider: true, label: 'Data Pipeline' },
   { href: '/admin/imports', label: 'Seed Imports', icon: FileInput },
   { href: '/admin/data-sources', label: 'Data Sources', icon: Database },
+  { href: '/admin/ingestion-jobs', label: 'AI Ingestion', icon: BrainCircuit },
   { href: '/admin/sync', label: 'Sync Jobs', icon: RefreshCw },
   { href: '/admin/staged-changes', label: 'Staged Changes', icon: GitCompare },
   { href: 'http://localhost:3001', label: 'Analytics', icon: BarChart3, external: true },

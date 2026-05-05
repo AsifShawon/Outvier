@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
-  CheckCircle2, XCircle, RefreshCw, AlertCircle, Loader2, ChevronDown
+  CheckCircle2, XCircle, RefreshCw, AlertCircle, Loader2, ChevronDown, AlertTriangle, LinkIcon, FileJson, Sparkles
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -163,6 +163,11 @@ export default function StagedChangesPage() {
                       <p className="text-sm text-muted-foreground mt-1 truncate">
                         {(c.universityId as any)?.name ?? c.entityId ?? 'Unknown entity'} ·{' '}
                         {c.createdAt ? format(new Date(c.createdAt), 'dd MMM yyyy') : '—'}
+                        {c.ingestionJobId && (
+                          <span className="ml-2 inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-primary/10 text-primary text-[10px] uppercase font-bold tracking-wider">
+                            <Sparkles className="h-3 w-3" /> AI Extracted
+                          </span>
+                        )}
                       </p>
                     </div>
                   </div>
@@ -220,23 +225,77 @@ export default function StagedChangesPage() {
                       exit={{ height: 0, opacity: 0 }}
                       className="overflow-hidden border-t border-border/30"
                     >
+                      {/* AI Extraction Warnings */}
+                      {c.warnings && c.warnings.length > 0 && (
+                        <div className="px-5 py-3 border-b border-border/30 bg-amber-500/5">
+                          <h4 className="text-xs font-semibold text-amber-500 flex items-center gap-1.5 mb-2">
+                            <AlertTriangle className="h-3.5 w-3.5" /> Extraction Warnings
+                          </h4>
+                          <ul className="space-y-1.5">
+                            {c.warnings.map((w: any, idx: number) => (
+                              <li key={idx} className="text-xs text-amber-400/80 flex items-start gap-2">
+                                <span className="w-1.5 h-1.5 rounded-full bg-amber-500/50 mt-1 shrink-0" />
+                                <span><strong className="text-amber-300">{w.field}:</strong> {w.message}</span>
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                      )}
+
+                      {/* Field-Level Source Evidence */}
+                      {c.sourceEvidence && Object.keys(c.sourceEvidence).length > 0 && (
+                        <div className="px-5 py-4 border-b border-border/30 bg-card">
+                          <h4 className="text-xs font-semibold text-muted-foreground flex items-center gap-1.5 mb-3">
+                            <LinkIcon className="h-3.5 w-3.5" /> Source Evidence
+                          </h4>
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                            {Object.entries(c.sourceEvidence).map(([field, ev]: [string, any]) => (
+                              <div key={field} className="text-xs border border-border/50 rounded-md p-2.5 bg-muted/20">
+                                <div className="flex justify-between items-start mb-1.5">
+                                  <span className="font-mono text-muted-foreground">{field}</span>
+                                  {ev.confidence !== undefined && (
+                                    <span className={`font-mono font-bold ${CONFIDENCE_COLOR(ev.confidence)}`}>
+                                      {Math.round(ev.confidence * 100)}%
+                                    </span>
+                                  )}
+                                </div>
+                                <div className="text-foreground font-medium truncate mb-2" title={JSON.stringify(ev.value)}>
+                                  {typeof ev.value === 'object' ? JSON.stringify(ev.value) : String(ev.value)}
+                                </div>
+                                {ev.sourceUrl && (
+                                  <a href={ev.sourceUrl} target="_blank" rel="noreferrer" className="text-[10px] text-primary/70 hover:text-primary underline truncate block">
+                                    {ev.sourceUrl}
+                                  </a>
+                                )}
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Raw Diff/JSON */}
                       <div className="grid grid-cols-2 gap-4 px-5 py-4">
-                        {c.oldValue && (
+                        {(c.oldValue || c.diff) && (
                           <div>
-                            <p className="text-xs text-muted-foreground font-medium mb-2">Old Value</p>
+                            <p className="text-xs text-muted-foreground font-medium mb-2 flex items-center gap-1">
+                              <FileJson className="h-3.5 w-3.5" /> {c.diff ? 'Old Value / Diff' : 'Old Value'}
+                            </p>
                             <pre className="text-xs bg-red-500/5 border border-red-500/20 rounded-lg p-3 overflow-auto max-h-40 text-red-300 whitespace-pre-wrap">
-                              {JSON.stringify(c.oldValue, null, 2)}
+                              {JSON.stringify(c.diff || c.oldValue, null, 2)}
                             </pre>
                           </div>
                         )}
-                        <div className={c.oldValue ? '' : 'col-span-2'}>
-                          <p className="text-xs text-muted-foreground font-medium mb-2">New Value</p>
+                        <div className={c.oldValue || c.diff ? '' : 'col-span-2'}>
+                          <p className="text-xs text-muted-foreground font-medium mb-2 flex items-center gap-1">
+                            <FileJson className="h-3.5 w-3.5" /> New Value
+                          </p>
                           <pre className="text-xs bg-emerald-500/5 border border-emerald-500/20 rounded-lg p-3 overflow-auto max-h-40 text-emerald-300 whitespace-pre-wrap">
                             {JSON.stringify(c.newValue, null, 2)}
                           </pre>
                         </div>
                       </div>
-                      {c.sourceUrl && (
+
+                      {c.sourceUrl && !c.sourceEvidence && (
                         <div className="px-5 pb-4">
                           <a
                             href={c.sourceUrl}

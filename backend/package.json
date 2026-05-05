@@ -12,7 +12,9 @@
     "seed": "ts-node src/seed/seed.ts"
   },
   "dependencies": {
+    "@langchain/core": "^1.1.44",
     "@langchain/groq": "^1.2.0",
+    "@langchain/ollama": "^1.2.7",
     "axios": "^1.15.2",
     "bcryptjs": "^2.4.3",
     "bullmq": "^5.76.2",

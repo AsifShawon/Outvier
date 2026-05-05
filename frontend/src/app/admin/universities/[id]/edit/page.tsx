@@ -7,7 +7,7 @@ import { toast } from 'sonner';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { ArrowLeft } from 'lucide-react';
+import { ArrowLeft, Sparkles, Loader2, BrainCircuit } from 'lucide-react';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -16,6 +16,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Skeleton } from '@/components/ui/skeleton';
 import { universitiesApi } from '@/lib/api/universities.api';
+import { ingestionApi } from '@/lib/api/ingestion.api';
 import { University } from '@/types/university';
 
 const schema = z.object({
@@ -92,16 +93,38 @@ export default function EditUniversityPage() {
     onError: () => toast.error('Failed to update university'),
   });
 
+  const discoverMutation = useMutation({
+    mutationFn: () => ingestionApi.discoverPrograms(id),
+    onSuccess: (res) => {
+      toast.success(res.message || 'Program discovery started!');
+      router.push('/admin/ingestion-jobs');
+    },
+    onError: (err: any) => {
+      toast.error(err.response?.data?.message || 'Failed to start discovery');
+    },
+  });
+
   return (
     <div className="max-w-2xl">
-      <div className="flex items-center gap-3 mb-6">
-        <Link href="/admin/universities">
-          <Button variant="ghost" size="sm" className="gap-2">
-            <ArrowLeft className="h-4 w-4" />
-            Back
-          </Button>
-        </Link>
-        <h1 className="text-2xl font-bold font-display">Edit University</h1>
+      <div className="flex items-center justify-between mb-6">
+        <div className="flex items-center gap-3">
+          <Link href="/admin/universities">
+            <Button variant="ghost" size="sm" className="gap-2">
+              <ArrowLeft className="h-4 w-4" />
+              Back
+            </Button>
+          </Link>
+          <h1 className="text-2xl font-bold font-display">Edit University</h1>
+        </div>
+        <Button 
+          variant="default" 
+          className="gap-2 bg-indigo-600 hover:bg-indigo-700 text-white"
+          onClick={() => discoverMutation.mutate()}
+          disabled={discoverMutation.isPending}
+        >
+          {discoverMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <BrainCircuit className="h-4 w-4" />}
+          AI Discover Programs
+        </Button>
       </div>
 
       {isLoading ? (

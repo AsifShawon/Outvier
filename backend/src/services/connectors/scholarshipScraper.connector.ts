@@ -1,10 +1,10 @@
 import { BaseConnector, ConnectorResult } from './base.connector';
 import { Scholarship } from '../../models/Scholarship.model';
 
-export class ScholarshipScraperConnector extends BaseConnector {
+export class ScholarshipScraperConnector extends BaseConnector<any> {
   public name = 'Automated Scholarship Scraper';
 
-  async fetch(universityId: string, universityName: string): Promise<ConnectorResult> {
+  async fetch(universityId: string, universityName: string): Promise<ConnectorResult<any>> {
     try {
       // Simulate scraping university scholarship page
       const mockScholarships = [
