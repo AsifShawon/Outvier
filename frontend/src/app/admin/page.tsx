@@ -18,7 +18,7 @@ export default function AdminDashboardPage() {
 
   const statsCards = [
     { title: 'Universities', value: stats?.totalUniversities || 0, icon: University, colorClass: 'bg-primary-100 text-primary-700' },
-    { title: 'Programs', value: stats?.totalPrograms || 0, icon: BookOpen, colorClass: 'bg-violet-100 text-violet-700' },
+    { title: 'Programs', value: stats?.totalPrograms || 0, icon: BookOpen, colorClass: 'bg-secondary-100 text-secondary-700' },
     { title: 'Admin Users', value: stats?.totalUsers || 0, icon: Users, colorClass: 'bg-emerald-100 text-emerald-700' },
     { title: 'Study Levels', value: stats?.programsByLevel?.length || 0, icon: TrendingUp, colorClass: 'bg-amber-100 text-amber-700' },
   ];

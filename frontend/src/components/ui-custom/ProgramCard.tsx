@@ -15,7 +15,7 @@ interface ProgramCardProps {
 
 const levelColors: Record<string, string> = {
   bachelor: 'bg-primary-100 text-primary-800 dark:bg-primary-900/30 dark:text-primary-300',
-  master: 'bg-violet-100 text-violet-800 dark:bg-violet-900/30 dark:text-violet-300',
+  master: 'bg-secondary-100 text-secondary-800 dark:bg-secondary-900/30 dark:text-secondary-300',
   phd: 'bg-rose-100 text-rose-800 dark:bg-rose-900/30 dark:text-rose-300',
   diploma: 'bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300',
   certificate: 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300',

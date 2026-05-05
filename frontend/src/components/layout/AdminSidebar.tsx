@@ -73,7 +73,7 @@ export function AdminSidebar({ onClose }: { onClose?: () => void }) {
       </div>
 
       {/* Nav */}
-      <nav className="flex-1 px-3 py-4 space-y-1">
+      <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto custom-scrollbar">
         {(navItems as any[]).map((item, idx) => {
           if (item.divider) {
             return (

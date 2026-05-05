@@ -16,11 +16,11 @@ const slides = [
     }
   },
   {
-    image: 'https://images.unsplash.com/photo-1523050854058-8df90110c9f1?q=80&w=2070&auto=format&fit=crop',
+    image: 'https://images.unsplash.com/photo-1522202176988-66273c2fd55f?q=80&w=2070&auto=format&fit=crop',
     floatingCard: {
       icon: DollarSign,
-      color: 'text-amber-500',
-      bgColor: 'bg-amber-100 dark:bg-amber-500/20',
+      color: 'text-primary-600',
+      bgColor: 'bg-primary-100 dark:bg-primary-500/20',
       title: 'Budget matched',
       subtitle: 'Within $30k'
     }
@@ -29,8 +29,8 @@ const slides = [
     image: 'https://images.unsplash.com/photo-1523240795612-9a054b0db644?q=80&w=2070&auto=format&fit=crop',
     floatingCard: {
       icon: Sparkles,
-      color: 'text-emerald-500',
-      bgColor: 'bg-emerald-100 dark:bg-emerald-500/20',
+      color: 'text-secondary-600',
+      bgColor: 'bg-secondary-100 dark:bg-secondary-500/20',
       title: 'Scholarship found',
       subtitle: '$5,000 Awarded'
     }
@@ -49,7 +49,7 @@ export function HeroImageSlider() {
 
   return (
     <div className="relative w-full h-[380px] lg:h-[460px] rounded-[2.5rem] overflow-hidden shadow-2xl border border-slate-200/50 dark:border-slate-800/50">
-      <AnimatePresence mode="wait">
+      <AnimatePresence>
         <motion.div
           key={current}
           initial={{ opacity: 0, scale: 1.02 }}
@@ -59,9 +59,10 @@ export function HeroImageSlider() {
           className="absolute inset-0"
         >
           {/* Background Image */}
-          <div 
-            className="absolute inset-0 bg-cover bg-center"
-            style={{ backgroundImage: `url(${slides[current].image})` }}
+          <img 
+            src={slides[current].image}
+            alt="University slide"
+            className="absolute inset-0 w-full h-full object-cover"
           />
           {/* Overlay Gradient */}
           <div className="absolute inset-0 bg-gradient-to-t from-slate-900/40 via-transparent to-transparent" />
@@ -86,8 +87,8 @@ export function HeroImageSlider() {
                   <CardIcon className={`w-5 h-5 ${slides[current].floatingCard.color}`} />
                 </div>
                 <div>
-                  <p className="text-slate-900 dark:text-white font-bold text-sm leading-tight">{slides[current].floatingCard.title}</p>
-                  <p className="text-slate-600 dark:text-slate-300 text-xs font-medium">{slides[current].floatingCard.subtitle}</p>
+                  <p className="text-white font-bold text-sm leading-tight">{slides[current].floatingCard.title}</p>
+                  <p className="text-primary-100/90 text-xs font-medium">{slides[current].floatingCard.subtitle}</p>
                 </div>
               </>
             );

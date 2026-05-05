@@ -5,7 +5,7 @@
 
 @custom-variant dark (&:is(.dark *));
 
-@theme inline {
+@theme {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --font-sans: "Inter", system-ui, sans-serif;
@@ -24,6 +24,18 @@
   --color-primary-800: #3B4953;
   --color-primary-900: #2E3D35;
   --color-primary-950: #1A221E;
+
+  --color-slate-50: #F7FAF1;
+  --color-slate-100: #EBF4DD;
+  --color-slate-200: #D1E0D1;
+  --color-slate-300: #A8C2AC;
+  --color-slate-400: #90AB8B;
+  --color-slate-500: #7A9B83;
+  --color-slate-600: #5A7863;
+  --color-slate-700: #4B6352;
+  --color-slate-800: #3B4953;
+  --color-slate-900: #2E3D35;
+  --color-slate-950: #1A221E;
 
   --color-secondary-50: #F7FAF1;
   --color-secondary-100: #EBF4DD;
@@ -202,5 +214,20 @@
   @keyframes slideUp {
     from { opacity: 0; transform: translateY(40px); }
     to { opacity: 1; transform: translateY(0); }
+  }
+
+  /* Custom Scrollbar */
+  .custom-scrollbar::-webkit-scrollbar {
+    width: 5px;
+  }
+  .custom-scrollbar::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  .custom-scrollbar::-webkit-scrollbar-thumb {
+    background: var(--color-primary-200);
+    border-radius: 10px;
+  }
+  .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+    background: var(--color-primary-300);
   }
 }

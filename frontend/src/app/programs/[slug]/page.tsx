@@ -13,7 +13,7 @@ import { Program } from '@/types/program';
 
 const levelColors: Record<string, string> = {
   bachelor: 'bg-primary-100 text-primary-800',
-  master: 'bg-violet-100 text-violet-800',
+  master: 'bg-secondary-100 text-secondary-800',
   phd: 'bg-rose-100 text-rose-800',
   diploma: 'bg-amber-100 text-amber-800',
   certificate: 'bg-green-100 text-green-800',
@@ -58,7 +58,7 @@ export default function ProgramDetailPage() {
         </div>
 
         {/* Header */}
-        <div className="bg-gradient-to-br from-violet-900 via-primary/90 to-slate-900 text-white py-14">
+        <div className="bg-gradient-to-br from-secondary-900 via-primary/90 to-slate-900 text-white py-14">
           <div className="container mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
             {isLoading ? (
               <div className="space-y-3">

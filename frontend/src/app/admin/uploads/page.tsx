@@ -45,7 +45,7 @@ export default function AdminUploadsPage() {
         {/* Programs upload */}
         <div className="rounded-xl border border-border/60 bg-card p-6">
           <div className="flex items-center gap-2 mb-5">
-            <FileText className="h-5 w-5 text-violet-500" />
+            <FileText className="h-5 w-5 text-secondary-500" />
             <h2 className="font-semibold">Programs CSV</h2>
           </div>
           <CsvUploader entity="programs" />

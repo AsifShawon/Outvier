@@ -115,7 +115,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           </button>
         </div>
         
-        <div className="flex-1 overflow-y-auto py-6 px-3 scrollbar-hide">
+        <div className="flex-1 overflow-y-auto py-6 px-3 custom-scrollbar">
           <nav className="space-y-1">
             {navItems.map((item) => {
               const isActive = pathname === item.href;
