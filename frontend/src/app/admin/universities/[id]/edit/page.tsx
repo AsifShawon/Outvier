@@ -97,16 +97,24 @@ export default function EditUniversityPage() {
     mutationFn: () => ingestionApi.discoverPrograms(id),
     onSuccess: (res) => {
       toast.success(res.message || 'Program discovery started!');
-      router.push('/admin/ingestion-jobs');
+      router.push('/admin/staged-changes');
     },
     onError: (err: any) => {
       toast.error(err.response?.data?.message || 'Failed to start discovery');
     },
   });
 
+  const summaryMutation = useMutation({
+    mutationFn: () => universitiesApi.update(id, { generateSummary: true } as any),
+    onSuccess: () => {
+      toast.success('AI Summary generation queued! Check staged changes soon.');
+      router.push('/admin/staged-changes');
+    },
+  });
+
   return (
     <div className="max-w-2xl">
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex flex-col md:flex-row md:items-center justify-between mb-6 gap-4">
         <div className="flex items-center gap-3">
           <Link href="/admin/universities">
             <Button variant="ghost" size="sm" className="gap-2">
@@ -116,15 +124,28 @@ export default function EditUniversityPage() {
           </Link>
           <h1 className="text-2xl font-bold font-display">Edit University</h1>
         </div>
-        <Button 
-          variant="default" 
-          className="gap-2 bg-indigo-600 hover:bg-indigo-700 text-white"
-          onClick={() => discoverMutation.mutate()}
-          disabled={discoverMutation.isPending}
-        >
-          {discoverMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <BrainCircuit className="h-4 w-4" />}
-          AI Discover Programs
-        </Button>
+        <div className="flex gap-2">
+          <Button 
+            variant="outline" 
+            size="sm"
+            className="gap-2 border-primary/20"
+            onClick={() => summaryMutation.mutate()}
+            disabled={summaryMutation.isPending}
+          >
+            {summaryMutation.isPending ? <Loader2 className="h-3 w-3 animate-spin" /> : <Sparkles className="h-3 w-3 text-primary" />}
+            Generate Summary
+          </Button>
+          <Button 
+            variant="default" 
+            size="sm"
+            className="gap-2 bg-primary text-primary-foreground"
+            onClick={() => discoverMutation.mutate()}
+            disabled={discoverMutation.isPending}
+          >
+            {discoverMutation.isPending ? <Loader2 className="h-3 w-3 animate-spin" /> : <BrainCircuit className="h-3 w-3" />}
+            AI Discover Programs
+          </Button>
+        </div>
       </div>
 
       {isLoading ? (

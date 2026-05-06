@@ -7,7 +7,7 @@ import { toast } from 'sonner';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { ArrowLeft } from 'lucide-react';
+import { ArrowLeft, Sparkles, Loader2, BrainCircuit } from 'lucide-react';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -127,16 +127,36 @@ export default function EditProgramPage() {
     onError: () => toast.error('Failed to update program'),
   });
 
+  const summaryMutation = useMutation({
+    mutationFn: () => programsApi.update(id, { generateSummary: true } as any),
+    onSuccess: () => {
+      toast.success('AI Summary generation queued! Check staged changes soon.');
+      router.push('/admin/staged-changes');
+    },
+  });
+
   return (
     <div className="max-w-2xl">
-      <div className="flex items-center gap-3 mb-6">
-        <Link href="/admin/programs">
-          <Button variant="ghost" size="sm" className="gap-2">
-            <ArrowLeft className="h-4 w-4" />
-            Back
-          </Button>
-        </Link>
-        <h1 className="text-2xl font-bold font-display">Edit Program</h1>
+      <div className="flex flex-col md:flex-row md:items-center justify-between mb-6 gap-4">
+        <div className="flex items-center gap-3">
+          <Link href="/admin/programs">
+            <Button variant="ghost" size="sm" className="gap-2">
+              <ArrowLeft className="h-4 w-4" />
+              Back
+            </Button>
+          </Link>
+          <h1 className="text-2xl font-bold font-display">Edit Program</h1>
+        </div>
+        <Button 
+          variant="outline" 
+          size="sm"
+          className="gap-2 border-primary/20"
+          onClick={() => summaryMutation.mutate()}
+          disabled={summaryMutation.isPending}
+        >
+          {summaryMutation.isPending ? <Loader2 className="h-3 w-3 animate-spin" /> : <Sparkles className="h-3 w-3 text-primary" />}
+          Generate Program Summary
+        </Button>
       </div>
 
       {isLoading ? (

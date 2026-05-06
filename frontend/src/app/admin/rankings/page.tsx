@@ -7,7 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { toast } from 'sonner';
-import { Trophy, Trash2, Plus, Search, ExternalLink, RefreshCw, Pencil, RotateCw } from 'lucide-react';
+import { Trophy, Trash2, Plus, Search, ExternalLink, RefreshCw, Pencil, RotateCw, BrainCircuit } from 'lucide-react';
 import { useState } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { 
@@ -94,18 +94,21 @@ export default function AdminRankingsPage() {
           <h1 className="text-2xl font-bold font-display">University Rankings</h1>
           <p className="text-sm text-muted-foreground mt-1">Manage global and national university rankings.</p>
         </div>
-        <Button 
-          className="gap-2 bg-emerald-600 hover:bg-emerald-700"
-          onClick={() => recheckAllMutation.mutate()}
-          disabled={recheckAllMutation.isPending}
-        >
-          {recheckAllMutation.isPending ? (
-            <RotateCw className="h-4 w-4 animate-spin" />
-          ) : (
-            <RefreshCw className="h-4 w-4" />
-          )}
-          Recheck
-        </Button>
+        <div className="flex gap-2">
+          <Button 
+            variant="outline"
+            className="gap-2 border-primary/20 hover:bg-primary/5"
+            onClick={() => recheckAllMutation.mutate()}
+            disabled={recheckAllMutation.isPending}
+          >
+            {recheckAllMutation.isPending ? (
+              <RotateCw className="h-4 w-4 animate-spin" />
+            ) : (
+              <BrainCircuit className="h-4 w-4 text-primary" />
+            )}
+            AI Enrich Ranking
+          </Button>
+        </div>
       </div>
 
       <Card className="border-border/60 shadow-sm">

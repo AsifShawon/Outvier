@@ -18,7 +18,7 @@ Outvier is built as a high-performance monorepo with a decoupled frontend, backe
 ### 2. Backend (`/backend`)
 - **Runtime:** Node.js with Express.js (TypeScript).
 - **Queue System:** **BullMQ** with **Redis** for handling long-running scraping and sync jobs.
-- **Data Pipeline:** Custom connectors for **QS World Rankings**, **QILT Graduate Outcomes**, and automated Scholarship scrapers.
+- **Data Pipeline:** **CRICOS-first** official synchronization with Government DataStore.
 - **Security:** JWT Authentication with Role-Based Access Control (RBAC).
 
 ### 3. Data & Services
@@ -70,21 +70,40 @@ npm run dev
 
 ---
 
+## 🛡️ Admin Dashboard & Data Pipeline
+
+Outvier uses a **CRICOS-first** architecture. The official Government DataStore is the primary source for universities, programs, locations, and their relationships.
+
+### CRICOS Sync Workflow
+Administrators manage data via the **CRICOS Sync** menu:
+1. **Provider Sync**: Fetch fresh data from the CRICOS API.
+2. **Staged Changes**: Review and approve differences before they hit the production database.
+3. **Raw Explorer**: Inspect original DataStore records.
+
+### AI Enrichment
+AI is used as a contextual enrichment tool integrated into:
+- **Rankings**: Automated discovery of global/national ranks.
+- **Scholarships**: Discovery of university-specific financial aid.
+- **Outcomes**: Enrichment of graduate employment metrics.
+- **Summaries**: Generation of student-friendly descriptions.
+
+For more details, see [CRICOS Admin Workflow](docs/CRICOS_ADMIN_WORKFLOW.md).
+
+---
+
 ## 🗺️ Key Features
 
 ### 🎓 For Students
-- ✅ **Personalized Fit Score:** An advanced comparison engine that calculates a 0-100% match based on your academic profile, budget, and preferred location.
-- ✅ **Comparison Table:** Side-by-side analysis of programs featuring real-time ranking data and graduate outcome metrics.
+- ✅ **Personalized Fit Score:** An advanced comparison engine that calculates a 0-100% match based on academic profile and budget.
+- ✅ **Comparison Table:** Side-by-side analysis featuring real-time ranking data and outcomes.
 - ✅ **Application Tracker:** A Kanban board to manage your journey from "Researching" to "Enrolled."
-- ✅ **Budget Calculator:** Estimate total yearly costs including tuition, accommodation, and lifestyle expenses across different Australian states.
+- ✅ **Budget Calculator:** Estimate total yearly costs including tuition and accommodation.
 
 ### 🛡️ For Administrators
-- ✅ **Metabase Dashboard:** Integrated BI dashboard for tracking student trends and platform performance.
-- ✅ **Automated Data Sync:** Connectors that pull the latest data from QS Rankings and QILT Outcomes.
+- ✅ **Operational Dashboard:** Real-time health metrics of CRICOS syncs and staged changes.
+- ✅ **Metabase Dashboard:** Integrated BI dashboard for tracking student trends.
 - ✅ **Staged Changes System:** Review and approve automated data updates before they go live.
-- ✅ **Bulk CSV Upload:** High-speed ingestion for university and program data.
-- ✅ **CRICOS Official Sync:** Direct integration with data.gov.au CKAN API for official Australian provider and course data.
-- ✅ **Rankings & Scholarships CRUD:** Manage global rankings and financial aid records through a dedicated admin UI.
+- ✅ **Field Inspector:** Debugging tool for CRICOS DataStore schemas.
 
 ---
 
@@ -112,7 +131,6 @@ The admin panel is pre-configured to link directly to your local Metabase instan
    - **Port**: `27017`
    - **Database Name**: `outvier`
 3. **Admin Dashboard**: Clicking **"Analytics"** in the sidebar will now open your Metabase instance in a new tab for full access.
-4. **Embedding (Optional)**: If you prefer to see the dashboard *inside* the Outvier panel, enable embedding in Metabase settings and paste the signed URL into `frontend/.env.local` as `NEXT_PUBLIC_METABASE_EMBED_URL`.
 
 ---
 

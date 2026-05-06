@@ -48,11 +48,13 @@ router.delete('/rankings/:id', adminController.deleteRanking);
 // Scholarships
 router.get('/scholarships', adminController.getScholarships);
 router.post('/scholarships', adminController.createScholarship);
+router.post('/scholarships/ai-find', adminController.aiFindScholarships);
 router.delete('/scholarships/:id', adminController.deleteScholarship);
 
 // Outcomes
 router.get('/outcomes', adminController.getOutcomes);
 router.post('/outcomes', adminController.createOutcome);
+router.post('/outcomes/ai-enrich', adminController.aiEnrichOutcomes);
 router.delete('/outcomes/:id', adminController.deleteOutcome);
 
 export default router;

@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { toast } from 'sonner';
-import { GraduationCap, Trash2, Plus, Search, DollarSign } from 'lucide-react';
+import { GraduationCap, Trash2, Plus, Search, DollarSign, BrainCircuit, RotateCw } from 'lucide-react';
 import { useState } from 'react';
 import { Badge } from '@/components/ui/badge';
 
@@ -27,6 +27,16 @@ export default function AdminScholarshipsPage() {
     },
   });
 
+  const aiFindMutation = useMutation({
+    mutationFn: () => api.post('/admin/scholarships/ai-find'),
+    onSuccess: (res) => {
+      toast.success(res.data.message || 'AI discovery job queued');
+    },
+    onError: (err: any) => {
+      toast.error(err.response?.data?.message || 'Failed to trigger AI discovery');
+    }
+  });
+
   const scholarships = scholarshipsRes?.data || [];
   const filtered = scholarships.filter((s: any) => 
     s.name?.toLowerCase().includes(search.toLowerCase()) ||
@@ -40,10 +50,25 @@ export default function AdminScholarshipsPage() {
           <h1 className="text-2xl font-bold font-display">University Scholarships</h1>
           <p className="text-sm text-muted-foreground mt-1">Manage active scholarships and financial aid.</p>
         </div>
-        <Button className="gap-2">
-          <Plus className="h-4 w-4" />
-          Add Scholarship
-        </Button>
+        <div className="flex gap-2">
+          <Button 
+            variant="outline"
+            className="gap-2 border-primary/20 hover:bg-primary/5"
+            onClick={() => aiFindMutation.mutate()}
+            disabled={aiFindMutation.isPending}
+          >
+            {aiFindMutation.isPending ? (
+              <RotateCw className="h-4 w-4 animate-spin" />
+            ) : (
+              <BrainCircuit className="h-4 w-4 text-primary" />
+            )}
+            AI Find Scholarships
+          </Button>
+          <Button className="gap-2">
+            <Plus className="h-4 w-4" />
+            Add Scholarship
+          </Button>
+        </div>
       </div>
 
       <Card className="border-border/60 shadow-sm">

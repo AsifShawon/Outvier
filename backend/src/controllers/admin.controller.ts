@@ -8,6 +8,9 @@ import { User } from '../models/User.model';
 import { RankingRecord } from '../models/RankingRecord.model';
 import { Scholarship } from '../models/Scholarship.model';
 import { OutcomeMetric } from '../models/OutcomeMetric.model';
+import { StagedChange } from '../models/StagedChange.model';
+import { CricosSyncRun } from '../models/CricosSyncRun.model';
+import { ProgramLocation } from '../models/ProgramLocation.model';
 import { IngestionJob } from '../models/IngestionJob.model';
 import { programDiscoveryQueue, cricosSyncQueue } from '../jobs/queue';
 import { UniversityIngestionJobSchema } from '../schemas/ingestion.schema';
@@ -16,22 +19,45 @@ export const adminController = {
   // Dashboard stats
   async getStats(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
-      const [totalUniversities, totalPrograms, totalUsers] = await Promise.all([
+      const [
+        totalUniversities, 
+        totalPrograms, 
+        totalCampuses,
+        pendingStagedChanges,
+        lastCricosSync,
+        failedSyncRuns
+      ] = await Promise.all([
         University.countDocuments(),
         Program.countDocuments(),
-        User.countDocuments(),
+        ProgramLocation.countDocuments(),
+        StagedChange.countDocuments({ status: 'pending' }),
+        CricosSyncRun.findOne().sort({ startedAt: -1 }).lean(),
+        CricosSyncRun.countDocuments({ status: 'failed' }),
       ]);
+
       const programsByLevel = await Program.aggregate([
         { $group: { _id: '$level', count: { $sum: 1 } } },
         { $sort: { count: -1 } },
+        { $limit: 8 }
       ]);
+
       const universitiesByState = await University.aggregate([
         { $group: { _id: '$state', count: { $sum: 1 } } },
         { $sort: { count: -1 } },
       ]);
+
       res.status(200).json({
         success: true,
-        data: { totalUniversities, totalPrograms, totalUsers, programsByLevel, universitiesByState },
+        data: { 
+          totalUniversities, 
+          totalPrograms, 
+          totalCampuses,
+          pendingStagedChanges,
+          lastCricosSync,
+          failedSyncRuns,
+          programsByLevel, 
+          universitiesByState 
+        },
       });
     } catch (error) {
       next(error);
@@ -301,6 +327,15 @@ export const adminController = {
       res.json({ success: true, message: 'Scholarship deleted' });
     } catch (error) { next(error); }
   },
+  async aiFindScholarships(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const { scholarshipSyncQueue } = require('../jobs/queue');
+      await scholarshipSyncQueue.add('discover-all', {
+        triggeredBy: (req as any).user?.username || 'admin',
+      });
+      res.json({ success: true, message: 'AI Scholarship discovery job queued' });
+    } catch (error) { next(error); }
+  },
 
   // Outcomes CRUD
   async getOutcomes(req: Request, res: Response, next: NextFunction): Promise<void> {
@@ -319,6 +354,15 @@ export const adminController = {
     try {
       await OutcomeMetric.findByIdAndDelete(req.params.id);
       res.json({ success: true, message: 'Outcome deleted' });
+    } catch (error) { next(error); }
+  },
+  async aiEnrichOutcomes(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const { outcomeSyncQueue } = require('../jobs/queue');
+      await outcomeSyncQueue.add('enrich-all', {
+        triggeredBy: (req as any).user?.username || 'admin',
+      });
+      res.json({ success: true, message: 'AI Outcomes enrichment job queued' });
     } catch (error) { next(error); }
   },
 };

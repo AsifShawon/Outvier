@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { toast } from 'sonner';
-import { BarChart3, Trash2, Plus, Search, TrendingUp, Users } from 'lucide-react';
+import { BarChart3, Trash2, Plus, Search, TrendingUp, Users, BrainCircuit, RotateCw } from 'lucide-react';
 import { useState } from 'react';
 import { Badge } from '@/components/ui/badge';
 
@@ -27,6 +27,16 @@ export default function AdminOutcomesPage() {
     },
   });
 
+  const aiEnrichMutation = useMutation({
+    mutationFn: () => api.post('/admin/outcomes/ai-enrich'),
+    onSuccess: (res) => {
+      toast.success(res.data.message || 'AI enrichment job queued');
+    },
+    onError: (err: any) => {
+      toast.error(err.response?.data?.message || 'Failed to trigger AI enrichment');
+    }
+  });
+
   const outcomes = outcomesRes?.data || [];
   const filtered = outcomes.filter((o: any) => 
     o.universityId?.name?.toLowerCase().includes(search.toLowerCase())
@@ -39,10 +49,25 @@ export default function AdminOutcomesPage() {
           <h1 className="text-2xl font-bold font-display">Graduate Outcomes</h1>
           <p className="text-sm text-muted-foreground mt-1">Track employment rates and graduate satisfaction metrics.</p>
         </div>
-        <Button className="gap-2">
-          <Plus className="h-4 w-4" />
-          Add Outcome Data
-        </Button>
+        <div className="flex gap-2">
+          <Button 
+            variant="outline"
+            className="gap-2 border-primary/20 hover:bg-primary/5"
+            onClick={() => aiEnrichMutation.mutate()}
+            disabled={aiEnrichMutation.isPending}
+          >
+            {aiEnrichMutation.isPending ? (
+              <RotateCw className="h-4 w-4 animate-spin" />
+            ) : (
+              <BrainCircuit className="h-4 w-4 text-primary" />
+            )}
+            AI Enrich Outcomes
+          </Button>
+          <Button className="gap-2">
+            <Plus className="h-4 w-4" />
+            Add Outcome Data
+          </Button>
+        </div>
       </div>
 
       <Card className="border-border/60 shadow-sm">
