@@ -4,7 +4,9 @@ import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useParams, notFound } from 'next/navigation';
 import Link from 'next/link';
-import { MapPin, Globe, Calendar, Award, Users, ChevronRight, BookOpen, CheckCircle2, Search, X } from 'lucide-react';
+import { MapPin, Globe, Calendar, Award, Users, ChevronRight, BookOpen, CheckCircle2, Search, X, Layout } from 'lucide-react';
+import { applicationTrackerApi } from '@/lib/api/applicationTracker.api';
+import { toast } from 'sonner';
 import { Navbar } from '@/components/layout/Navbar';
 import { Footer } from '@/components/layout/Footer';
 import { ProgramCard } from '@/components/ui-custom/ProgramCard';
@@ -231,6 +233,27 @@ export default function UniversityDetailPage() {
                   <Globe className="h-4 w-4 text-muted-foreground" />
                   Visit Official Website
                 </a>
+
+                <Button 
+                  variant="outline" 
+                  className="w-full h-12 rounded-xl gap-2 font-bold border-slate-200 hover:border-primary/50 hover:bg-primary/5 text-slate-600 hover:text-primary transition-all mb-4"
+                  onClick={async () => {
+                    try {
+                      await applicationTrackerApi.createItem({
+                        itemType: 'university',
+                        universityId: university._id,
+                        title: university.name,
+                        subtitle: 'General Application'
+                      });
+                      toast.success('Added to your application board');
+                    } catch (err) {
+                      toast.error('Failed to add to tracker');
+                    }
+                  }}
+                >
+                  <Layout className="h-4 w-4" />
+                  Track General Application
+                </Button>
 
                 {/* Browse all programs CTA */}
                 <Link href={`/programs?universitySlug=${university.slug}`}>

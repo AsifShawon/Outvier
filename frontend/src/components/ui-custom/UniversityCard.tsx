@@ -7,6 +7,8 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { profileApi } from '@/lib/api/profile.api';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
+import { applicationTrackerApi } from '@/lib/api/applicationTracker.api';
+import { Layout } from 'lucide-react';
 
 interface UniversityCardProps {
   university: University;
@@ -38,7 +40,8 @@ export function UniversityCard({ university }: UniversityCardProps) {
   const { data: profileRes } = useQuery({ 
     queryKey: ['profile'], 
     queryFn: () => profileApi.getProfile(),
-    staleTime: 60000 
+    staleTime: 60000,
+    enabled: typeof window !== 'undefined' && !!localStorage.getItem('outvier_token')
   });
   
   const isSaved = profileRes?.data?.data?.savedUniversities?.some((u: { _id: string } | string) => (typeof u === 'string' ? u : u._id) === university._id);
@@ -68,9 +71,7 @@ export function UniversityCard({ university }: UniversityCardProps) {
       <Card className="h-full overflow-hidden border-slate-200 dark:border-slate-800 hover:border-primary-500/50 dark:hover:border-primary-500/50 bg-white dark:bg-slate-900 transition-all duration-300 shadow-sm hover:shadow-xl flex flex-col relative">
         
         {/* Fit Score Badge Placeholder */}
-        <div className="absolute top-3 left-3 z-20 bg-white/90 dark:bg-slate-900/90 backdrop-blur border border-green-500/30 text-green-600 dark:text-green-400 text-xs font-bold px-2 py-1 rounded-md shadow-sm flex items-center gap-1">
-          <CheckCircle2 className="w-3 h-3" /> 94% Match
-        </div>
+        {/* Fit Score Badge Removed */}
 
         {/* Save Button */}
         <Button
@@ -148,6 +149,29 @@ export function UniversityCard({ university }: UniversityCardProps) {
              <div className="flex items-center gap-1 text-sm font-semibold text-primary-600 dark:text-primary-400 group-hover:underline">
                Explore Programs <span className="ml-1 transition-transform group-hover:translate-x-1">→</span>
              </div>
+             <Button
+                size="sm"
+                variant="ghost"
+                className="h-9 w-9 p-0 rounded-xl hover:bg-primary/5 text-slate-400 hover:text-primary transition-all"
+                onClick={async (e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  try {
+                    await applicationTrackerApi.createItem({
+                      itemType: 'university',
+                      universityId: university._id,
+                      title: university.name,
+                      subtitle: 'General Application'
+                    });
+                    toast.success('Added to application tracker');
+                  } catch (err) {
+                    toast.error('Failed to add to tracker');
+                  }
+                }}
+                title="Add to Application Tracker"
+              >
+                <Layout className="w-4 h-4" />
+              </Button>
           </div>
         </CardContent>
       </Card>

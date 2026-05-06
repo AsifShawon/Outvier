@@ -8,6 +8,8 @@ import { profileApi } from '@/lib/api/profile.api';
 import { toast } from 'sonner';
 import { useComparison } from '@/context/ComparisonContext';
 import { Button } from '@/components/ui/button';
+import { applicationTrackerApi } from '@/lib/api/applicationTracker.api';
+import { Layout } from 'lucide-react';
 
 interface ProgramCardProps {
   program: Program;
@@ -45,7 +47,8 @@ export function ProgramCard({ program }: ProgramCardProps) {
   const { data: profileRes } = useQuery({ 
     queryKey: ['profile'], 
     queryFn: () => profileApi.getProfile(),
-    staleTime: 60000 
+    staleTime: 60000,
+    enabled: typeof window !== 'undefined' && !!localStorage.getItem('outvier_token')
   });
   
   const isSaved = profileRes?.data?.data?.savedPrograms?.some((p: { _id: string } | string) => (typeof p === 'string' ? p : p._id) === program._id);
@@ -163,6 +166,31 @@ export function ProgramCard({ program }: ProgramCardProps) {
               ) : (
                 <><Plus className="w-4 h-4 mr-2" /> Compare</>
               )}
+            </Button>
+
+            <Button
+              size="sm"
+              variant="outline"
+              className="h-10 w-10 p-0 rounded-xl border-slate-200 hover:border-primary/50 hover:bg-primary/5 text-slate-400 hover:text-primary transition-all"
+              onClick={async (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                try {
+                  await applicationTrackerApi.createItem({
+                    itemType: 'program',
+                    programId: program._id,
+                    universityId: program.university?._id || program.university,
+                    title: program.name,
+                    subtitle: program.universityName
+                  });
+                  toast.success('Added to application tracker');
+                } catch (err) {
+                  toast.error('Failed to add to tracker');
+                }
+              }}
+              title="Add to Application Tracker"
+            >
+              <Layout className="w-4 h-4" />
             </Button>
             
             <div className="flex items-center justify-center w-10 h-10 rounded-xl bg-slate-50 dark:bg-slate-800 text-slate-400 group-hover:bg-primary-600 group-hover:text-white transition-colors">

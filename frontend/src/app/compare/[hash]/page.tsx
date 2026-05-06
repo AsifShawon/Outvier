@@ -6,8 +6,10 @@ import { Navbar } from '@/components/layout/Navbar';
 import { Footer } from '@/components/layout/Footer';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
-import { CheckCircle2, AlertTriangle, Info, MapPin, GraduationCap, DollarSign, Languages, Calendar } from 'lucide-react';
+import { CheckCircle2, AlertTriangle, Info, MapPin, GraduationCap, DollarSign, Languages, Calendar, Trash2 } from 'lucide-react';
 import api from '@/lib/api';
+import { useComparison } from '@/context/ComparisonContext';
+import { Button } from '@/components/ui/button';
 
 interface ComparisonRow {
   label: string;
@@ -26,6 +28,7 @@ const COMPARISON_ROWS: ComparisonRow[] = [
 
 export default function ComparePage() {
   const { hash } = useParams<{ hash: string }>();
+  const { removeFromCompare } = useComparison();
 
   const { data: sessionData, isLoading: isLoadingSession } = useQuery({
     queryKey: ['comparison', hash],
@@ -86,12 +89,22 @@ export default function ComparePage() {
                         <th key={program._id} className="p-8 border-b border-slate-200 border-l border-slate-100 min-w-[300px]">
                           <div className="space-y-4">
                             <div className="flex justify-between items-start">
-                              <div className="h-12 w-12 rounded-xl bg-slate-100 border border-slate-200 flex items-center justify-center overflow-hidden">
-                                {program.university?.logo ? (
-                                  <img src={program.university.logo} alt="" className="w-8 h-8 object-contain" />
-                                ) : (
-                                  <GraduationCap className="h-6 w-6 text-slate-400" />
-                                )}
+                              <div className="flex gap-4 items-start">
+                                <div className="h-12 w-12 rounded-xl bg-slate-100 border border-slate-200 flex items-center justify-center overflow-hidden">
+                                  {program.university?.logo ? (
+                                    <img src={program.university.logo} alt="" className="w-8 h-8 object-contain" />
+                                  ) : (
+                                    <GraduationCap className="h-6 w-6 text-slate-400" />
+                                  )}
+                                </div>
+                                <Button 
+                                  variant="ghost" 
+                                  size="icon" 
+                                  className="h-8 w-8 rounded-lg text-slate-400 hover:text-destructive hover:bg-destructive/10"
+                                  onClick={() => removeFromCompare(program._id)}
+                                >
+                                  <Trash2 className="h-4 w-4" />
+                                </Button>
                               </div>
                               {score && (
                                 <div className="text-right">

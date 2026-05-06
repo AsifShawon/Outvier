@@ -23,8 +23,11 @@ api.interceptors.response.use(
   (response) => response,
   (error) => {
     if (error.response?.status === 401 && typeof window !== 'undefined') {
-      localStorage.removeItem('outvier_token');
-      window.location.href = '/login';
+      const token = localStorage.getItem('outvier_token');
+      if (token) {
+        localStorage.removeItem('outvier_token');
+        window.location.href = '/login';
+      }
     }
     return Promise.reject(error);
   }

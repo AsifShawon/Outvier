@@ -73,7 +73,9 @@ export default function LoginPage() {
           <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-white/10 text-white mx-auto mb-4 border border-white/20 shadow-xl backdrop-blur-sm">
             <GraduationCap className="h-7 w-7" />
           </div>
-          <h1 className="text-3xl font-bold font-display text-white tracking-tight">Outvier</h1>
+          <Link href="/" className="flex items-center justify-center gap-2">
+            <h1 className="text-3xl font-bold font-display text-white tracking-tight">Outvier</h1>
+          </Link>
           <p className="text-white/70 text-sm mt-2">Sign in to your account</p>
         </div>
 

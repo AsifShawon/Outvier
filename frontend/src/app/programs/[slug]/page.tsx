@@ -6,8 +6,11 @@ import Link from 'next/link';
 import {
   Clock, DollarSign, Globe, BookOpen, ChevronRight, CheckCircle2,
   Calendar, Monitor, GraduationCap, ExternalLink, AlertTriangle,
-  Languages, Briefcase, FlaskConical, Layers, BadgeCheck,
+  Languages, Briefcase, FlaskConical, Layers, BadgeCheck, Layout
 } from 'lucide-react';
+import { applicationTrackerApi } from '@/lib/api/applicationTracker.api';
+import { toast } from 'sonner';
+import { Button } from '@/components/ui/button';
 import { Navbar } from '@/components/layout/Navbar';
 import { Footer } from '@/components/layout/Footer';
 import { Badge } from '@/components/ui/badge';
@@ -401,6 +404,28 @@ export default function ProgramDetailPage() {
                     Official CRICOS Page
                   </a>
                 )}
+
+                <Button 
+                  variant="outline" 
+                  className="w-full h-12 rounded-xl gap-2 font-bold border-slate-200 hover:border-primary/50 hover:bg-primary/5 text-slate-600 hover:text-primary transition-all"
+                  onClick={async () => {
+                    try {
+                      await applicationTrackerApi.createItem({
+                        itemType: 'program',
+                        programId: program._id,
+                        universityId: program.university?._id || program.university,
+                        title: program.name,
+                        subtitle: program.universityName
+                      });
+                      toast.success('Added to your application board');
+                    } catch (err) {
+                      toast.error('Failed to add to tracker');
+                    }
+                  }}
+                >
+                  <Layout className="h-4 w-4" />
+                  Track this Application
+                </Button>
 
                 <Link href={`/universities/${program.universitySlug}`}>
                   <div className="flex items-center justify-center gap-2 w-full rounded-xl border border-border/60 bg-card p-4 text-sm font-medium hover:bg-muted/50 hover:border-primary/30 transition-colors cursor-pointer">

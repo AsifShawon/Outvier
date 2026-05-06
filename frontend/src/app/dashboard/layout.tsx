@@ -76,7 +76,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const navItems = [
     { href: '/dashboard', label: 'Overview', icon: LayoutDashboard },
     { href: '/dashboard/profile', label: 'My Profile', icon: User },
-    { href: '/dashboard/student-fit', label: 'Fit Score', icon: BarChart2 },
+    // { href: '/dashboard/student-fit', label: 'Fit Score', icon: BarChart2 },
     { href: '/dashboard/saved', label: 'Saved Items', icon: Bookmark },
     { href: '/dashboard/tracker', label: 'Application Tracker', icon: BarChart2 },
     { href: '/dashboard/budget', label: 'Budget Calculator', icon: DollarSign },

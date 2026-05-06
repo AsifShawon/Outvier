@@ -238,8 +238,8 @@ export default function DashboardPage() {
             <CardHeader className="bg-slate-50/50 border-b">
               <div className="flex justify-between items-center">
                 <div>
-                  <CardTitle className="text-xl font-display">University Fit Scores</CardTitle>
-                  <CardDescription>Compatibility based on your academic and budget profile.</CardDescription>
+                  <CardTitle className="text-xl font-display">My Shortlisted Programs</CardTitle>
+                  <CardDescription>Quick view of your saved programs.</CardDescription>
                 </div>
                 <Button variant="ghost" size="sm" className="text-deep-green font-bold text-xs" asChild>
                   <Link href="/dashboard/saved">View All Saved</Link>
@@ -265,9 +265,10 @@ export default function DashboardPage() {
                           </div>
                         </div>
                         <div className="flex items-center gap-6">
+                           {/* Fit Score hidden for now */}
                            <div className="text-right hidden sm:block">
-                              <p className="text-[10px] text-slate-400 uppercase font-bold">Fit Score</p>
-                              <p className="text-lg font-black text-deep-green">85%</p>
+                              <p className="text-[10px] text-slate-400 uppercase font-bold">Status</p>
+                              <p className="text-sm font-bold text-slate-600">Saved</p>
                            </div>
                            <Button variant="ghost" size="icon" className="rounded-xl hover:bg-white border border-transparent hover:border-slate-100" asChild>
                              <Link href={`/programs/${prog.slug}`}>
@@ -338,18 +339,7 @@ export default function DashboardPage() {
           <div className="space-y-4">
              <h3 className="text-sm font-bold text-slate-900 uppercase tracking-widest ml-1">Quick Tools</h3>
              <div className="grid grid-cols-1 gap-3">
-                <Link href="/dashboard/student-fit" className="group">
-                   <div className="p-4 rounded-2xl bg-white border border-slate-200 hover:border-deep-green hover:shadow-md transition-all flex items-center gap-4">
-                      <div className="p-2 bg-cream-100 rounded-xl group-hover:bg-deep-green group-hover:text-white transition-colors">
-                         <LayoutDashboard className="h-5 w-5" />
-                      </div>
-                      <div className="flex-1">
-                         <p className="text-xs font-bold text-slate-900">Fit Score Analysis</p>
-                         <p className="text-[10px] text-slate-500">Deep dive into matches</p>
-                      </div>
-                      <ChevronRight className="h-4 w-4 text-slate-300" />
-                   </div>
-                </Link>
+                 {/* Fit Score tool hidden */}
                 <Link href="/dashboard/saved" className="group">
                    <div className="p-4 rounded-2xl bg-white border border-slate-200 hover:border-deep-green hover:shadow-md transition-all flex items-center gap-4">
                       <div className="p-2 bg-cream-100 rounded-xl group-hover:bg-deep-green group-hover:text-white transition-colors">
