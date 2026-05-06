@@ -106,9 +106,11 @@ export function UniversityCard({ university }: UniversityCardProps) {
               <span className={cn('px-2 py-1 rounded-md text-[10px] font-bold uppercase tracking-wide', university.state ? (stateColors[university.state] ?? 'bg-slate-100 text-slate-600') : 'bg-slate-100 text-slate-600')}>
                 {university.state}
               </span>
-              <span className="px-2 py-1 rounded-md text-[10px] font-bold uppercase tracking-wide bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400">
-                {university.type}
-              </span>
+              {university.cricosProviderCode && (
+                <span className="px-2 py-1 rounded-md text-[10px] font-mono font-bold uppercase tracking-wide bg-primary/10 text-primary border border-primary/20">
+                  {university.cricosProviderCode}
+                </span>
+              )}
             </div>
           </div>
 
@@ -118,24 +120,26 @@ export function UniversityCard({ university }: UniversityCardProps) {
           
           <div className="flex items-center gap-1 mb-4">
             <MapPin className="h-3 w-3 text-slate-400 shrink-0" />
-            <span className="text-xs text-slate-500 dark:text-slate-400 truncate">{university.location}</span>
+            <span className="text-xs text-slate-500 dark:text-slate-400 truncate">
+              {university.city || university.location}{university.state ? `, ${university.state}` : ''}
+            </span>
           </div>
 
           <div className="grid grid-cols-2 gap-3 mb-4">
-            {university.ranking && (
-              <div className="flex items-center gap-2 bg-slate-50 dark:bg-slate-800/50 p-2 rounded-lg">
-                <Award className="h-4 w-4 text-amber-500" />
-                <div>
-                  <div className="text-[10px] text-slate-500 dark:text-slate-400 uppercase font-semibold">Global Rank</div>
-                  <div className="text-xs font-bold text-slate-900 dark:text-white">#{university.ranking}</div>
+            <div className="flex items-center gap-2 bg-slate-50 dark:bg-slate-800/50 p-2 rounded-lg">
+              <Award className="h-4 w-4 text-amber-500" />
+              <div>
+                <div className="text-[10px] text-slate-500 dark:text-slate-400 uppercase font-semibold">Ranking</div>
+                <div className="text-xs font-bold text-slate-900 dark:text-white">
+                  {university.ranking ? `#${university.ranking}` : university.rankingBand ? university.rankingBand : '—'}
                 </div>
               </div>
-            )}
+            </div>
             <div className="flex items-center gap-2 bg-slate-50 dark:bg-slate-800/50 p-2 rounded-lg">
               <Building className="h-4 w-4 text-primary-500" />
               <div>
-                <div className="text-[10px] text-slate-500 dark:text-slate-400 uppercase font-semibold">Campuses</div>
-                <div className="text-xs font-bold text-slate-900 dark:text-white">{university.campuses?.length || 1}</div>
+                <div className="text-[10px] text-slate-500 dark:text-slate-400 uppercase font-semibold">Programs</div>
+                <div className="text-xs font-bold text-slate-900 dark:text-white">{university.programCount || '—'}</div>
               </div>
             </div>
           </div>

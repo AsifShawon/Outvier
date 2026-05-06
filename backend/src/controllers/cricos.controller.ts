@@ -109,6 +109,16 @@ export const cricosController = {
     }
   },
 
+  async syncAllInstitutions(req: Request, res: Response, next: NextFunction) {
+    try {
+      const triggeredBy = (req as any).user?.username || 'admin';
+      const syncRunId = await cricosSyncService.syncAllInstitutions(triggeredBy);
+      res.status(202).json({ success: true, data: { syncRunId } });
+    } catch (error) {
+      next(error);
+    }
+  },
+
   async syncUniversity(req: Request, res: Response, next: NextFunction) {
     try {
       const { universityId } = req.params;

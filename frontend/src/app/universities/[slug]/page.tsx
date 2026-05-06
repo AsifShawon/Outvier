@@ -1,13 +1,15 @@
 'use client';
 
+import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useParams, notFound } from 'next/navigation';
 import Link from 'next/link';
-import { MapPin, Globe, Calendar, Award, Users, ChevronRight, BookOpen, CheckCircle2 } from 'lucide-react';
+import { MapPin, Globe, Calendar, Award, Users, ChevronRight, BookOpen, CheckCircle2, Search, X } from 'lucide-react';
 import { Navbar } from '@/components/layout/Navbar';
 import { Footer } from '@/components/layout/Footer';
 import { ProgramCard } from '@/components/ui-custom/ProgramCard';
 import { SkeletonCard } from '@/components/ui-custom/SkeletonCard';
+import { Pagination } from '@/components/ui-custom/Pagination';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -15,10 +17,15 @@ import { universitiesApi } from '@/lib/api/universities.api';
 import { programsApi } from '@/lib/api/programs.api';
 import { University } from '@/types/university';
 import { Program } from '@/types/program';
+import { useDebounce } from '@/hooks/useDebounce';
 
 export default function UniversityDetailPage() {
   const params = useParams();
   const slug = params.slug as string;
+  
+  const [search, setSearch] = useState('');
+  const [page, setPage] = useState(1);
+  const debouncedSearch = useDebounce(search, 350);
 
   const { data: uniData, isLoading: uniLoading, isError } = useQuery({
     queryKey: ['university', slug],
@@ -26,13 +33,19 @@ export default function UniversityDetailPage() {
   });
 
   const { data: programsData, isLoading: programsLoading } = useQuery({
-    queryKey: ['university-programs', slug],
-    queryFn: () => programsApi.getAll({ universitySlug: slug, limit: 20 }),
+    queryKey: ['university-programs', slug, debouncedSearch, page],
+    queryFn: () => programsApi.getAll({ 
+      universitySlug: slug, 
+      search: debouncedSearch,
+      page,
+      limit: 10 
+    }),
     enabled: !!slug,
   });
 
   const university: University | undefined = uniData?.data?.data;
   const programs: Program[] = programsData?.data?.programs || [];
+  const pagination = programsData?.data?.pagination;
 
   if (isError) return notFound();
 
@@ -116,19 +129,73 @@ export default function UniversityDetailPage() {
               )}
 
               {/* Programs */}
-              <div>
-                <div className="flex items-center justify-between mb-5">
-                  <h2 className="text-xl font-bold font-display">Programs Offered</h2>
-                  <Badge variant="secondary">{programs.length} programs</Badge>
+              <div id="programs-section">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+                  <div>
+                    <h2 className="text-xl font-bold font-display">Programs Offered</h2>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Showing {programs.length} of {pagination?.total || 0} programs
+                    </p>
+                  </div>
+                  
+                  <div className="relative w-full sm:w-64">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                    <input
+                      type="text"
+                      placeholder="Search courses..."
+                      value={search}
+                      onChange={(e) => { setSearch(e.target.value); setPage(1); }}
+                      className="w-full h-10 pl-9 pr-9 rounded-xl border border-border/60 bg-card text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all"
+                    />
+                    {search && (
+                      <button 
+                        onClick={() => { setSearch(''); setPage(1); }}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 p-0.5 rounded-full hover:bg-muted transition-colors"
+                      >
+                        <X className="h-3.5 w-3.5 text-muted-foreground" />
+                      </button>
+                    )}
+                  </div>
                 </div>
+
                 {programsLoading ? (
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     {Array.from({ length: 4 }).map((_, i) => <SkeletonCard key={i} />)}
                   </div>
-                ) : (
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    {programs.map((p) => <ProgramCard key={p._id} program={p} />)}
+                ) : programs.length === 0 ? (
+                  <div className="text-center py-12 rounded-2xl border border-dashed border-border/60 bg-muted/20">
+                    <BookOpen className="h-10 w-10 text-muted-foreground/30 mx-auto mb-3" />
+                    <p className="text-sm text-muted-foreground">No programs found matching your search.</p>
+                    {search && (
+                      <Button 
+                        variant="link" 
+                        className="mt-2 text-primary"
+                        onClick={() => { setSearch(''); setPage(1); }}
+                      >
+                        Clear filters
+                      </Button>
+                    )}
                   </div>
+                ) : (
+                  <>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      {programs.map((p) => <ProgramCard key={p._id} program={p} />)}
+                    </div>
+                    
+                    {pagination && pagination.pages > 1 && (
+                      <div className="mt-8 flex justify-center">
+                        <Pagination
+                          page={page}
+                          totalPages={pagination.pages}
+                          onPageChange={(p) => {
+                            setPage(p);
+                            const section = document.getElementById('programs-section');
+                            if (section) section.scrollIntoView({ behavior: 'smooth' });
+                          }}
+                        />
+                      </div>
+                    )}
+                  </>
                 )}
               </div>
             </div>

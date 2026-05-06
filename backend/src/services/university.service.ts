@@ -7,23 +7,47 @@ export interface UniversityQuery {
   limit?: number;
   search?: string;
   state?: string;
-  type?: string;
+  rankingBand?: string;
+  sortBy?: string;
+  sortOrder?: 'asc' | 'desc';
 }
 
 export const universityService = {
   async getAll(query: UniversityQuery) {
-    const { page = 1, limit = 12, search, state, type } = query;
-    const filter: Record<string, unknown> = {};
+    const { 
+      page = 1, 
+      limit = 12, 
+      search, 
+      state, 
+      rankingBand, 
+      sortBy = 'name', 
+      sortOrder = 'asc' 
+    } = query;
+    
+    const filter: Record<string, any> = { status: 'active' };
 
     if (search) {
       filter.$text = { $search: search };
     }
-    if (state) filter.state = state;
-    if (type) filter.type = type;
+    if (state && state !== 'all') filter.state = state;
+    
+    if (rankingBand && rankingBand !== 'all') {
+      if (rankingBand === 'unranked') {
+        filter.ranking = { $exists: false };
+      } else {
+        const maxRank = parseInt(rankingBand.replace('top', ''));
+        filter.ranking = { $lte: maxRank, $gt: 0 };
+      }
+    }
+
+    const sort: Record<string, any> = {};
+    const allowedSorts = ['name', 'ranking', 'programCount', 'averageEstimatedTotalCostAud', 'updatedAt'];
+    const sortField = allowedSorts.includes(sortBy) ? sortBy : 'name';
+    sort[sortField] = sortOrder === 'desc' ? -1 : 1;
 
     const skip = (page - 1) * limit;
     const [universities, total] = await Promise.all([
-      University.find(filter).sort({ name: 1 }).skip(skip).limit(limit),
+      University.find(filter).sort(sort).skip(skip).limit(limit),
       University.countDocuments(filter),
     ]);
 

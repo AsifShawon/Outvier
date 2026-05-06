@@ -12,6 +12,9 @@ export const programsApi = {
   getFields: (): Promise<{ data: ApiResponse<string[]> }> =>
     api.get('/programs/fields'),
 
+  getCities: (): Promise<{ data: ApiResponse<string[]> }> =>
+    api.get('/programs/cities'),
+
   // Admin
   create: (data: CreateProgramPayload): Promise<{ data: ApiResponse<Program> }> =>
     api.post('/admin/programs', data),

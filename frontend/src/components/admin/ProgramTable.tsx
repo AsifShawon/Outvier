@@ -8,10 +8,13 @@ import { Plus, Pencil, Trash2, ExternalLink } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { DeleteDialog } from '@/components/ui-custom/DeleteDialog';
+import { Pagination } from '@/components/ui-custom/Pagination';
 import { Skeleton } from '@/components/ui/skeleton';
 import { programsApi } from '@/lib/api/programs.api';
 import { Program } from '@/types/program';
+import { useDebounce } from '@/hooks/useDebounce';
 
 const levelLabels: Record<string, string> = {
   bachelor: 'Bachelor',
@@ -26,10 +29,22 @@ export function ProgramTable() {
   const qc = useQueryClient();
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [deleteName, setDeleteName] = useState('');
+  
+  // Filters & Pagination
+  const [search, setSearch] = useState('');
+  const [level, setLevel] = useState('all');
+  const [page, setPage] = useState(1);
+  const [limit, setLimit] = useState(20);
+  const debouncedSearch = useDebounce(search, 350);
 
   const { data, isLoading } = useQuery({
-    queryKey: ['admin-programs'],
-    queryFn: () => programsApi.getAll({ limit: 100 }),
+    queryKey: ['admin-programs', { search: debouncedSearch, level, page, limit }],
+    queryFn: () => programsApi.getAll({ 
+      search: debouncedSearch, 
+      level: level !== 'all' ? level : undefined,
+      page, 
+      limit 
+    }),
   });
 
   const deleteMutation = useMutation({
@@ -44,20 +59,46 @@ export function ProgramTable() {
   });
 
   const programs: Program[] = data?.data?.programs || [];
+  const meta = data?.data?.pagination;
+
+  const handleFilterChange = (key: string, value: string) => {
+    setPage(1);
+    if (key === 'search') setSearch(value);
+    if (key === 'level') setLevel(value);
+  };
 
   return (
-    <div>
-      <div className="flex items-center justify-between mb-4">
-        <h2 className="font-semibold">All Programs</h2>
+    <div className="space-y-4">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div className="flex flex-wrap items-center gap-2">
+          <input
+            type="text"
+            placeholder="Search programs..."
+            className="h-9 w-64 rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+            value={search}
+            onChange={(e) => handleFilterChange('search', e.target.value)}
+          />
+          <Select value={level} onValueChange={(v) => handleFilterChange('level', v)}>
+            <SelectTrigger className="w-[140px] h-9">
+              <SelectValue placeholder="All Levels" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Levels</SelectItem>
+              {Object.entries(levelLabels).map(([val, label]) => (
+                <SelectItem key={val} value={val}>{label}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
         <Link href="/admin/programs/new">
-          <Button size="sm" className="gap-2">
+          <Button size="sm" className="gap-2 h-9">
             <Plus className="h-3.5 w-3.5" />
             Add Program
           </Button>
         </Link>
       </div>
 
-      <div className="rounded-lg border border-border/60 overflow-hidden">
+      <div className="rounded-lg border border-border/60 overflow-hidden bg-card">
         <Table>
           <TableHeader>
             <TableRow className="bg-muted/50">
@@ -83,7 +124,7 @@ export function ProgramTable() {
                     <TableCell className="font-medium text-sm max-w-[200px] truncate">{program.name}</TableCell>
                     <TableCell className="text-xs text-muted-foreground max-w-[150px] truncate">{program.universityName}</TableCell>
                     <TableCell>
-                      <Badge variant="secondary" className="text-[10px]">{levelLabels[program.level]}</Badge>
+                      <Badge variant="secondary" className="text-[10px]">{levelLabels[program.level] || program.level}</Badge>
                     </TableCell>
                     <TableCell className="text-xs text-muted-foreground max-w-[120px] truncate">{program.field}</TableCell>
                     <TableCell className="text-xs capitalize">{program.campusMode}</TableCell>
@@ -114,6 +155,32 @@ export function ProgramTable() {
           </TableBody>
         </Table>
       </div>
+
+      {meta && meta.pages > 1 && (
+        <div className="flex items-center justify-between">
+          <p className="text-xs text-muted-foreground">
+            Showing {programs.length} of {meta.total} programs
+          </p>
+          <div className="flex items-center gap-4">
+            <Select value={limit.toString()} onValueChange={(v) => { setLimit(parseInt(v)); setPage(1); }}>
+              <SelectTrigger className="w-[70px] h-8 text-xs">
+                <SelectValue placeholder={limit.toString()} />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="10">10</SelectItem>
+                <SelectItem value="20">20</SelectItem>
+                <SelectItem value="50">50</SelectItem>
+                <SelectItem value="100">100</SelectItem>
+              </SelectContent>
+            </Select>
+            <Pagination
+              page={page}
+              totalPages={meta.pages}
+              onPageChange={setPage}
+            />
+          </div>
+        </div>
+      )}
 
       <DeleteDialog
         open={!!deleteId}

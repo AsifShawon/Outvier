@@ -9,14 +9,16 @@ import { toast } from 'sonner';
 import { GraduationCap, Trash2, Plus, Search, DollarSign, BrainCircuit, RotateCw } from 'lucide-react';
 import { useState } from 'react';
 import { Badge } from '@/components/ui/badge';
+import { Pagination } from '@/components/ui-custom/Pagination';
 
 export default function AdminScholarshipsPage() {
   const qc = useQueryClient();
   const [search, setSearch] = useState('');
+  const [page, setPage] = useState(1);
 
   const { data: scholarshipsRes, isLoading } = useQuery({
-    queryKey: ['admin-scholarships'],
-    queryFn: () => api.get('/admin/scholarships').then(r => r.data),
+    queryKey: ['admin-scholarships', page],
+    queryFn: () => api.get('/admin/scholarships', { params: { page, limit: 50 } }).then(r => r.data),
   });
 
   const deleteMutation = useMutation({
@@ -38,6 +40,7 @@ export default function AdminScholarshipsPage() {
   });
 
   const scholarships = scholarshipsRes?.data || [];
+  const meta = scholarshipsRes?.meta;
   const filtered = scholarships.filter((s: any) => 
     s.name?.toLowerCase().includes(search.toLowerCase()) ||
     s.universityId?.name?.toLowerCase().includes(search.toLowerCase())
@@ -84,7 +87,7 @@ export default function AdminScholarshipsPage() {
           </div>
         </CardHeader>
         <CardContent>
-          <div className="rounded-xl border border-border/60 overflow-hidden">
+          <div className="rounded-xl border border-border/60 overflow-hidden mb-4">
             <table className="w-full text-sm">
               <thead className="bg-muted/50 border-b border-border/60">
                 <tr>
@@ -140,6 +143,16 @@ export default function AdminScholarshipsPage() {
               </tbody>
             </table>
           </div>
+
+          {meta && meta.pages > 1 && (
+            <div className="flex justify-center pt-2">
+              <Pagination 
+                page={page} 
+                totalPages={meta.pages} 
+                onPageChange={setPage} 
+              />
+            </div>
+          )}
         </CardContent>
       </Card>
     </div>

@@ -10,6 +10,7 @@ import { toast } from 'sonner';
 import { Trophy, Trash2, Plus, Search, ExternalLink, RefreshCw, Pencil, RotateCw, BrainCircuit } from 'lucide-react';
 import { useState } from 'react';
 import { Badge } from '@/components/ui/badge';
+import { Pagination } from '@/components/ui-custom/Pagination';
 import { 
   Dialog, 
   DialogContent, 
@@ -22,12 +23,13 @@ import {
 export default function AdminRankingsPage() {
   const qc = useQueryClient();
   const [search, setSearch] = useState('');
+  const [page, setPage] = useState(1);
   const [editingRank, setEditingRank] = useState<any>(null);
   const [editFormData, setEditFormData] = useState<any>({});
 
   const { data: rankingsRes, isLoading } = useQuery({
-    queryKey: ['admin-rankings'],
-    queryFn: () => api.get('/admin/rankings').then(r => r.data),
+    queryKey: ['admin-rankings', page],
+    queryFn: () => api.get('/admin/rankings', { params: { page, limit: 50 } }).then(r => r.data),
   });
 
   const deleteMutation = useMutation({
@@ -82,6 +84,7 @@ export default function AdminRankingsPage() {
   };
 
   const rankings = rankingsRes?.data || [];
+  const meta = rankingsRes?.meta;
   const filteredRankings = rankings.filter((r: any) => 
     r.universityId?.name?.toLowerCase().includes(search.toLowerCase()) ||
     r.source?.toLowerCase().includes(search.toLowerCase())
@@ -126,7 +129,7 @@ export default function AdminRankingsPage() {
           </div>
         </CardHeader>
         <CardContent>
-          <div className="rounded-xl border border-border/60 overflow-hidden">
+          <div className="rounded-xl border border-border/60 overflow-hidden mb-4">
             <table className="w-full text-sm">
               <thead className="bg-muted/50 border-b border-border/60">
                 <tr>
@@ -208,6 +211,16 @@ export default function AdminRankingsPage() {
               </tbody>
             </table>
           </div>
+
+          {meta && meta.pages > 1 && (
+            <div className="flex justify-center pt-2">
+              <Pagination 
+                page={page} 
+                totalPages={meta.pages} 
+                onPageChange={setPage} 
+              />
+            </div>
+          )}
         </CardContent>
       </Card>
 

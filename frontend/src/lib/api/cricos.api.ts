@@ -49,6 +49,10 @@ export const cricosApi = {
   recheckProvider: (providerCode: string) =>
     api.post('/admin/cricos/recheck-provider', { providerCode }),
 
+  // Global sync of all institution records
+  syncAllInstitutions: () =>
+    api.post('/admin/cricos/sync-all-institutions'),
+
   // Sync via university ObjectId
   syncUniversity: (universityId: string) =>
     api.post(`/admin/cricos/sync-university/${universityId}`),

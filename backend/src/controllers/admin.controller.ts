@@ -67,16 +67,52 @@ export const adminController = {
   // University list (admin — with CRICOS fields)
   async listUniversities(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
-      const { page = '1', limit = '50', q, status } = req.query as Record<string, string>;
-      const filter: Record<string, unknown> = {};
-      if (status) filter.status = status;
+      const { 
+        page = '1', 
+        limit = '50', 
+        q, 
+        status, 
+        state, 
+        rankingBand, 
+        sortBy = 'name', 
+        sortOrder = 'asc' 
+      } = req.query as Record<string, string>;
+      
+      const filter: Record<string, any> = {};
+      if (status && status !== 'all') filter.status = status;
+      if (state && state !== 'all') filter.state = state;
       if (q) filter.$text = { $search: q };
+      
+      if (rankingBand && rankingBand !== 'all') {
+        if (rankingBand === 'unranked') {
+          filter.ranking = { $exists: false };
+        } else {
+          const maxRank = parseInt(rankingBand.replace('top', ''));
+          filter.ranking = { $lte: maxRank, $gt: 0 };
+        }
+      }
+
+      const sort: Record<string, any> = {};
+      const allowedSorts = ['name', 'ranking', 'programCount', 'lastSyncedAt', 'cricosProviderCode'];
+      const sortField = allowedSorts.includes(sortBy) ? sortBy : 'name';
+      sort[sortField] = sortOrder === 'desc' ? -1 : 1;
+
       const skip = (parseInt(page) - 1) * parseInt(limit);
       const [data, total] = await Promise.all([
-        University.find(filter).sort({ name: 1 }).skip(skip).limit(parseInt(limit)).lean(),
+        University.find(filter).sort(sort).skip(skip).limit(parseInt(limit)).lean(),
         University.countDocuments(filter),
       ]);
-      res.status(200).json({ success: true, data, meta: { total, page: parseInt(page), limit: parseInt(limit) } });
+      
+      res.status(200).json({ 
+        success: true, 
+        data, 
+        meta: { 
+          total, 
+          page: parseInt(page), 
+          limit: parseInt(limit),
+          pages: Math.ceil(total / parseInt(limit))
+        } 
+      });
     } catch (error) {
       next(error);
     }
@@ -240,8 +276,29 @@ export const adminController = {
   // Rankings CRUD
   async getRankings(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
-      const rankings = await RankingRecord.find().populate('universityId', 'name slug').sort({ year: -1 });
-      res.json({ success: true, data: rankings });
+      const { page = '1', limit = '50', q } = req.query as Record<string, string>;
+      const filter: Record<string, any> = {};
+      
+      const skip = (parseInt(page) - 1) * parseInt(limit);
+      const [rankings, total] = await Promise.all([
+        RankingRecord.find(filter)
+          .populate('universityId', 'name slug')
+          .sort({ year: -1, ranking: 1 })
+          .skip(skip)
+          .limit(parseInt(limit)),
+        RankingRecord.countDocuments(filter),
+      ]);
+
+      res.json({ 
+        success: true, 
+        data: rankings,
+        meta: {
+          total,
+          page: parseInt(page),
+          limit: parseInt(limit),
+          pages: Math.ceil(total / parseInt(limit))
+        }
+      });
     } catch (error) { next(error); }
   },
   async createRanking(req: Request, res: Response, next: NextFunction): Promise<void> {
@@ -311,8 +368,29 @@ export const adminController = {
   // Scholarships CRUD
   async getScholarships(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
-      const scholarships = await Scholarship.find().populate('universityId', 'name slug').sort({ createdAt: -1 });
-      res.json({ success: true, data: scholarships });
+      const { page = '1', limit = '50' } = req.query as Record<string, string>;
+      const filter: Record<string, any> = {};
+      
+      const skip = (parseInt(page) - 1) * parseInt(limit);
+      const [scholarships, total] = await Promise.all([
+        Scholarship.find(filter)
+          .populate('universityId', 'name slug')
+          .sort({ createdAt: -1 })
+          .skip(skip)
+          .limit(parseInt(limit)),
+        Scholarship.countDocuments(filter),
+      ]);
+
+      res.json({ 
+        success: true, 
+        data: scholarships,
+        meta: {
+          total,
+          page: parseInt(page),
+          limit: parseInt(limit),
+          pages: Math.ceil(total / parseInt(limit))
+        }
+      });
     } catch (error) { next(error); }
   },
   async createScholarship(req: Request, res: Response, next: NextFunction): Promise<void> {
@@ -340,8 +418,29 @@ export const adminController = {
   // Outcomes CRUD
   async getOutcomes(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
-      const outcomes = await OutcomeMetric.find().populate('universityId', 'name slug').sort({ year: -1 });
-      res.json({ success: true, data: outcomes });
+      const { page = '1', limit = '50' } = req.query as Record<string, string>;
+      const filter: Record<string, any> = {};
+      
+      const skip = (parseInt(page) - 1) * parseInt(limit);
+      const [outcomes, total] = await Promise.all([
+        OutcomeMetric.find(filter)
+          .populate('universityId', 'name slug')
+          .sort({ year: -1 })
+          .skip(skip)
+          .limit(parseInt(limit)),
+        OutcomeMetric.countDocuments(filter),
+      ]);
+
+      res.json({ 
+        success: true, 
+        data: outcomes,
+        meta: {
+          total,
+          page: parseInt(page),
+          limit: parseInt(limit),
+          pages: Math.ceil(total / parseInt(limit))
+        }
+      });
     } catch (error) { next(error); }
   },
   async createOutcome(req: Request, res: Response, next: NextFunction): Promise<void> {

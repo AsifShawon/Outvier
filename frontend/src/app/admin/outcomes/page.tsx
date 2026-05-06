@@ -9,14 +9,16 @@ import { toast } from 'sonner';
 import { BarChart3, Trash2, Plus, Search, TrendingUp, Users, BrainCircuit, RotateCw } from 'lucide-react';
 import { useState } from 'react';
 import { Badge } from '@/components/ui/badge';
+import { Pagination } from '@/components/ui-custom/Pagination';
 
 export default function AdminOutcomesPage() {
   const qc = useQueryClient();
   const [search, setSearch] = useState('');
+  const [page, setPage] = useState(1);
 
   const { data: outcomesRes, isLoading } = useQuery({
-    queryKey: ['admin-outcomes'],
-    queryFn: () => api.get('/admin/outcomes').then(r => r.data),
+    queryKey: ['admin-outcomes', page],
+    queryFn: () => api.get('/admin/outcomes', { params: { page, limit: 50 } }).then(r => r.data),
   });
 
   const deleteMutation = useMutation({
@@ -38,6 +40,7 @@ export default function AdminOutcomesPage() {
   });
 
   const outcomes = outcomesRes?.data || [];
+  const meta = outcomesRes?.meta;
   const filtered = outcomes.filter((o: any) => 
     o.universityId?.name?.toLowerCase().includes(search.toLowerCase())
   );
@@ -83,7 +86,7 @@ export default function AdminOutcomesPage() {
           </div>
         </CardHeader>
         <CardContent>
-          <div className="rounded-xl border border-border/60 overflow-hidden">
+          <div className="rounded-xl border border-border/60 overflow-hidden mb-4">
             <table className="w-full text-sm">
               <thead className="bg-muted/50 border-b border-border/60">
                 <tr>
@@ -137,6 +140,16 @@ export default function AdminOutcomesPage() {
               </tbody>
             </table>
           </div>
+
+          {meta && meta.pages > 1 && (
+            <div className="flex justify-center pt-2">
+              <Pagination 
+                page={page} 
+                totalPages={meta.pages} 
+                onPageChange={setPage} 
+              />
+            </div>
+          )}
         </CardContent>
       </Card>
     </div>

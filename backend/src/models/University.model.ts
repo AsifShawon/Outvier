@@ -51,7 +51,8 @@ export interface IUniversity extends Document {
   logo?: string;               // legacy alias for logoUrl
   establishedYear?: number;
   ranking?: number;            // legacy; prefer RankingRecord
-  type?: 'public' | 'private';
+  rankingBand?: string;        // 'top50', 'top100', 'top200', 'top500', 'unranked'
+  type?: 'public' | 'private'; // @deprecated: use providerType or institutionType instead
   campuses?: string[];         // legacy string array; new: campusDetails
   internationalStudents?: boolean;
   // --- Existing new fields ---
@@ -78,7 +79,11 @@ export interface IUniversity extends Document {
   postalAddress?: IPostalAddress;
   lastCricosSyncedAt?: Date;
   cricosSyncStatus?: CricosSyncStatus;
+  lastSyncError?: string;
+  lastSyncRunId?: string;
   cricosDataHash?: string;
+  programCount?: number;
+  averageEstimatedTotalCostAud?: number;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -135,7 +140,8 @@ const UniversitySchema = new Schema<IUniversity>(
     logo: String,
     establishedYear: Number,
     ranking: Number,
-    type: { type: String, enum: ['public', 'private'] },
+    rankingBand: { type: String, enum: ['top50', 'top100', 'top200', 'top500', 'unranked'] },
+    type: { type: String, enum: ['public', 'private'] }, // Deprecated
     campuses: [{ type: String }],
     internationalStudents: { type: Boolean, default: true },
     // New
@@ -171,7 +177,11 @@ const UniversitySchema = new Schema<IUniversity>(
       default: 'not_synced',
       index: true,
     },
+    lastSyncError: String,
+    lastSyncRunId: { type: Schema.Types.ObjectId, ref: 'CricosSyncRun' },
     cricosDataHash: { type: String },
+    programCount: { type: Number, default: 0 },
+    averageEstimatedTotalCostAud: { type: Number },
   },
   { timestamps: true }
 );
@@ -180,5 +190,8 @@ const UniversitySchema = new Schema<IUniversity>(
 UniversitySchema.index({ name: 'text', shortName: 'text', description: 'text', city: 'text', state: 'text' });
 UniversitySchema.index({ status: 1 });
 UniversitySchema.index({ ingestionStatus: 1 });
+UniversitySchema.index({ ranking: 1 });
+UniversitySchema.index({ rankingBand: 1 });
 
 export const University = mongoose.model<IUniversity>('University', UniversitySchema);
+

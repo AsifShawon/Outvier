@@ -23,10 +23,23 @@ interface CricosStats {
   lastSync: { status: string; startedAt: string; providerCode?: string } | null;
 }
 
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { toast } from 'sonner';
+
 export default function CricosDashboard() {
+  const qc = useQueryClient();
   const [stats, setStats] = useState<CricosStats | null>(null);
   const [resources, setResources] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+
+  const syncAllMutation = useMutation({
+    mutationFn: () => cricosApi.syncAllInstitutions(),
+    onSuccess: (res: any) => {
+      toast.success('Global institution sync started');
+      qc.invalidateQueries({ queryKey: ['cricos-sync-runs'] });
+    },
+    onError: () => toast.error('Failed to start global sync'),
+  });
 
   useEffect(() => {
     Promise.all([cricosApi.getStats(), cricosApi.getResources()])
@@ -178,6 +191,25 @@ export default function CricosDashboard() {
             <Link href="/admin/cricos/raw/locations"><Button variant="outline" size="sm">Locations</Button></Link>
             <Link href="/admin/cricos/raw/course-locations"><Button variant="outline" size="sm">Course Locations</Button></Link>
           </div>
+        </Card>
+
+        <Card className="p-6 space-y-3">
+          <h2 className="text-lg font-bold flex items-center gap-2">
+            <Database className="h-5 w-5 text-primary" />
+            Bulk Ingestion
+          </h2>
+          <p className="text-sm text-muted-foreground">
+            Synchronize all 1,100+ CRICOS providers at once to detect new institutions or metadata changes.
+          </p>
+          <Button 
+            variant="outline" 
+            className="border-emerald-500/40 text-emerald-600 hover:bg-emerald-500/5 gap-2"
+            onClick={() => syncAllMutation.mutate()}
+            disabled={syncAllMutation.isPending}
+          >
+            {syncAllMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
+            Sync All Institutions
+          </Button>
         </Card>
 
         <Card className="p-6 space-y-3">

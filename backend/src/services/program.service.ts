@@ -10,29 +10,57 @@ export interface ProgramQuery {
   level?: string;
   field?: string;
   campusMode?: string;
+  city?: string;
   universitySlug?: string;
+  sortBy?: string;
+  sortOrder?: 'asc' | 'desc';
 }
 
 export const programService = {
   async getAll(query: ProgramQuery) {
-    const { page = 1, limit = 12, search, level, field, campusMode, universitySlug } = query;
+    const { 
+      page = 1, 
+      limit = 12, 
+      search, 
+      level, 
+      field, 
+      campusMode, 
+      city,
+      universitySlug,
+      sortBy = 'name',
+      sortOrder = 'asc'
+    } = query;
+
     const filter: Record<string, unknown> = {};
 
     if (search) filter.$text = { $search: search };
-    if (level) filter.level = level;
-    if (field) filter.field = { $regex: field, $options: 'i' };
-    if (campusMode) filter.campusMode = campusMode;
+    if (level && level !== 'all') filter.level = level;
+    if (field && field !== 'all') filter.field = { $regex: field, $options: 'i' };
+    if (campusMode && campusMode !== 'all') filter.campusMode = campusMode;
+    if (city && city !== 'all') filter.city = city;
     if (universitySlug) filter.universitySlug = universitySlug;
+
+    const sort: Record<string, any> = {};
+    const allowedSorts = ['name', 'level', 'universityName', 'updatedAt'];
+    const sortField = allowedSorts.includes(sortBy) ? sortBy : 'name';
+    sort[sortField] = sortOrder === 'desc' ? -1 : 1;
 
     const skip = (page - 1) * limit;
     const [programs, total] = await Promise.all([
-      Program.find(filter).sort({ name: 1 }).skip(skip).limit(limit),
+      Program.find(filter).sort(sort).skip(skip).limit(limit),
       Program.countDocuments(filter),
     ]);
 
     return {
       programs,
-      pagination: { page, limit, total, pages: Math.ceil(total / limit) },
+      pagination: { 
+        page, 
+        limit, 
+        total, 
+        pages: Math.ceil(total / limit),
+        hasNextPage: page < Math.ceil(total / limit),
+        hasPrevPage: page > 1
+      },
     };
   },
 
@@ -95,5 +123,9 @@ export const programService = {
 
   async getFields(): Promise<string[]> {
     return Program.distinct('field');
+  },
+
+  async getCities(): Promise<string[]> {
+    return Program.distinct('city');
   },
 };

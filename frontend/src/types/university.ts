@@ -13,14 +13,19 @@ export interface University {
   logo?: string;
   establishedYear?: number;
   ranking?: number;
-  type?: 'public' | 'private';
+  rankingBand?: string;
+  type?: 'public' | 'private'; // @deprecated
   campuses?: string[];
   internationalStudents?: boolean;
   cricosProviderCode?: string;
   institutionType?: string;
   institutionCapacity?: number;
   cricosSyncStatus?: string;
+  lastSyncError?: string;
+  lastSyncRunId?: string;
   lastCricosSyncedAt?: string;
+  programCount?: number;
+  averageEstimatedTotalCostAud?: number;
   sourceMetadata?: {
     sourceName?: string;
     fetchedAt?: string;
@@ -39,7 +44,9 @@ export interface CreateUniversityPayload {
   logo?: string;
   establishedYear?: number;
   ranking?: number;
-  type: 'public' | 'private';
+  type?: 'public' | 'private';
   campuses?: string[];
   internationalStudents?: boolean;
+  cricosProviderCode?: string;
+  officialWebsite?: string;
 }

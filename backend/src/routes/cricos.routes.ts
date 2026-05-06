@@ -13,6 +13,7 @@ router.post('/inspect-fields', cricosController.inspectFields);
 router.post('/preview-provider', cricosController.previewProvider);
 router.post('/sync-provider', cricosController.syncProvider);
 router.post('/recheck-provider', cricosController.recheckProvider);
+router.post('/sync-all-institutions', cricosController.syncAllInstitutions);
 router.post('/sync-university/:universityId', cricosController.syncUniversity);
 router.get('/sync-runs', cricosController.getSyncRuns);
 router.get('/sync-runs/:id', cricosController.getSyncRunDetail);

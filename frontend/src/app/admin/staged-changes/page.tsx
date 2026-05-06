@@ -5,7 +5,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   CheckCircle2, XCircle, RefreshCw, AlertCircle, Loader2, ChevronDown, AlertTriangle, LinkIcon, FileJson, Sparkles, Zap,
-  Square, CheckSquare, ChevronLeft, ChevronRight, Filter
+  Square, CheckSquare, ChevronLeft, ChevronRight, Filter, BookOpen, Building2
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -24,6 +24,8 @@ const STATUSES = ['pending', 'approved', 'rejected', 'edited'];
 
 const CONFIDENCE_COLOR = (c: number) =>
   c >= 0.9 ? 'text-emerald-400' : c >= 0.7 ? 'text-amber-400' : 'text-red-400';
+
+import { DiffViewer } from '@/components/admin/DiffViewer';
 
 export default function StagedChangesPage() {
   const qc = useQueryClient();
@@ -215,7 +217,8 @@ export default function StagedChangesPage() {
         </div>
         
         <Select value={status} onValueChange={(v) => { setStatus(v ?? 'pending'); setPage(1); }}>
-          <SelectTrigger className="w-36 rounded-xl bg-card">
+          <SelectTrigger className="w-[150px]">
+            <CheckCircle2 className="h-3.5 w-3.5 text-muted-foreground mr-1" />
             <SelectValue placeholder="Status" />
           </SelectTrigger>
           <SelectContent>
@@ -224,7 +227,8 @@ export default function StagedChangesPage() {
         </Select>
 
         <Select value={entityType} onValueChange={(v) => { setEntityType(v ?? 'all'); setPage(1); }}>
-          <SelectTrigger className="w-44 rounded-xl bg-card">
+          <SelectTrigger className="w-[180px]">
+            <BookOpen className="h-3.5 w-3.5 text-muted-foreground mr-1" />
             <SelectValue placeholder="Entity type" />
           </SelectTrigger>
           <SelectContent>
@@ -233,7 +237,8 @@ export default function StagedChangesPage() {
         </Select>
 
         <Select value={universityId} onValueChange={(v) => { setUniversityId(v ?? 'all'); setPage(1); }}>
-          <SelectTrigger className="w-56 rounded-xl bg-card">
+          <SelectTrigger className="w-[220px]">
+            <Building2 className="h-3.5 w-3.5 text-muted-foreground mr-1" />
             <SelectValue placeholder="University" />
           </SelectTrigger>
           <SelectContent>
@@ -485,27 +490,14 @@ export default function StagedChangesPage() {
                           </div>
                         </div>
                       )}
-
-                      {/* Raw Diff/JSON */}
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 px-5 py-4 bg-muted/5">
-                        {(c.oldValue || c.diff) && (
-                          <div>
-                            <p className="text-xs text-muted-foreground font-medium mb-2 flex items-center gap-1">
-                              <FileJson className="h-3.5 w-3.5" /> {c.diff ? 'Old Value / Diff' : 'Old Value'}
-                            </p>
-                            <pre className="text-xs bg-red-500/5 border border-red-500/20 rounded-lg p-3 overflow-auto max-h-60 text-red-300 whitespace-pre-wrap font-mono">
-                              {JSON.stringify(c.diff || c.oldValue, null, 2)}
-                            </pre>
-                          </div>
-                        )}
-                        <div className={c.oldValue || c.diff ? '' : 'col-span-2'}>
-                          <p className="text-xs text-muted-foreground font-medium mb-2 flex items-center gap-1">
-                            <FileJson className="h-3.5 w-3.5" /> New Value
-                          </p>
-                          <pre className="text-xs bg-emerald-500/5 border border-emerald-500/20 rounded-lg p-3 overflow-auto max-h-60 text-emerald-300 whitespace-pre-wrap font-mono">
-                            {JSON.stringify(c.newValue, null, 2)}
-                          </pre>
-                        </div>
+                      
+                      {/* Diff Viewer */}
+                      <div className="px-5 py-6 bg-muted/10 border-b border-border/30">
+                        <DiffViewer 
+                          diff={c.diff}
+                          oldValue={c.oldValue}
+                          newValue={c.newValue}
+                        />
                       </div>
 
                       {c.sourceUrl && !c.sourceEvidence && (
@@ -534,6 +526,7 @@ export default function StagedChangesPage() {
               <p className="text-xs text-muted-foreground">
                 Showing page <span className="font-semibold text-foreground">{page}</span> of <span className="font-semibold text-foreground">{meta.pages}</span> ({meta.total} results)
               </p>
+
               <div className="flex items-center gap-2">
                 <Button
                   variant="outline"
