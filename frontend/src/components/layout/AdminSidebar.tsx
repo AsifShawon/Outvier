@@ -36,6 +36,8 @@ const navItems = [
   { href: '/admin/imports', label: 'Seed Imports', icon: FileInput },
   { href: '/admin/data-sources', label: 'Data Sources', icon: Database },
   { href: '/admin/ingestion-jobs', label: 'AI Ingestion', icon: BrainCircuit },
+  { href: '/admin/cricos', label: 'CRICOS Sync', icon: RefreshCw },
+  { href: '/admin/cricos/runs', label: 'CRICOS Runs', icon: Database },
   { href: '/admin/sync', label: 'Sync Jobs', icon: RefreshCw },
   { href: '/admin/staged-changes', label: 'Staged Changes', icon: GitCompare },
   { href: 'http://localhost:3001', label: 'Analytics', icon: BarChart3, external: true },

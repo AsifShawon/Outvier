@@ -193,6 +193,15 @@ export default function ProgramDetailPage() {
                         </div>
                       </div>
                     )}
+                    {program.cricosCourseCode && (
+                      <div className="flex items-center gap-3">
+                        <CheckCircle2 className="h-4 w-4 text-primary shrink-0" />
+                        <div>
+                          <dt className="text-[10px] text-muted-foreground uppercase tracking-wide">CRICOS Code</dt>
+                          <dd className="text-sm font-medium">{program.cricosCourseCode}</dd>
+                        </div>
+                      </div>
+                    )}
                   </dl>
                 </div>
 
@@ -212,6 +221,18 @@ export default function ProgramDetailPage() {
                   >
                     <Globe className="h-4 w-4 text-muted-foreground" />
                     View on University Site
+                  </a>
+                )}
+
+                {program.cricosCourseCode && (
+                  <a
+                    href={`https://cricos.education.gov.au/course/coursedetails.aspx?coursecode=${program.cricosCourseCode}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center justify-center gap-2 w-full rounded-xl border border-primary/20 bg-primary/5 p-4 text-sm font-medium hover:bg-primary/10 transition-colors text-primary"
+                  >
+                    <ExternalLink className="h-4 w-4" />
+                    Official CRICOS Page
                   </a>
                 )}
 

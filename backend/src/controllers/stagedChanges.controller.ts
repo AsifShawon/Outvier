@@ -7,6 +7,10 @@ import { RankingRecord } from '../models/RankingRecord.model';
 import { TuitionRecord } from '../models/TuitionRecord.model';
 import { OutcomeMetric } from '../models/OutcomeMetric.model';
 import { Scholarship } from '../models/Scholarship.model';
+import { Campus } from '../models/Campus.model';
+import { ProgramLocation } from '../models/ProgramLocation.model';
+import { University } from '../models/University.model';
+import { Program } from '../models/Program.model';
 
 export const stagedChangesController = {
   /** GET /api/v1/admin/staged-changes
@@ -302,6 +306,66 @@ async function applyApprovedChange(
         await Scholarship.create([value], options);
       } else if (entityId) {
         await Scholarship.findByIdAndUpdate(entityId, { $set: value }, options);
+      }
+      break;
+    
+    case 'campus':
+      const campusData = { ...newValue };
+      if (campusData.cricosProviderCode && !campusData.university) {
+        const uni = await University.findOne({ cricosProviderCode: campusData.cricosProviderCode }).session(session || null);
+        if (uni) {
+          campusData.university = uni._id;
+        } else {
+          throw new Error(`University with CRICOS Provider Code ${campusData.cricosProviderCode} not found. Please sync and approve the University first.`);
+        }
+      }
+
+      if (changeType === 'create') {
+        await Campus.create([campusData], options);
+      } else if (changeType === 'update' && entityId) {
+        await Campus.findByIdAndUpdate(entityId, { $set: campusData }, options);
+      } else if (changeType === 'delete' && entityId) {
+        await Campus.findByIdAndDelete(entityId, options);
+      }
+      break;
+
+    case 'program':
+      const programData = { ...newValue };
+      if (programData.cricosProviderCode && (!programData.university || !programData.universityName || !programData.universitySlug)) {
+        const uni = await University.findOne({ cricosProviderCode: programData.cricosProviderCode }).session(session || null).lean();
+        
+        // DEBUG LOGGING TO FILE
+        const fs = require('fs');
+        const logPath = require('path').join(process.cwd(), 'debug_staged_approval.log');
+        fs.appendFileSync(logPath, `[${new Date().toISOString()}] Approving program for code: ${programData.cricosProviderCode}\n`);
+        fs.appendFileSync(logPath, `Found Uni: ${uni ? uni.name : 'NULL'}\n`);
+        
+        if (uni) {
+          programData.university = uni._id;
+          programData.universityName = uni.name;
+          programData.universitySlug = uni.slug;
+          fs.appendFileSync(logPath, `Injected ID: ${uni._id}\n`);
+        } else {
+          throw new Error(`University with CRICOS Provider Code ${programData.cricosProviderCode} not found. Please sync and approve the University first.`);
+        }
+      }
+
+      if (changeType === 'create') {
+        await Program.create([programData], options);
+      } else if (changeType === 'update' && entityId) {
+        await Program.findByIdAndUpdate(entityId, { $set: programData }, options);
+      } else if (changeType === 'delete' && entityId) {
+        await Program.findByIdAndDelete(entityId, options);
+      }
+      break;
+
+    case 'programLocation':
+      if (changeType === 'create') {
+        await ProgramLocation.create([newValue], options);
+      } else if (changeType === 'update' && entityId) {
+        await ProgramLocation.findByIdAndUpdate(entityId, { $set: newValue }, options);
+      } else if (changeType === 'delete' && entityId) {
+        await ProgramLocation.findByIdAndDelete(entityId, options);
       }
       break;
 

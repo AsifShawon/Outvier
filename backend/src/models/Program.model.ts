@@ -10,6 +10,9 @@ export interface IDataQuality {
   lastFetchedAt?: Date;
   lastApprovedAt?: Date;
   sourceUrl?: string;
+  sourceName?: string;
+  sourceResourceId?: string;
+  importMethod?: 'cricos_api' | 'ai_ingestion' | 'manual' | 'csv';
 }
 
 // Per-field source evidence
@@ -135,6 +138,12 @@ export interface IProgram extends Document {
   domesticAvailable?: boolean;
   internationalAvailable?: boolean;
   estimatedCompletionTime?: string;
+  durationWeeks?: number;
+  tuitionFeeAud?: number;
+  nonTuitionFeeAud?: number;
+  estimatedTotalCourseCostAud?: number;
+  workComponent?: string;
+  courseLanguage?: string;
   courseStructure?: ICourseStructure;
   academicEntryRequirements?: string;
   minimumGPA?: string;
@@ -310,6 +319,13 @@ const ProgramSchema = new Schema<IProgram>(
       index: true,
     },
     dataQuality: DataQualitySchema,
+    // CRICOS specific fields
+    durationWeeks: Number,
+    tuitionFeeAud: Number,
+    nonTuitionFeeAud: Number,
+    estimatedTotalCourseCostAud: Number,
+    workComponent: String,
+    courseLanguage: String,
     // AI Ingestion fields
     degreeLevel: String,
     faculty: String,

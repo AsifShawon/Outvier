@@ -75,8 +75,14 @@ export default function UniversityDetailPage() {
                     <div className="flex items-center gap-4 text-white/70 text-sm">
                       <span className="flex items-center gap-1">
                         <MapPin className="h-3.5 w-3.5" />
-                        {university.location}
+                        {university.city || university.location}, {university.state}
                       </span>
+                      {university.cricosProviderCode && (
+                        <span className="flex items-center gap-1">
+                          <CheckCircle2 className="h-3.5 w-3.5 text-green-400" />
+                          CRICOS: {university.cricosProviderCode}
+                        </span>
+                      )}
                       {university.establishedYear && (
                         <span className="flex items-center gap-1">
                           <Calendar className="h-3.5 w-3.5" />
@@ -137,7 +143,7 @@ export default function UniversityDetailPage() {
                     {[
                       { label: 'State', value: university.state },
                       { label: 'Type', value: university.type === 'public' ? 'Public University' : 'Private University' },
-                      { label: 'Campuses', value: university.campuses?.join(', ') || 'N/A' },
+                      { label: 'CRICOS Code', value: university.cricosProviderCode || 'N/A' },
                       { label: 'International Students', value: university.internationalStudents ? 'Yes' : 'Limited' },
                     ].map((item) => (
                       <div key={item.label} className="flex justify-between items-start gap-2">
@@ -166,6 +172,13 @@ export default function UniversityDetailPage() {
                     Browse All Programs
                   </Button>
                 </Link>
+
+                {university.sourceMetadata?.sourceName === 'CRICOS' && (
+                  <div className="p-3 rounded-lg bg-muted/30 border border-border/40 text-[10px] text-muted-foreground text-center">
+                    Data source: Official CRICOS / data.gov.au
+                    {university.sourceMetadata.fetchedAt && ` • Last synced: ${new Date(university.sourceMetadata.fetchedAt).toLocaleDateString()}`}
+                  </div>
+                )}
               </aside>
             )}
           </div>

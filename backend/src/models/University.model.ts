@@ -17,8 +17,14 @@ export interface ICampus {
 // Source metadata sub-document
 export interface ISourceMetadata {
   createdBy?: string;
-  createdVia: 'csv' | 'manual' | 'connector' | 'ai_ingestion';
+  createdVia: 'csv' | 'manual' | 'connector' | 'ai_ingestion' | 'cricos_api';
+  sourceName?: string;
+  sourceResourceId?: string;
+  sourceUrl?: string;
+  fetchedAt?: Date;
   lastVerifiedAt?: Date;
+  confidence?: number;
+  importMethod?: 'manual' | 'csv' | 'cricos_api' | 'connector';
   notes?: string;
 }
 
@@ -74,8 +80,14 @@ const CampusSchema = new Schema<ICampus>(
 const SourceMetadataSchema = new Schema<ISourceMetadata>(
   {
     createdBy: String,
-    createdVia: { type: String, enum: ['csv', 'manual', 'connector', 'ai_ingestion'], default: 'manual' },
+    createdVia: { type: String, enum: ['csv', 'manual', 'connector', 'ai_ingestion', 'cricos_api'], default: 'manual' },
+    sourceName: String,
+    sourceResourceId: String,
+    sourceUrl: String,
+    fetchedAt: Date,
     lastVerifiedAt: Date,
+    confidence: Number,
+    importMethod: { type: String, enum: ['manual', 'csv', 'cricos_api', 'connector'] },
     notes: String,
   },
   { _id: false }

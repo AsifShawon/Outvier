@@ -4,7 +4,7 @@
  */
 import mongoose, { Document, Schema, Types } from 'mongoose';
 
-export type EntityType = 'university' | 'program' | 'ranking' | 'tuition' | 'outcome' | 'scholarship';
+export type EntityType = 'university' | 'program' | 'ranking' | 'tuition' | 'outcome' | 'scholarship' | 'campus' | 'programLocation' | 'cricosRaw';
 export type ChangeType = 'create' | 'update' | 'delete' | 'possible_duplicate';
 export type StagedChangeStatus = 'pending' | 'approved' | 'rejected' | 'edited';
 
@@ -52,7 +52,7 @@ const StagedChangeSchema = new Schema<IStagedChange>(
   {
     entityType: {
       type: String,
-      enum: ['university', 'program', 'ranking', 'tuition', 'outcome', 'scholarship'],
+      enum: ['university', 'program', 'ranking', 'tuition', 'outcome', 'scholarship', 'campus', 'programLocation', 'cricosRaw'],
       required: true,
     },
     entityId: { type: Schema.Types.ObjectId },

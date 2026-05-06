@@ -20,6 +20,15 @@ export interface Program {
   careerPathways?: string[];
   campusMode: CampusMode;
   website?: string;
+  cricosCourseCode?: string;
+  cricosProviderCode?: string;
+  durationWeeks?: number;
+  totalEstimatedCost?: number;
+  dataQuality?: {
+    sourceName?: string;
+    lastFetchedAt?: string;
+  };
+
   createdAt: string;
   updatedAt: string;
 }

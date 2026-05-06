@@ -12,6 +12,12 @@ export interface University {
   type: 'public' | 'private';
   campuses?: string[];
   internationalStudents?: boolean;
+  cricosProviderCode?: string;
+  sourceMetadata?: {
+    sourceName?: string;
+    fetchedAt?: string;
+  };
+
   createdAt: string;
   updatedAt: string;
 }

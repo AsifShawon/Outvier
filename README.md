@@ -83,6 +83,7 @@ npm run dev
 - ✅ **Automated Data Sync:** Connectors that pull the latest data from QS Rankings and QILT Outcomes.
 - ✅ **Staged Changes System:** Review and approve automated data updates before they go live.
 - ✅ **Bulk CSV Upload:** High-speed ingestion for university and program data.
+- ✅ **CRICOS Official Sync:** Direct integration with data.gov.au CKAN API for official Australian provider and course data.
 - ✅ **Rankings & Scholarships CRUD:** Manage global rankings and financial aid records through a dedicated admin UI.
 
 ---
