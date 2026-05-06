@@ -30,10 +30,10 @@ const valueProps = [
 ];
 
 const journeySteps = [
-  { number: '1', title: 'Discover Countries', description: 'Explore top study destinations, their culture, and post-study work opportunities.', icon: Map },
-  { number: '2', title: 'Compare Universities', description: 'Filter universities by ranking, location, public/private status, and campus life.', icon: Building },
-  { number: '3', title: 'Choose Programs', description: 'Find the exact degree, check intakes, tuition fees, and duration.', icon: BookOpen },
-  { number: '4', title: 'Estimate Costs', description: 'Use our calculators to plan your budget confidently before you apply.', icon: Calculator },
+  { number: '1', title: 'Explore States', description: 'Discover the best Australian states for your studies, lifestyle, and career goals.', icon: Map },
+  { number: '2', title: 'Compare Universities', description: 'Filter Australian institutions by ranking, location, and campus life.', icon: Building },
+  { number: '3', title: 'Choose Programs', description: 'Find the exact degree, check intakes, and tuition fees across Australia.', icon: BookOpen },
+  { number: '4', title: 'Estimate Costs', description: 'Use our calculators to plan your Australian study budget confidently.', icon: Calculator },
 ];
 
 export default function HomePage() {
@@ -146,36 +146,35 @@ export default function HomePage() {
         <div className="container mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-end mb-12">
             <div>
-              <h2 className="text-3xl md:text-4xl font-bold font-display text-slate-900 dark:text-white mb-4">Featured Destinations</h2>
-              <p className="text-slate-500 dark:text-slate-400">Explore the most popular countries for international students.</p>
+              <h2 className="text-3xl md:text-4xl font-bold font-display text-slate-900 dark:text-white mb-4">Featured Locations</h2>
+              <p className="text-slate-500 dark:text-slate-400">Explore the best Australian regions for international students.</p>
             </div>
             <Link href="/universities" className="hidden md:flex items-center text-primary-600 dark:text-primary-400 font-semibold hover:underline">
-              View all countries <ArrowRight className="w-4 h-4 ml-2" />
+              View all regions <ArrowRight className="w-4 h-4 ml-2" />
             </Link>
           </div>
 
           <div className="grid md:grid-cols-3 gap-6">
             <FeaturedCountryCard 
-              country="Australia"
-              image="https://images.unsplash.com/photo-1523482580672-f109ba8cb9be?q=80&w=2130&auto=format&fit=crop"
-              budget="$25k - $45k"
-              programs="1,200+"
+              country="New South Wales"
+              image="https://images.unsplash.com/photo-1506973035872-a4ec16b8e8d9?q=80&w=2070&auto=format&fit=crop"
+              budget="$30k - $50k"
+              programs="500+"
+              intakes="Feb, Jul"
+            />
+            <FeaturedCountryCard 
+              country="Victoria"
+              image="https://images.unsplash.com/photo-1514395462725-fb4566210144?q=80&w=2071&auto=format&fit=crop"
+              budget="$28k - $48k"
+              programs="450+"
+              intakes="Feb, Jul"
+            />
+            <FeaturedCountryCard 
+              country="Queensland"
+              image="https://images.unsplash.com/photo-1554350342-9443214a937c?q=80&w=2070&auto=format&fit=crop"
+              budget="$25k - $42k"
+              programs="300+"
               intakes="Feb, Jul, Nov"
-            />
-            {/* Placeholder countries for visual appeal */}
-            <FeaturedCountryCard 
-              country="Canada"
-              image="https://images.unsplash.com/photo-1490623970972-ae8bb3da443e?q=80&w=2069&auto=format&fit=crop"
-              budget="$20k - $40k"
-              programs="900+"
-              intakes="Jan, May, Sep"
-            />
-            <FeaturedCountryCard 
-              country="United Kingdom"
-              image="https://images.unsplash.com/photo-1513635269975-5969336cd122?q=80&w=2070&auto=format&fit=crop"
-              budget="$22k - $42k"
-              programs="1,500+"
-              intakes="Jan, Sep"
             />
           </div>
           <div className="mt-8 text-center md:hidden">
@@ -284,19 +283,19 @@ export default function HomePage() {
             <TestimonialCard 
               quote="Outvier made comparing tuition fees so easy. I saved thousands by finding a program that fit my budget exactly."
               name="Sarah K."
-              country="Australia"
+              country="Sydney"
               initials="SK"
             />
             <TestimonialCard 
               quote="The side-by-side comparison tool helped me decide between two amazing universities in minutes instead of weeks."
               name="Michael T."
-              country="Canada"
+              country="Melbourne"
               initials="MT"
             />
             <TestimonialCard 
               quote="I loved how I could see the actual total cost of living, not just the tuition. It helped me prepare my finances."
               name="Elena R."
-              country="UK"
+              country="Brisbane"
               initials="ER"
             />
           </div>

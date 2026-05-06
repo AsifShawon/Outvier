@@ -18,6 +18,7 @@ import publicAnalyticsRoutes from './routes/publicAnalytics.routes';
 import trackerRoutes from './routes/applicationTracker.routes';
 import ingestionRoutes from './routes/ingestion.routes';
 import cricosRoutes from './routes/cricos.routes';
+import budgetPlanRoutes from './routes/budgetPlan.routes';
 import { errorHandler, notFound } from './middleware/error.middleware';
 
 dotenv.config();
@@ -47,6 +48,7 @@ app.use('/api/v1/copilot', aiRoutes);
 app.use('/api/v1/recommendations', recommendationsRoutes);
 app.use('/api/v1/analytics', publicAnalyticsRoutes);
 app.use('/api/v1/tracker', trackerRoutes);
+app.use('/api/v1/budget', budgetPlanRoutes);
 
 // Admin routes (all require auth + admin role)
 app.use('/api/v1/admin', adminRoutes);

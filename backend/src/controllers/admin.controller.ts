@@ -2,6 +2,7 @@ import { Request, Response, NextFunction } from 'express';
 import { Types } from 'mongoose';
 import { universityService } from '../services/university.service';
 import { programService } from '../services/program.service';
+import { aiExtractionService } from '../services/aiExtraction.service';
 import { University } from '../models/University.model';
 import { Program } from '../models/Program.model';
 import { User } from '../models/User.model';
@@ -12,6 +13,8 @@ import { StagedChange } from '../models/StagedChange.model';
 import { CricosSyncRun } from '../models/CricosSyncRun.model';
 import { ProgramLocation } from '../models/ProgramLocation.model';
 import { IngestionJob } from '../models/IngestionJob.model';
+import { Activity } from '../models/Activity.model';
+import { ApplicationTracker } from '../models/ApplicationTracker.model';
 import { programDiscoveryQueue, cricosSyncQueue } from '../jobs/queue';
 import { UniversityIngestionJobSchema } from '../schemas/ingestion.schema';
 
@@ -23,6 +26,9 @@ export const adminController = {
         totalUniversities, 
         totalPrograms, 
         totalCampuses,
+        totalUsers,
+        totalScholarships,
+        totalApplications,
         pendingStagedChanges,
         lastCricosSync,
         failedSyncRuns
@@ -30,6 +36,9 @@ export const adminController = {
         University.countDocuments(),
         Program.countDocuments(),
         ProgramLocation.countDocuments(),
+        User.countDocuments({ role: 'student' }),
+        Scholarship.countDocuments(),
+        ApplicationTracker.countDocuments(),
         StagedChange.countDocuments({ status: 'pending' }),
         CricosSyncRun.findOne().sort({ startedAt: -1 }).lean(),
         CricosSyncRun.countDocuments({ status: 'failed' }),
@@ -46,18 +55,74 @@ export const adminController = {
         { $sort: { count: -1 } },
       ]);
 
+      // Programs by Field
+      const programsByField = await Program.aggregate([
+        { $group: { _id: '$fieldOfStudy', count: { $sum: 1 } } },
+        { $sort: { count: -1 } },
+        { $limit: 8 }
+      ]);
+
+      // User signups last 30 days
+      const thirtyDaysAgo = new Date();
+      thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+      const userSignups = await User.aggregate([
+        { $match: { createdAt: { $gte: thirtyDaysAgo }, role: 'student' } },
+        {
+          $group: {
+            _id: { $dateToString: { format: '%Y-%m-%d', date: '$createdAt' } },
+            count: { $sum: 1 }
+          }
+        },
+        { $sort: { _id: 1 } }
+      ]);
+
       res.status(200).json({
         success: true,
         data: { 
           totalUniversities, 
           totalPrograms, 
           totalCampuses,
+          totalUsers,
+          totalScholarships,
+          totalApplications,
           pendingStagedChanges,
           lastCricosSync,
           failedSyncRuns,
           programsByLevel, 
-          universitiesByState 
+          universitiesByState,
+          programsByField,
+          userSignups
         },
+      });
+    } catch (error) {
+      next(error);
+    }
+  },
+
+  // Activities
+  async getActivities(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const activities = await Activity.find().sort({ createdAt: -1 }).limit(10);
+      res.status(200).json({ success: true, data: activities });
+    } catch (error) {
+      next(error);
+    }
+  },
+
+  // Recent additions
+  async getRecentAdditions(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const [universities, programs, users, stagedChanges, scholarships] = await Promise.all([
+        University.find().sort({ createdAt: -1 }).limit(5).select('name state status createdAt').lean(),
+        Program.find().sort({ createdAt: -1 }).limit(5).select('name level status createdAt').lean(),
+        User.find({ role: 'student' }).sort({ createdAt: -1 }).limit(5).select('username email createdAt').lean(),
+        StagedChange.find().sort({ createdAt: -1 }).limit(5).select('entityType entityName status createdAt').lean(),
+        Scholarship.find().sort({ createdAt: -1 }).limit(5).select('title universityName status createdAt').lean(),
+      ]);
+
+      res.status(200).json({
+        success: true,
+        data: { universities, programs, users, stagedChanges, scholarships }
       });
     } catch (error) {
       next(error);
@@ -277,17 +342,54 @@ export const adminController = {
   async getRankings(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       const { page = '1', limit = '50', q } = req.query as Record<string, string>;
-      const filter: Record<string, any> = {};
       
+      const aggregate: any[] = [
+        {
+          $lookup: {
+            from: 'universities',
+            localField: 'universityId',
+            foreignField: '_id',
+            as: 'university'
+          }
+        },
+        { $unwind: '$university' }
+      ];
+
+      if (q) {
+        aggregate.push({
+          $match: {
+            $or: [
+              { 'university.name': { $regex: q, $options: 'i' } },
+              { source: { $regex: q, $options: 'i' } }
+            ]
+          }
+        });
+      }
+
       const skip = (parseInt(page) - 1) * parseInt(limit);
-      const [rankings, total] = await Promise.all([
-        RankingRecord.find(filter)
-          .populate('universityId', 'name slug')
-          .sort({ year: -1, ranking: 1 })
-          .skip(skip)
-          .limit(parseInt(limit)),
-        RankingRecord.countDocuments(filter),
+      
+      const [results] = await RankingRecord.aggregate([
+        {
+          $facet: {
+            data: [
+              ...aggregate,
+              { $sort: { year: -1, globalRank: 1 } },
+              { $skip: skip },
+              { $limit: parseInt(limit) }
+            ],
+            totalCount: [
+              ...aggregate,
+              { $count: 'count' }
+            ]
+          }
+        }
       ]);
+
+      const rankings = results.data.map((r: any) => ({
+        ...r,
+        universityId: r.university // keep compatible with frontend expectation
+      }));
+      const total = results.totalCount[0]?.count || 0;
 
       res.json({ 
         success: true, 
@@ -329,39 +431,70 @@ export const adminController = {
       }
       
       const university = ranking.universityId as any;
-      
-      // Trigger sync job
-      const { rankingSyncQueue } = require('../jobs/queue');
-      await rankingSyncQueue.add('recheck-single', {
-        rankingId: ranking._id,
-        universityId: university._id,
-        universityName: university.name,
-        source: ranking.source,
-        year: ranking.year
-      });
+      const results = await aiExtractionService.extractRankingsForUniversities(
+        [{ id: university._id.toString(), name: university.name }],
+        ranking.source as any
+      );
 
-      res.json({ success: true, message: 'Recheck job queued' });
+      if (results.length > 0) {
+        const r = results[0];
+        const updated = await RankingRecord.findOneAndUpdate(
+          { universityId: university._id, source: ranking.source, year: r.year },
+          { 
+            globalRank: r.globalRank, 
+            nationalRank: r.nationalRank,
+            confidence: r.confidence,
+            fetchedAt: new Date(),
+            status: 'approved' 
+          },
+          { upsert: true, new: true }
+        );
+
+        // Sync to university model
+        if (updated.year === new Date().getFullYear() || updated.year === new Date().getFullYear() + 1) {
+          await University.findByIdAndUpdate(university._id, { ranking: updated.globalRank });
+        }
+
+        res.json({ success: true, message: 'Ranking updated via AI', data: updated });
+      } else {
+        res.status(500).json({ success: false, message: 'AI failed to find ranking' });
+      }
     } catch (error) { next(error); }
   },
   async recheckAllRankings(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
-      const rankings = await RankingRecord.find({ source: { $ne: 'Manual' } }).populate('universityId');
-      const { rankingSyncQueue } = require('../jobs/queue');
-      
-      for (const ranking of rankings) {
-        const university = ranking.universityId as any;
-        if (university) {
-          await rankingSyncQueue.add('recheck-single', {
-            rankingId: ranking._id,
-            universityId: university._id,
-            universityName: university.name,
-            source: ranking.source,
-            year: ranking.year
-          });
+      const unis = await University.find({ status: 'active' }).select('_id name');
+      const results = await aiExtractionService.extractRankingsForUniversities(
+        unis.map(u => ({ id: u._id.toString(), name: u.name })),
+        'QS'
+      );
+
+      const updatedRecords = [];
+      for (const r of results) {
+        const record = await RankingRecord.findOneAndUpdate(
+          { universityId: r.universityId, source: 'QS', year: r.year },
+          { 
+            globalRank: r.globalRank, 
+            nationalRank: r.nationalRank,
+            confidence: r.confidence,
+            fetchedAt: new Date(),
+            status: 'approved' 
+          },
+          { upsert: true, new: true }
+        );
+        updatedRecords.push(record);
+
+        // Sync to university model
+        if (r.year === new Date().getFullYear() || r.year === new Date().getFullYear() + 1) {
+          await University.findByIdAndUpdate(r.universityId, { ranking: r.globalRank });
         }
       }
 
-      res.json({ success: true, message: `${rankings.length} recheck jobs queued` });
+      res.json({ 
+        success: true, 
+        message: `Successfully enriched ${updatedRecords.length} rankings via AI`,
+        count: updatedRecords.length 
+      });
     } catch (error) { next(error); }
   },
 

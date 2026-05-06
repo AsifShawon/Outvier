@@ -60,7 +60,7 @@ export default function EditProgramPage() {
 
   const { data: uniData } = useQuery({
     queryKey: ['all-universities'],
-    queryFn: () => universitiesApi.getAll({ limit: 100 }),
+    queryFn: () => universitiesApi.adminGetAll({ limit: 100 }),
   });
 
   const { data: programsData, isLoading } = useQuery({
@@ -72,7 +72,7 @@ export default function EditProgramPage() {
     },
   });
 
-  const universities: University[] = uniData?.data?.universities || [];
+  const universities: University[] = uniData?.data?.data || [];
   const program = programsData;
 
   const { register, handleSubmit, setValue, watch, reset, formState: { errors } } = useForm<FormData>({

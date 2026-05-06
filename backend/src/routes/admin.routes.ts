@@ -16,6 +16,8 @@ router.use(protect, adminOnly);
 
 // Dashboard
 router.get('/dashboard/stats', adminController.getStats);
+router.get('/dashboard/activities', adminController.getActivities);
+router.get('/dashboard/recent-additions', adminController.getRecentAdditions);
 router.get('/users', adminController.getUsers);
 
 // University CRUD

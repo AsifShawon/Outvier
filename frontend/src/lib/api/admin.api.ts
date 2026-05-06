@@ -7,6 +7,12 @@ export const adminApi = {
   getStats: (): Promise<{ data: ApiResponse<DashboardStats> }> =>
     api.get('/admin/dashboard/stats'),
 
+  getActivities: (): Promise<{ data: ApiResponse<any[]> }> =>
+    api.get('/admin/dashboard/activities'),
+
+  getRecentAdditions: (): Promise<{ data: ApiResponse<any> }> =>
+    api.get('/admin/dashboard/recent-additions'),
+
   getUsers: () => api.get('/admin/users'),
 
   getUploadHistory: (): Promise<{ data: ApiResponse<UploadJob[]> }> =>

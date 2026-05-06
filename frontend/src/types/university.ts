@@ -1,4 +1,4 @@
-export interface University {
+export type University = {
   _id: string;
   name: string;
   slug: string;
@@ -33,9 +33,9 @@ export interface University {
 
   createdAt: string;
   updatedAt: string;
-}
+};
 
-export interface CreateUniversityPayload {
+export type CreateUniversityPayload = {
   name: string;
   description: string;
   location: string;
@@ -49,4 +49,7 @@ export interface CreateUniversityPayload {
   internationalStudents?: boolean;
   cricosProviderCode?: string;
   officialWebsite?: string;
-}
+};
+
+export const UNIVERSITY_MODEL = "University";
+export default UNIVERSITY_MODEL;

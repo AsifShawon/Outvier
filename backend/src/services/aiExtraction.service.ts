@@ -221,12 +221,9 @@ ${pageText.substring(0, 8000)}
     try {
       const model = await aiService.getModel();
       
-      const invokeOptions: any = {};
-      if (process.env.DEFAULT_AI_PROVIDER === 'ollama') {
-        invokeOptions.format = 'json';
-      } else if (process.env.DEFAULT_AI_PROVIDER === 'groq') {
-        invokeOptions.response_format = { type: 'json_object' };
-      }
+      const invokeOptions = {
+        response_format: { type: 'json_object' }
+      };
 
       const response = await model.invoke([
         new SystemMessage(EXTRACTION_SYSTEM_PROMPT),
@@ -498,5 +495,57 @@ ${pageText.substring(0, 8000)}
     if (!program.intakes?.months?.length) missing.push('Intake Months');
 
     return missing;
+  },
+
+  /**
+   * AI-powered ranking discovery for multiple universities at once.
+   */
+  async extractRankingsForUniversities(
+    universities: Array<{ id: string; name: string }>,
+    source: 'QS' | 'THE' | 'ARWU' = 'QS'
+  ): Promise<Array<{ universityId: string; globalRank: number; nationalRank?: number; year: number; confidence: number }>> {
+    const year = new Date().getFullYear() + (new Date().getMonth() > 5 ? 1 : 0);
+    
+    const prompt = `
+You are a university ranking specialist. 
+Your task: Find the latest ${source} World University Rankings for the following Australian universities for the year ${year}.
+
+Universities:
+${JSON.stringify(universities.map(u => ({ id: u.id, name: u.name })), null, 2)}
+
+STRICT RULES:
+1. Return ONLY a JSON array of objects.
+2. Each object MUST have: "universityId" (from the input), "globalRank" (integer), "nationalRank" (integer or null), "year" (integer: ${year}), and "confidence" (0-1).
+3. If you don't know a rank, use null for that field or omit the university from the result.
+4. DO NOT hallucinate. Use your knowledge of the latest ${source} rankings.
+5. Return ONLY the JSON. No markdown.
+
+FORMAT:
+[
+  { "universityId": "...", "globalRank": 123, "nationalRank": 10, "year": ${year}, "confidence": 0.95 },
+  ...
+]
+`.trim();
+
+    try {
+      const model = await aiService.getModel();
+      const response = await model.invoke([
+        new SystemMessage("You are a helpful assistant that returns only valid JSON."),
+        new HumanMessage(prompt),
+      ]);
+
+      const jsonStr = response.content.toString().trim()
+        .replace(/^```json?\s*/i, '')
+        .replace(/\s*```$/, '')
+        .trim();
+
+      const parsed = JSON.parse(jsonStr);
+      if (!Array.isArray(parsed)) return [];
+
+      return parsed;
+    } catch (err) {
+      console.error('[aiExtraction] Ranking extraction failed:', err);
+      return [];
+    }
   },
 };

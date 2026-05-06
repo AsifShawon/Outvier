@@ -1,16 +1,19 @@
 import api from '../api';
-import { University, CreateUniversityPayload } from '@/types/university';
+import { type University, type CreateUniversityPayload } from '@/types/university';
 import { ApiResponse } from '@/types/api';
 
 export const universitiesApi = {
   getAll: (params?: Record<string, string | number>) =>
     api.get('/universities', { params }),
 
+  adminGetAll: (params?: Record<string, string | number>) =>
+    api.get('/admin/universities', { params }),
+
   getBySlug: (slug: string): Promise<{ data: ApiResponse<University> }> =>
     api.get(`/universities/${slug}`),
 
   getPrograms: (slug: string, params?: Record<string, string | number>) =>
-    api.get(`/programs`, { params: { ...params, universitySlug: slug } }),
+    api.get('/programs', { params: { ...params, universitySlug: slug } }),
 
   getStates: (): Promise<{ data: ApiResponse<string[]> }> =>
     api.get('/universities/states'),

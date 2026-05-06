@@ -355,12 +355,12 @@ async function applyApprovedChange(
         }
       }
 
-      if (changeType === 'create') {
-        const newProgram = new Program();
-        Object.assign(newProgram, programData);
-        await newProgram.save(options);
-      } else if (changeType === 'update' && entityId) {
-        await Program.findByIdAndUpdate(entityId, { $set: programData }, options);
+      if (changeType === 'create' || changeType === 'update') {
+        const progFilter = programData.cricosCourseCode 
+          ? { cricosCourseCode: programData.cricosCourseCode, university: programData.university }
+          : { slug: programData.slug };
+        
+        await Program.findOneAndUpdate(progFilter, { $set: programData }, { upsert: true, ...options });
       } else if (changeType === 'delete' && entityId) {
         await Program.findByIdAndDelete(entityId, options);
       }
@@ -368,24 +368,39 @@ async function applyApprovedChange(
     }
 
     case 'ranking':
-      if (changeType === 'create') {
-        await RankingRecord.create([value], options);
+      if (changeType === 'create' || changeType === 'update') {
+        const rankFilter = { 
+          universityId: (value as any).universityId, 
+          source: (value as any).source, 
+          year: (value as any).year 
+        };
+        await RankingRecord.findOneAndUpdate(rankFilter, { $set: value }, { upsert: true, ...options });
       } else if (entityId) {
         await RankingRecord.findByIdAndUpdate(entityId, { $set: value }, options);
       }
       break;
 
     case 'tuition':
-      if (changeType === 'create') {
-        await TuitionRecord.create([value], options);
+      if (changeType === 'create' || changeType === 'update') {
+        const tuitionFilter = {
+          universityId: (value as any).universityId,
+          programId: (value as any).programId,
+          year: (value as any).year
+        };
+        await TuitionRecord.findOneAndUpdate(tuitionFilter, { $set: value }, { upsert: true, ...options });
       } else if (entityId) {
         await TuitionRecord.findByIdAndUpdate(entityId, { $set: value }, options);
       }
       break;
 
     case 'outcome':
-      if (changeType === 'create') {
-        await OutcomeMetric.create([value], options);
+      if (changeType === 'create' || changeType === 'update') {
+        const outcomeFilter = {
+          universityId: (value as any).universityId,
+          metricName: (value as any).metricName,
+          year: (value as any).year
+        };
+        await OutcomeMetric.findOneAndUpdate(outcomeFilter, { $set: value }, { upsert: true, ...options });
       } else if (entityId) {
         await OutcomeMetric.findByIdAndUpdate(entityId, { $set: value }, options);
       }
@@ -408,11 +423,12 @@ async function applyApprovedChange(
         }
       }
 
-      if (changeType === 'create') {
-        const newCampus = new Campus(campusData);
-        await newCampus.save(options);
-      } else if (changeType === 'update' && entityId) {
-        await Campus.findByIdAndUpdate(entityId, { $set: campusData }, options);
+      if (changeType === 'create' || changeType === 'update') {
+        const campusFilter = campusData.externalId 
+          ? { externalId: campusData.externalId }
+          : { university: campusData.university, name: campusData.name };
+
+        await Campus.findOneAndUpdate(campusFilter, { $set: campusData }, { upsert: true, ...options });
       } else if (changeType === 'delete' && entityId) {
         await Campus.findByIdAndDelete(entityId, options);
       }
@@ -442,10 +458,13 @@ async function applyApprovedChange(
         if (uni) plData.university = uni._id;
       }
 
-      if (changeType === 'create') {
-        await ProgramLocation.create([plData], options);
-      } else if (changeType === 'update' && entityId) {
-        await ProgramLocation.findByIdAndUpdate(entityId, { $set: plData }, options);
+      if (changeType === 'create' || changeType === 'update') {
+        const plFilter = {
+          cricosProviderCode: plData.cricosProviderCode,
+          cricosCourseCode: plData.cricosCourseCode,
+          locationName: plData.locationName
+        };
+        await ProgramLocation.findOneAndUpdate(plFilter, { $set: plData }, { upsert: true, ...options });
       } else if (changeType === 'delete' && entityId) {
         await ProgramLocation.findByIdAndDelete(entityId, options);
       }

@@ -51,10 +51,10 @@ export default function NewProgramPage() {
 
   const { data: uniData } = useQuery({
     queryKey: ['all-universities'],
-    queryFn: () => universitiesApi.getAll({ limit: 100 }),
+    queryFn: () => universitiesApi.adminGetAll({ limit: 100 }),
   });
 
-  const universities: University[] = uniData?.data?.universities || [];
+  const universities: University[] = uniData?.data?.data || [];
 
   const { register, handleSubmit, setValue, watch, formState: { errors } } = useForm<FormData>({
     resolver: zodResolver(schema) as any,

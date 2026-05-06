@@ -25,11 +25,34 @@ export default function AdminRankingsPage() {
   const [search, setSearch] = useState('');
   const [page, setPage] = useState(1);
   const [editingRank, setEditingRank] = useState<any>(null);
+  const [isAdding, setIsAdding] = useState(false);
+  const [addFormData, setAddFormData] = useState<any>({ source: 'QS', year: new Date().getFullYear() });
   const [editFormData, setEditFormData] = useState<any>({});
 
   const { data: rankingsRes, isLoading } = useQuery({
-    queryKey: ['admin-rankings', page],
-    queryFn: () => api.get('/admin/rankings', { params: { page, limit: 50 } }).then(r => r.data),
+    queryKey: ['admin-rankings', page, search],
+    queryFn: () => api.get('/admin/rankings', { params: { page, limit: 50, q: search } }).then(r => r.data),
+  });
+
+  const { data: universitiesRes } = useQuery({
+    queryKey: ['admin-rankings-universities'],
+    queryFn: () => api.get('/admin/universities', { params: { limit: 100 } }).then(r => r.data),
+    enabled: isAdding
+  });
+
+  const universities = universitiesRes?.data || [];
+
+  const createMutation = useMutation({
+    mutationFn: (data: any) => api.post('/admin/rankings', data),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['admin-rankings'] });
+      toast.success('Ranking record created');
+      setIsAdding(false);
+      setAddFormData({ source: 'QS', year: new Date().getFullYear() });
+    },
+    onError: (err: any) => {
+      toast.error(err.response?.data?.message || 'Failed to create ranking');
+    }
   });
 
   const deleteMutation = useMutation({
@@ -43,7 +66,8 @@ export default function AdminRankingsPage() {
   const recheckAllMutation = useMutation({
     mutationFn: () => api.post('/admin/rankings/recheck'),
     onSuccess: (res) => {
-      toast.success(res.data.message || 'Recheck jobs queued');
+      qc.invalidateQueries({ queryKey: ['admin-rankings'] });
+      toast.success(res.data.message || 'Rankings enriched via AI');
     },
     onError: (err: any) => {
       toast.error(err.response?.data?.message || 'Failed to trigger recheck');
@@ -53,7 +77,8 @@ export default function AdminRankingsPage() {
   const recheckMutation = useMutation({
     mutationFn: (id: string) => api.post(`/admin/rankings/${id}/recheck`),
     onSuccess: (res) => {
-      toast.success(res.data.message || 'Recheck job queued');
+      qc.invalidateQueries({ queryKey: ['admin-rankings'] });
+      toast.success(res.data.message || 'Ranking updated');
     },
     onError: (err: any) => {
       toast.error(err.response?.data?.message || 'Failed to trigger recheck');
@@ -85,10 +110,7 @@ export default function AdminRankingsPage() {
 
   const rankings = rankingsRes?.data || [];
   const meta = rankingsRes?.meta;
-  const filteredRankings = rankings.filter((r: any) => 
-    r.universityId?.name?.toLowerCase().includes(search.toLowerCase()) ||
-    r.source?.toLowerCase().includes(search.toLowerCase())
-  );
+  const filteredRankings = rankings; // Search is now done on backend
 
   return (
     <div className="space-y-6">
@@ -98,6 +120,87 @@ export default function AdminRankingsPage() {
           <p className="text-sm text-muted-foreground mt-1">Manage global and national university rankings.</p>
         </div>
         <div className="flex gap-2">
+          <Dialog open={isAdding} onOpenChange={setIsAdding}>
+            <DialogTrigger render={
+              <Button className="gap-2 bg-primary hover:bg-primary/90 text-white shadow-lg shadow-primary/20">
+                <Plus className="h-4 w-4" />
+                Add Ranking
+              </Button>
+            } />
+            <DialogContent className="sm:max-w-[500px]">
+              <DialogHeader>
+                <DialogTitle>Add New Ranking Record</DialogTitle>
+              </DialogHeader>
+              <div className="grid gap-6 py-6">
+                <div className="space-y-2">
+                  <Label>University</Label>
+                  <select 
+                    className="w-full h-10 rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20"
+                    value={addFormData.universityId}
+                    onChange={(e) => setAddFormData({...addFormData, universityId: e.target.value})}
+                  >
+                    <option value="">Select a university...</option>
+                    {universities.map((u: any) => (
+                      <option key={u._id} value={u._id}>{u.name}</option>
+                    ))}
+                  </select>
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label>Source</Label>
+                    <select 
+                      className="w-full h-10 rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20"
+                      value={addFormData.source}
+                      onChange={(e) => setAddFormData({...addFormData, source: e.target.value})}
+                    >
+                      <option value="QS">QS</option>
+                      <option value="THE">THE</option>
+                      <option value="ARWU">ARWU</option>
+                      <option value="National">National</option>
+                    </select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Year</Label>
+                    <Input 
+                      type="number" 
+                      value={addFormData.year} 
+                      onChange={(e) => setAddFormData({...addFormData, year: parseInt(e.target.value)})} 
+                    />
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label>Global Rank</Label>
+                    <Input 
+                      type="number" 
+                      placeholder="e.g. 50"
+                      value={addFormData.globalRank} 
+                      onChange={(e) => setAddFormData({...addFormData, globalRank: parseInt(e.target.value)})} 
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>National Rank</Label>
+                    <Input 
+                      type="number" 
+                      placeholder="e.g. 5"
+                      value={addFormData.nationalRank} 
+                      onChange={(e) => setAddFormData({...addFormData, nationalRank: parseInt(e.target.value)})} 
+                    />
+                  </div>
+                </div>
+              </div>
+              <DialogFooter>
+                <Button variant="outline" onClick={() => setIsAdding(false)}>Cancel</Button>
+                <Button 
+                  onClick={() => createMutation.mutate(addFormData)} 
+                  disabled={createMutation.isPending || !addFormData.universityId}
+                >
+                  {createMutation.isPending ? 'Saving...' : 'Create Ranking'}
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+          
           <Button 
             variant="outline"
             className="gap-2 border-primary/20 hover:bg-primary/5"

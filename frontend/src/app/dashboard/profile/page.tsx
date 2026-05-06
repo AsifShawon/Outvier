@@ -12,7 +12,23 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
-import { InfoIcon, Save, RefreshCw, CheckCircle2 } from 'lucide-react';
+import { 
+  InfoIcon, 
+  Save, 
+  RefreshCw, 
+  CheckCircle2, 
+  ChevronRight, 
+  ChevronLeft,
+  GraduationCap,
+  Globe,
+  Wallet,
+  Target,
+  Settings2,
+  Sparkles
+} from 'lucide-react';
+import { Progress } from '@/components/ui/progress';
+import { motion, AnimatePresence } from 'framer-motion';
+import { cn } from '@/lib/utils';
 
 interface IPriorityWeights {
   affordability: number;
@@ -31,6 +47,11 @@ interface ProfileFormData {
   ieltsScore: number;
   pteScore: number;
   academicBackground: string;
+  careerGoals: {
+    targetRole: string;
+    migrationInterest: boolean;
+    fundingSource: 'self' | 'loan' | 'scholarship' | 'family';
+  };
   priorityWeights: IPriorityWeights;
   priorityPreset: 'balanced' | 'budget' | 'career' | 'prestige' | 'easy-admission' | 'scholarship';
 }
@@ -46,17 +67,21 @@ const LEVELS = [
 ];
 
 const PRESETS = [
-  { id: 'balanced', label: 'Balanced recommendation', description: 'All factors considered equally', weights: { affordability: 25, ranking: 20, employability: 20, admissionMatch: 15, location: 10, scholarship: 10 } },
-  { id: 'budget', label: 'Lower cost matters most', description: 'Prioritises affordable tuition and scholarships', weights: { affordability: 45, scholarship: 20, admissionMatch: 15, employability: 10, location: 5, ranking: 5 } },
-  { id: 'career', label: 'Career outcome matters most', description: 'Prioritises graduate employment and outcomes', weights: { employability: 40, ranking: 20, affordability: 15, admissionMatch: 10, scholarship: 10, location: 5 } },
-  { id: 'prestige', label: 'Better ranking matters most', description: 'Prioritises QS/THE world ranking', weights: { ranking: 45, employability: 20, affordability: 10, admissionMatch: 10, scholarship: 5, location: 10 } },
-  { id: 'easy-admission', label: 'Easier admission matters most', description: 'Prioritises meeting entry requirements', weights: { admissionMatch: 40, affordability: 20, scholarship: 15, location: 10, employability: 10, ranking: 5 } },
-  { id: 'scholarship', label: 'Scholarships matter most', description: 'Prioritises scholarship availability', weights: { scholarship: 35, affordability: 25, admissionMatch: 15, employability: 10, ranking: 10, location: 5 } },
+  { id: 'balanced', label: 'Balanced', description: 'All factors considered equally', icon: Sparkles, weights: { affordability: 25, ranking: 20, employability: 20, admissionMatch: 15, location: 10, scholarship: 10 } },
+  { id: 'budget', label: 'Budget First', description: 'Prioritises affordable tuition', icon: Wallet, weights: { affordability: 45, scholarship: 20, admissionMatch: 15, employability: 10, location: 5, ranking: 5 } },
+  { id: 'career', label: 'Career Growth', description: 'Focus on graduate outcomes', icon: Target, weights: { employability: 40, ranking: 20, affordability: 15, admissionMatch: 10, scholarship: 10, location: 5 } },
+  { id: 'prestige', label: 'Academic Prestige', description: 'Prioritises world rankings', icon: GraduationCap, weights: { ranking: 45, employability: 20, affordability: 10, admissionMatch: 10, scholarship: 5, location: 10 } },
+];
+
+const STEPS = [
+  { id: 'academic', title: 'Academic', description: 'Education & Language', icon: GraduationCap },
+  { id: 'goals', title: 'Goals', description: 'Career & Migration', icon: Target },
+  { id: 'fit', title: 'Fit Strategy', description: 'Recommendation Weights', icon: Settings2 },
 ];
 
 export default function ProfilePage() {
   const qc = useQueryClient();
-  const [showAdvanced, setShowAdvanced] = useState(false);
+  const [currentStep, setCurrentStep] = useState(0);
   const [formData, setFormData] = useState<ProfileFormData>({
     preferredField: '',
     preferredLevel: 'master',
@@ -65,6 +90,11 @@ export default function ProfilePage() {
     ieltsScore: 6.5,
     pteScore: 65,
     academicBackground: '',
+    careerGoals: {
+      targetRole: '',
+      migrationInterest: false,
+      fundingSource: 'family'
+    },
     priorityPreset: 'balanced',
     priorityWeights: {
       affordability: 25,
@@ -89,24 +119,12 @@ export default function ProfilePage() {
   useEffect(() => {
     if (profileRes?.data?.data) {
       const p = profileRes.data.data;
-      setFormData({
-        preferredField: p.preferredField || '',
-        preferredLevel: p.preferredLevel || 'master',
-        budgetMaxAud: p.budgetMaxAud || 40000,
-        preferredStates: p.preferredStates || [],
-        ieltsScore: p.ieltsScore || 6.5,
-        pteScore: p.pteScore || 65,
-        academicBackground: p.academicBackground || '',
-        priorityPreset: p.priorityPreset || 'balanced',
-        priorityWeights: p.priorityWeights || {
-          affordability: 25,
-          ranking: 20,
-          employability: 20,
-          admissionMatch: 15,
-          location: 10,
-          scholarship: 10,
-        },
-      });
+      setFormData(prev => ({
+        ...prev,
+        ...p,
+        careerGoals: p.careerGoals || prev.careerGoals,
+        priorityWeights: p.priorityWeights || prev.priorityWeights,
+      }));
     }
   }, [profileRes]);
 
@@ -116,301 +134,282 @@ export default function ProfilePage() {
       toast.success('Profile updated successfully!');
       qc.invalidateQueries({ queryKey: ['profile'] });
     },
-    onError: () => {
-      toast.error('Failed to update profile');
-    },
+    onError: () => toast.error('Failed to update profile'),
   });
 
-  const handlePresetChange = (presetId: string) => {
-    const preset = PRESETS.find(p => p.id === presetId);
-    if (preset) {
-      setFormData(prev => ({
-        ...prev,
-        priorityPreset: presetId as any,
-        priorityWeights: { ...preset.weights }
-      }));
-    }
+  const handleNext = () => {
+    if (currentStep < STEPS.length - 1) setCurrentStep(currentStep + 1);
+    else mutation.mutate(formData);
   };
 
-  const handleWeightChange = (key: keyof IPriorityWeights, value: number) => {
-    const otherKeys = (Object.keys(formData.priorityWeights) as Array<keyof IPriorityWeights>).filter(k => k !== key);
-    const remainingValue = 100 - value;
-    const currentOtherSum = otherKeys.reduce((sum, k) => sum + formData.priorityWeights[k], 0);
-
-    const newWeights = { ...formData.priorityWeights, [key]: value };
-
-    if (currentOtherSum === 0) {
-      const equalShare = remainingValue / otherKeys.length;
-      otherKeys.forEach(k => { newWeights[k] = Math.round(equalShare); });
-    } else {
-      otherKeys.forEach(k => {
-        newWeights[k] = Math.round((formData.priorityWeights[k] / currentOtherSum) * remainingValue);
-      });
-    }
-
-    // Adjust for rounding errors
-    let total = Object.values(newWeights).reduce((sum, v) => sum + v, 0);
-    if (total !== 100) {
-      const diff = 100 - total;
-      newWeights[otherKeys[0]] += diff;
-    }
-
-    setFormData(prev => ({ 
-      ...prev, 
-      priorityWeights: newWeights,
-      priorityPreset: 'balanced' // Clear preset if manual adjustment is made (or a special 'custom' one if you prefer)
-    }));
+  const handlePrev = () => {
+    if (currentStep > 0) setCurrentStep(currentStep - 1);
   };
 
-  const totalWeight = Object.values(formData.priorityWeights).reduce((a, b) => a + b, 0);
-
-  if (isLoadingProfile) {
-    return <div className="p-8">Loading profile...</div>;
-  }
+  if (isLoadingProfile) return <div className="p-12 text-center">Loading profile...</div>;
 
   return (
-    <div className="container mx-auto max-w-4xl py-10 px-4">
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold tracking-tight">Student Profile</h1>
-        <p className="text-muted-foreground mt-1">Complete your profile to get more accurate fit scores for programs.</p>
+    <div className="max-w-4xl mx-auto py-8 px-4 pb-20">
+      {/* Header & Stepper */}
+      <div className="mb-12">
+        <h1 className="text-4xl font-black font-display text-slate-900 tracking-tight">Profile Builder</h1>
+        <p className="text-slate-500 mt-2">Help us find the perfect Australian university for your goals.</p>
+        
+        <div className="mt-10 flex items-center justify-between relative">
+           <div className="absolute top-1/2 left-0 right-0 h-0.5 bg-slate-100 -translate-y-1/2 z-0" />
+           {STEPS.map((step, i) => (
+             <div key={step.id} className="relative z-10 flex flex-col items-center gap-2 group cursor-pointer" onClick={() => setCurrentStep(i)}>
+                <div className={cn(
+                  "w-12 h-12 rounded-2xl flex items-center justify-center transition-all duration-300",
+                  currentStep === i ? "bg-deep-green text-white shadow-lg shadow-deep-green/20" : 
+                  currentStep > i ? "bg-green-100 text-green-600" : "bg-white border border-slate-200 text-slate-300"
+                )}>
+                  {currentStep > i ? <CheckCircle2 className="h-6 w-6" /> : <step.icon className="h-6 w-6" />}
+                </div>
+                <div className="text-center">
+                  <p className={cn("text-xs font-black uppercase tracking-widest", currentStep === i ? "text-deep-green" : "text-slate-400")}>{step.title}</p>
+                </div>
+             </div>
+           ))}
+        </div>
       </div>
 
-      <div className="grid gap-8">
-        {/* Education & Preferences */}
-        <Card className="border-border/60 shadow-sm overflow-hidden">
-          <CardHeader className="bg-muted/30">
-            <CardTitle className="text-xl">Academic Preferences</CardTitle>
-            <CardDescription>Tell us about your background and what you're looking for.</CardDescription>
-          </CardHeader>
-          <CardContent className="p-6 space-y-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div className="space-y-2">
-                <Label htmlFor="preferredField">Preferred Field of Study</Label>
-                <Select 
-                  value={formData.preferredField} 
-                  onValueChange={(v) => v && setFormData(prev => ({ ...prev, preferredField: v }))}
-                >
-                  <SelectTrigger id="preferredField">
-                    <SelectValue placeholder="Select a field" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {fieldsRes?.data?.data?.map((f: string) => (
-                      <SelectItem key={f} value={f}>{f}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
+      <AnimatePresence mode="wait">
+        <motion.div
+          key={currentStep}
+          initial={{ opacity: 0, x: 20 }}
+          animate={{ opacity: 1, x: 0 }}
+          exit={{ opacity: 0, x: -20 }}
+          transition={{ duration: 0.3 }}
+        >
+          {currentStep === 0 && (
+            <Card className="rounded-3xl border-slate-200 shadow-sm overflow-hidden">
+               <CardHeader className="bg-slate-50/50 p-8 border-b">
+                 <CardTitle className="text-2xl font-display">Academic Background</CardTitle>
+                 <CardDescription>Tell us about your previous education and language skills.</CardDescription>
+               </CardHeader>
+               <CardContent className="p-8 space-y-8">
+                 <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                    <div className="space-y-3">
+                      <Label className="text-xs font-black text-slate-400 uppercase tracking-widest">Preferred Field</Label>
+                      <Select 
+                        value={formData.preferredField} 
+                        onValueChange={(v) => setFormData(prev => ({ ...prev, preferredField: v }))}
+                      >
+                        <SelectTrigger className="h-12 rounded-xl border-slate-200 font-bold">
+                          <SelectValue placeholder="Select Field" />
+                        </SelectTrigger>
+                        <SelectContent className="rounded-xl">
+                          {fieldsRes?.data?.data?.map((f: string) => (
+                            <SelectItem key={f} value={f}>{f}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="preferredLevel">Study Level</Label>
-                <Select 
-                  value={formData.preferredLevel} 
-                  onValueChange={(v) => v && setFormData(prev => ({ ...prev, preferredLevel: v }))}
-                >
-                  <SelectTrigger id="preferredLevel">
-                    <SelectValue placeholder="Select level" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {LEVELS.map((l) => (
-                      <SelectItem key={l.value} value={l.value}>{l.label}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
+                    <div className="space-y-3">
+                      <Label className="text-xs font-black text-slate-400 uppercase tracking-widest">Study Level</Label>
+                      <Select 
+                        value={formData.preferredLevel} 
+                        onValueChange={(v) => setFormData(prev => ({ ...prev, preferredLevel: v }))}
+                      >
+                        <SelectTrigger className="h-12 rounded-xl border-slate-200 font-bold">
+                          <SelectValue placeholder="Select Level" />
+                        </SelectTrigger>
+                        <SelectContent className="rounded-xl">
+                          {LEVELS.map((l) => (
+                            <SelectItem key={l.value} value={l.value}>{l.label}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                 </div>
 
-            <div className="space-y-4">
-              <div className="flex justify-between items-center">
-                <Label>Maximum Annual Budget (AUD)</Label>
-                <span className="font-bold text-primary font-mono">${formData.budgetMaxAud.toLocaleString()}</span>
-              </div>
-              <input 
-                type="range" 
-                min="10000" 
-                max="100000" 
-                step="5000" 
-                value={formData.budgetMaxAud}
-                onChange={(e) => setFormData(prev => ({ ...prev, budgetMaxAud: parseInt(e.target.value) }))}
-                className="w-full h-2 bg-muted rounded-lg appearance-none cursor-pointer accent-primary"
-              />
-              <div className="flex justify-between text-xs text-muted-foreground font-mono">
-                <span>$10k</span>
-                <span>$100k</span>
-              </div>
-            </div>
+                 <div className="grid grid-cols-1 md:grid-cols-2 gap-8 pt-4">
+                    <div className="space-y-3">
+                      <Label className="text-xs font-black text-slate-400 uppercase tracking-widest">IELTS Score</Label>
+                      <Input 
+                        type="number" step="0.5" 
+                        value={formData.ieltsScore} 
+                        onChange={(e) => setFormData(prev => ({ ...prev, ieltsScore: parseFloat(e.target.value) }))}
+                        className="h-12 rounded-xl border-slate-200 font-bold"
+                      />
+                    </div>
+                    <div className="space-y-3">
+                      <Label className="text-xs font-black text-slate-400 uppercase tracking-widest">PTE Score</Label>
+                      <Input 
+                        type="number" 
+                        value={formData.pteScore} 
+                        onChange={(e) => setFormData(prev => ({ ...prev, pteScore: parseInt(e.target.value) }))}
+                        className="h-12 rounded-xl border-slate-200 font-bold"
+                      />
+                    </div>
+                 </div>
 
-            <div className="space-y-3">
-              <Label>Preferred Australian States</Label>
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                {STATES.map((state) => (
-                  <label key={state} className="flex items-center space-x-2 cursor-pointer group">
-                    <input 
-                      type="checkbox" 
-                      checked={formData.preferredStates.includes(state)}
-                      onChange={(e) => {
-                        const next = e.target.checked 
-                          ? [...formData.preferredStates, state]
-                          : formData.preferredStates.filter(s => s !== state);
-                        setFormData(prev => ({ ...prev, preferredStates: next }));
-                      }}
-                      className="w-4 h-4 rounded border-border text-primary focus:ring-primary"
+                 <div className="space-y-3 pt-4">
+                    <Label className="text-xs font-black text-slate-400 uppercase tracking-widest">Education History (GPA, Degree, Institution)</Label>
+                    <Textarea 
+                      rows={4} 
+                      value={formData.academicBackground}
+                      onChange={(e) => setFormData(prev => ({ ...prev, academicBackground: e.target.value }))}
+                      placeholder="e.g. Bachelor of IT from University of Dhaka, GPA 3.8/4.0"
+                      className="rounded-2xl border-slate-200 p-4 font-medium"
                     />
-                    <span className="text-sm font-medium group-hover:text-primary transition-colors">{state}</span>
-                  </label>
-                ))}
-              </div>
-            </div>
+                 </div>
+               </CardContent>
+            </Card>
+          )}
 
-            <Separator className="my-6" />
+          {currentStep === 1 && (
+            <Card className="rounded-3xl border-slate-200 shadow-sm overflow-hidden">
+               <CardHeader className="bg-slate-50/50 p-8 border-b">
+                 <CardTitle className="text-2xl font-display">Goals & Preferences</CardTitle>
+                 <CardDescription>Your career aspirations and financial constraints.</CardDescription>
+               </CardHeader>
+               <CardContent className="p-8 space-y-10">
+                 <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                    <div className="space-y-3">
+                      <Label className="text-xs font-black text-slate-400 uppercase tracking-widest">Target Career Role</Label>
+                      <Input 
+                        placeholder="e.g. Software Engineer, Data Scientist"
+                        value={formData.careerGoals.targetRole}
+                        onChange={(e) => setFormData(prev => ({ 
+                          ...prev, 
+                          careerGoals: { ...prev.careerGoals, targetRole: e.target.value } 
+                        }))}
+                        className="h-12 rounded-xl border-slate-200 font-bold"
+                      />
+                    </div>
+                    <div className="space-y-3">
+                      <Label className="text-xs font-black text-slate-400 uppercase tracking-widest">Funding Source</Label>
+                      <Select 
+                        value={formData.careerGoals.fundingSource} 
+                        onValueChange={(v) => setFormData(prev => ({ 
+                          ...prev, 
+                          careerGoals: { ...prev.careerGoals, fundingSource: v as any } 
+                        }))}
+                      >
+                        <SelectTrigger className="h-12 rounded-xl border-slate-200 font-bold">
+                          <SelectValue placeholder="Select Funding" />
+                        </SelectTrigger>
+                        <SelectContent className="rounded-xl">
+                          <SelectItem value="self">Self Funded</SelectItem>
+                          <SelectItem value="family">Family Support</SelectItem>
+                          <SelectItem value="loan">Bank Loan</SelectItem>
+                          <SelectItem value="scholarship">Full Scholarship</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                 </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div className="space-y-2">
-                <Label htmlFor="ieltsScore">IELTS Score</Label>
-                <Input 
-                  id="ieltsScore" 
-                  type="number" 
-                  step="0.5" 
-                  min="0" 
-                  max="9" 
-                  value={formData.ieltsScore}
-                  onChange={(e) => setFormData(prev => ({ ...prev, ieltsScore: parseFloat(e.target.value) }))}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="pteScore">PTE Score</Label>
-                <Input 
-                  id="pteScore" 
-                  type="number" 
-                  min="0" 
-                  max="90" 
-                  value={formData.pteScore}
-                  onChange={(e) => setFormData(prev => ({ ...prev, pteScore: parseInt(e.target.value) }))}
-                />
-              </div>
-            </div>
+                 <div className="space-y-6 bg-slate-50 p-6 rounded-2xl border border-slate-100">
+                    <div className="flex justify-between items-center">
+                      <Label className="text-xs font-black text-slate-900 uppercase tracking-widest">Max Annual Budget (AUD)</Label>
+                      <span className="text-lg font-black text-deep-green">${formData.budgetMaxAud.toLocaleString()}</span>
+                    </div>
+                    <input 
+                      type="range" min="15000" max="80000" step="1000"
+                      value={formData.budgetMaxAud}
+                      onChange={(e) => setFormData(prev => ({ ...prev, budgetMaxAud: parseInt(e.target.value) }))}
+                      className="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-deep-green"
+                    />
+                 </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="academicBackground">Academic Background / Bio</Label>
-              <Textarea 
-                id="academicBackground" 
-                rows={4} 
-                placeholder="Tell us about your previous education, GPA, and career goals..."
-                value={formData.academicBackground}
-                onChange={(e) => setFormData(prev => ({ ...prev, academicBackground: e.target.value }))}
-              />
-            </div>
-          </CardContent>
-        </Card>
+                 <div className="space-y-4">
+                    <Label className="text-xs font-black text-slate-400 uppercase tracking-widest">Interested in Permanent Residency (PR)?</Label>
+                    <div className="flex gap-4">
+                       <Button 
+                         variant={formData.careerGoals.migrationInterest ? 'default' : 'outline'} 
+                         className={cn("flex-1 rounded-xl h-12 font-bold", formData.careerGoals.migrationInterest && "bg-deep-green")}
+                         onClick={() => setFormData(prev => ({ ...prev, careerGoals: { ...prev.careerGoals, migrationInterest: true } }))}
+                       >Yes</Button>
+                       <Button 
+                         variant={!formData.careerGoals.migrationInterest ? 'default' : 'outline'} 
+                         className={cn("flex-1 rounded-xl h-12 font-bold", !formData.careerGoals.migrationInterest && "bg-deep-green")}
+                         onClick={() => setFormData(prev => ({ ...prev, careerGoals: { ...prev.careerGoals, migrationInterest: false } }))}
+                       >No</Button>
+                    </div>
+                 </div>
+               </CardContent>
+            </Card>
+          )}
 
-        {/* Priority Preset */}
-        <Card className="border-border/60 shadow-sm overflow-hidden">
-          <CardHeader className="bg-muted/30">
-            <CardTitle className="text-xl">Priority Recommendation</CardTitle>
-            <CardDescription>Select a priority preset that best reflects your goals.</CardDescription>
-          </CardHeader>
-          <CardContent className="p-6 space-y-6">
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              {PRESETS.map((preset) => (
-                <div 
-                  key={preset.id}
-                  onClick={() => handlePresetChange(preset.id)}
-                  className={`
-                    p-4 rounded-xl border-2 cursor-pointer transition-all hover:shadow-md
-                    ${formData.priorityPreset === preset.id 
-                      ? 'border-primary bg-primary/5 shadow-sm' 
-                      : 'border-border/50 bg-card hover:border-border hover:bg-muted/30'}
-                  `}
-                >
-                  <div className="flex justify-between items-start mb-1">
-                    <span className={`font-bold ${formData.priorityPreset === preset.id ? 'text-primary' : 'text-foreground'}`}>
-                      {preset.label}
-                    </span>
-                    {formData.priorityPreset === preset.id && (
-                      <CheckCircle2 className="h-5 w-5 text-primary" />
-                    )}
-                  </div>
-                  <p className="text-xs text-muted-foreground leading-relaxed">
-                    {preset.description}
-                  </p>
-                </div>
-              ))}
-            </div>
-
-            <div className="mt-6 p-4 rounded-lg bg-muted/30 border border-border/50">
-              <h4 className="text-xs font-bold uppercase tracking-wider text-muted-foreground mb-3">Weight Summary for {formData.priorityPreset.replace('-', ' ')}</h4>
-              <div className="flex flex-wrap gap-2">
-                {Object.entries(formData.priorityWeights).map(([key, value]) => (
-                  <div key={key} className="bg-background border border-border/50 px-2 py-1 rounded text-xs">
-                    <span className="capitalize text-muted-foreground">{key.replace(/([A-Z])/g, ' $1')}:</span>
-                    <span className="ml-1 font-bold font-mono">{value}%</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            <div className="pt-4">
-              <Button 
-                variant="ghost" 
-                size="sm" 
-                onClick={() => setShowAdvanced(!showAdvanced)}
-                className="text-xs text-muted-foreground hover:text-primary"
-              >
-                {showAdvanced ? 'Hide Advanced Weight Controls' : 'Show Advanced Weight Controls'}
-              </Button>
-
-              {showAdvanced && (
-                <div className="space-y-6 pt-6 border-t border-dashed mt-4">
-                  <div className="rounded-lg bg-primary-500/5 border border-primary-500/10 p-4 flex gap-3 items-start">
-                    <InfoIcon className="h-5 w-5 text-primary-500 mt-0.5 flex-shrink-0" />
-                    <p className="text-sm text-primary-700/80">
-                      Manual adjustments will clear the preset selection. Total must sum to 100%.
-                    </p>
-                  </div>
-                  <div className="grid gap-6">
-                    {Object.entries(formData.priorityWeights).map(([key, value]) => (
-                      <div key={key} className="space-y-2">
-                        <div className="flex justify-between items-center">
-                          <Label className="capitalize font-semibold text-foreground/80">{key.replace(/([A-Z])/g, ' $1')}</Label>
-                          <span className="font-bold text-primary font-mono">{value}%</span>
+          {currentStep === 2 && (
+            <Card className="rounded-3xl border-slate-200 shadow-sm overflow-hidden">
+               <CardHeader className="bg-slate-50/50 p-8 border-b">
+                 <CardTitle className="text-2xl font-display">Recommendation Strategy</CardTitle>
+                 <CardDescription>How should we weight different factors for your Fit Score?</CardDescription>
+               </CardHeader>
+               <CardContent className="p-8 space-y-8">
+                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {PRESETS.map((preset) => (
+                      <div 
+                        key={preset.id}
+                        onClick={() => setFormData(prev => ({ ...prev, priorityPreset: preset.id as any, priorityWeights: preset.weights }))}
+                        className={cn(
+                          "p-6 rounded-2xl border-2 cursor-pointer transition-all flex items-start gap-4 hover:shadow-md",
+                          formData.priorityPreset === preset.id ? "border-deep-green bg-green-50/50" : "border-slate-100 hover:border-slate-200"
+                        )}
+                      >
+                        <div className={cn("p-2 rounded-lg", formData.priorityPreset === preset.id ? "bg-deep-green text-white" : "bg-slate-100 text-slate-400")}>
+                           <preset.icon className="h-5 w-5" />
                         </div>
-                        <input 
-                          type="range" 
-                          min="0" 
-                          max="100" 
-                          value={value}
-                          onChange={(e) => handleWeightChange(key as keyof IPriorityWeights, parseInt(e.target.value))}
-                          className="w-full h-2 bg-muted rounded-lg appearance-none cursor-pointer accent-primary"
-                        />
+                        <div>
+                          <p className="font-bold text-slate-900">{preset.label}</p>
+                          <p className="text-[10px] text-slate-500 font-medium mt-1">{preset.description}</p>
+                        </div>
                       </div>
                     ))}
-                  </div>
-                </div>
-              )}
-            </div>
-          </CardContent>
-        </Card>
+                 </div>
 
-        <div className="flex justify-end gap-4">
-          <Button 
-            variant="outline" 
-            onClick={() => qc.invalidateQueries({ queryKey: ['profile'] })}
-            className="gap-2"
-          >
-            <RefreshCw className="h-4 w-4" />
-            Reset Changes
-          </Button>
-          <Button 
-            onClick={() => mutation.mutate(formData)} 
-            disabled={mutation.isPending || totalWeight !== 100}
-            className="gap-2 px-8"
-          >
-            {mutation.isPending ? 'Saving...' : (
-              <>
-                <Save className="h-4 w-4" />
-                Save Profile
-              </>
-            )}
-          </Button>
+                 <div className="bg-slate-900 text-white p-6 rounded-2xl">
+                    <h4 className="text-[10px] font-black uppercase tracking-widest text-white/50 mb-4">Algorithm Weights</h4>
+                    <div className="flex flex-wrap gap-4">
+                       {Object.entries(formData.priorityWeights).map(([key, val]) => (
+                         <div key={key} className="flex flex-col">
+                            <span className="text-[9px] text-white/40 uppercase font-black">{key}</span>
+                            <span className="text-sm font-black text-green-400">{val}%</span>
+                         </div>
+                       ))}
+                    </div>
+                 </div>
+               </CardContent>
+            </Card>
+          )}
+        </motion.div>
+      </AnimatePresence>
+
+      {/* Footer Actions */}
+      <div className="fixed bottom-0 left-0 right-0 p-6 bg-white/80 backdrop-blur-md border-t border-slate-100 z-50">
+        <div className="max-w-4xl mx-auto flex justify-between items-center">
+           <Button 
+            variant="ghost" 
+            disabled={currentStep === 0}
+            onClick={handlePrev}
+            className="rounded-xl h-12 px-6 font-bold text-slate-500"
+           >
+             <ChevronLeft className="h-4 w-4 mr-2" />
+             Back
+           </Button>
+
+           <div className="flex gap-4">
+              <Button 
+                variant="outline" 
+                className="rounded-xl h-12 px-6 font-bold border-slate-200 hidden sm:flex"
+                onClick={() => mutation.mutate(formData)}
+                disabled={mutation.isPending}
+              >
+                Save Draft
+              </Button>
+              <Button 
+                onClick={handleNext}
+                disabled={mutation.isPending}
+                className="rounded-xl h-12 px-8 font-black bg-deep-green hover:bg-deep-green/90 shadow-lg shadow-deep-green/10"
+              >
+                {currentStep === STEPS.length - 1 ? 'Finish & Analyze' : 'Next Step'}
+                {currentStep < STEPS.length - 1 && <ChevronRight className="h-4 w-4 ml-2" />}
+              </Button>
+           </div>
         </div>
       </div>
     </div>

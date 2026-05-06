@@ -9,6 +9,7 @@ router.use(protect);
 router.get('/', applicationTrackerController.getMyApplications);
 router.post('/', applicationTrackerController.addApplication);
 router.patch('/:id', applicationTrackerController.updateStatus);
+router.patch('/:id/documents', applicationTrackerController.updateDocuments);
 router.delete('/:id', applicationTrackerController.removeApplication);
 
 export default router;

@@ -11,17 +11,45 @@ export interface IPriorityWeights {
 
 export interface IStudentProfile extends Document {
   userId?: Types.ObjectId;
+  
+  // Personal & Education Basics
+  country?: string;
+  currentEducationLevel?: string;
+  lastDegreeName?: string;
+  institutionName?: string;
+  gpa?: number;
+  gradingScale?: number;
+  workExperienceYears?: number;
+
+  // Preferences
   preferredField?: string;
   preferredLevel?: string;
-  budgetMaxAud?: number;
   preferredStates?: string[];
-  ieltsScore?: number;
-  pteScore?: number;
-  academicBackground?: string;
+  preferredCities?: string[];
+  intakePreference?: string;
+  budgetMaxAud?: number;
+  fundingSource?: string;
+  scholarshipNeeded?: boolean;
+
+  // Tests
+  ieltsOverall?: number;
+  toeflTotal?: number;
+  pteOverall?: number;
+  duolingoScore?: number;
+  testStatus?: 'taken' | 'planned' | 'not_needed';
+
+  // Career & Goals
+  preferredJobRole?: string;
+  targetIndustry?: string;
+  postStudyWorkInterest?: boolean;
+  migrationInterest?: boolean;
+
+  // Weights & Tracking
   priorityWeights?: IPriorityWeights;
   priorityPreset?: 'balanced' | 'budget' | 'career' | 'prestige' | 'easy-admission' | 'scholarship';
   savedUniversities?: Types.ObjectId[];
   savedPrograms?: Types.ObjectId[];
+  
   createdAt: Date;
   updatedAt: Date;
 }
@@ -41,13 +69,35 @@ const PriorityWeightsSchema = new Schema<IPriorityWeights>(
 const StudentProfileSchema = new Schema<IStudentProfile>(
   {
     userId: { type: Schema.Types.ObjectId, ref: 'User', sparse: true, index: true },
+    
+    country: String,
+    currentEducationLevel: String,
+    lastDegreeName: String,
+    institutionName: String,
+    gpa: Number,
+    gradingScale: Number,
+    workExperienceYears: Number,
+
     preferredField: String,
     preferredLevel: String,
-    budgetMaxAud: Number,
     preferredStates: [String],
-    ieltsScore: Number,
-    pteScore: Number,
-    academicBackground: String,
+    preferredCities: [String],
+    intakePreference: String,
+    budgetMaxAud: Number,
+    fundingSource: String,
+    scholarshipNeeded: { type: Boolean, default: false },
+
+    ieltsOverall: Number,
+    toeflTotal: Number,
+    pteOverall: Number,
+    duolingoScore: Number,
+    testStatus: { type: String, enum: ['taken', 'planned', 'not_needed'] },
+
+    preferredJobRole: String,
+    targetIndustry: String,
+    postStudyWorkInterest: { type: Boolean, default: true },
+    migrationInterest: { type: Boolean, default: false },
+
     priorityWeights: { type: PriorityWeightsSchema, default: () => ({}) },
     priorityPreset: { 
       type: String, 

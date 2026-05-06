@@ -8,5 +8,9 @@ export const comparisonApi = {
     api.post(`/comparison/${hash}/add-program`, { programId }),
   removeProgram: (hash: string, programId: string) =>
     api.delete(`/comparison/${hash}/remove-program`, { data: { programId } }),
+  addUniversity: (hash: string, universityId: string) =>
+    api.post(`/comparison/${hash}/add-university`, { universityId }),
+  removeUniversity: (hash: string, universityId: string) =>
+    api.delete(`/comparison/${hash}/remove-university`, { data: { universityId } }),
   getScores: (hash: string) => api.get(`/comparison/${hash}/scores`),
 };

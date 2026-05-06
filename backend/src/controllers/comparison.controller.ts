@@ -37,8 +37,9 @@ export const comparisonController = {
       const session = await ComparisonSession.findOne({ sessionKey: hash })
         .populate({
           path: 'selectedProgramIds',
-          populate: { path: 'university', select: 'name slug state' }
-        });
+          populate: { path: 'university', select: 'name slug state logo logoUrl' }
+        })
+        .populate('selectedUniversityIds');
       
       if (!session) {
         res.status(404).json({ success: false, message: 'Session not found' });
@@ -64,8 +65,8 @@ export const comparisonController = {
         { new: true }
       ).populate({
         path: 'selectedProgramIds',
-        populate: { path: 'university', select: 'name slug state' }
-      });
+        populate: { path: 'university', select: 'name slug state logo logoUrl' }
+      }).populate('selectedUniversityIds');
       
       if (!session) {
         res.status(404).json({ success: false, message: 'Session not found' });
@@ -91,8 +92,8 @@ export const comparisonController = {
         { new: true }
       ).populate({
         path: 'selectedProgramIds',
-        populate: { path: 'university', select: 'name slug state' }
-      });
+        populate: { path: 'university', select: 'name slug state logo logoUrl' }
+      }).populate('selectedUniversityIds');
 
       if (!session) {
         res.status(404).json({ success: false, message: 'Session not found' });
@@ -118,8 +119,62 @@ export const comparisonController = {
         { new: true }
       ).populate({
         path: 'selectedProgramIds',
-        populate: { path: 'university', select: 'name slug state' }
-      });
+        populate: { path: 'university', select: 'name slug state logo logoUrl' }
+      }).populate('selectedUniversityIds');
+
+      if (!session) {
+        res.status(404).json({ success: false, message: 'Session not found' });
+        return;
+      }
+
+      res.status(200).json({ success: true, data: session });
+    } catch (error) {
+      next(error);
+    }
+  },
+
+  /** POST /api/v1/comparison/:hash/add-university
+   */
+  async addUniversity(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const { hash } = req.params;
+      const { universityId } = req.body;
+
+      const session = await ComparisonSession.findOneAndUpdate(
+        { sessionKey: hash },
+        { $addToSet: { selectedUniversityIds: new Types.ObjectId(universityId) } },
+        { new: true }
+      ).populate({
+        path: 'selectedProgramIds',
+        populate: { path: 'university', select: 'name slug state logo logoUrl' }
+      }).populate('selectedUniversityIds');
+
+      if (!session) {
+        res.status(404).json({ success: false, message: 'Session not found' });
+        return;
+      }
+
+      res.status(200).json({ success: true, data: session });
+    } catch (error) {
+      next(error);
+    }
+  },
+
+  /** DELETE /api/v1/comparison/:hash/remove-university
+   */
+  async removeUniversity(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const { hash } = req.params;
+      const { universityId } = req.body;
+
+      const session = await ComparisonSession.findOneAndUpdate(
+        { sessionKey: hash },
+        { $pull: { selectedUniversityIds: new Types.ObjectId(universityId) } },
+        { new: true }
+      ).populate({
+        path: 'selectedProgramIds',
+        populate: { path: 'university', select: 'name slug state logo logoUrl' }
+      }).populate('selectedUniversityIds');
 
       if (!session) {
         res.status(404).json({ success: false, message: 'Session not found' });

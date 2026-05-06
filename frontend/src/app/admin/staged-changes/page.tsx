@@ -43,7 +43,7 @@ export default function StagedChangesPage() {
   // Fetch Universities for filtering
   const { data: unisData } = useQuery({
     queryKey: ['admin-universities-list'],
-    queryFn: () => universitiesApi.getAll().then(r => r.data),
+    queryFn: () => universitiesApi.adminGetAll({ limit: 500 }).then(r => r.data),
   });
   const universities = unisData?.data || [];
 

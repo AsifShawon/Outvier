@@ -24,9 +24,21 @@ export interface ApiError {
 export interface DashboardStats {
   totalUniversities: number;
   totalPrograms: number;
+  totalCampuses: number;
   totalUsers: number;
+  totalScholarships: number;
+  totalApplications: number;
+  pendingStagedChanges: number;
+  lastCricosSync: {
+    status: string;
+    startedAt: string;
+    completedAt?: string;
+  } | null;
+  failedSyncRuns: number;
   programsByLevel: { _id: string; count: number }[];
   universitiesByState: { _id: string; count: number }[];
+  programsByField: { _id: string; count: number }[];
+  userSignups: { _id: string; count: number }[];
 }
 
 export interface UploadJob {
