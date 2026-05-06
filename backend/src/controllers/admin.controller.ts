@@ -9,7 +9,7 @@ import { RankingRecord } from '../models/RankingRecord.model';
 import { Scholarship } from '../models/Scholarship.model';
 import { OutcomeMetric } from '../models/OutcomeMetric.model';
 import { IngestionJob } from '../models/IngestionJob.model';
-import { programDiscoveryQueue } from '../jobs/queue';
+import { programDiscoveryQueue, cricosSyncQueue } from '../jobs/queue';
 import { UniversityIngestionJobSchema } from '../schemas/ingestion.schema';
 
 export const adminController = {
@@ -33,6 +33,39 @@ export const adminController = {
         success: true,
         data: { totalUniversities, totalPrograms, totalUsers, programsByLevel, universitiesByState },
       });
+    } catch (error) {
+      next(error);
+    }
+  },
+
+  // University list (admin — with CRICOS fields)
+  async listUniversities(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const { page = '1', limit = '50', q, status } = req.query as Record<string, string>;
+      const filter: Record<string, unknown> = {};
+      if (status) filter.status = status;
+      if (q) filter.$text = { $search: q };
+      const skip = (parseInt(page) - 1) * parseInt(limit);
+      const [data, total] = await Promise.all([
+        University.find(filter).sort({ name: 1 }).skip(skip).limit(parseInt(limit)).lean(),
+        University.countDocuments(filter),
+      ]);
+      res.status(200).json({ success: true, data, meta: { total, page: parseInt(page), limit: parseInt(limit) } });
+    } catch (error) {
+      next(error);
+    }
+  },
+
+  // University by ID (admin)
+  async getUniversity(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const { id } = req.params;
+      const university = await University.findById(id).lean();
+      if (!university) {
+        res.status(404).json({ success: false, message: 'University not found' });
+        return;
+      }
+      res.status(200).json({ success: true, data: university });
     } catch (error) {
       next(error);
     }
@@ -86,10 +119,25 @@ export const adminController = {
         await ingestionJob.save();
       }
 
+      // Auto-trigger CRICOS sync if a provider code is set
+      let cricosSyncRunQueued = false;
+      if (university.cricosProviderCode) {
+        await cricosSyncQueue.add('sync-provider', {
+          providerCode: university.cricosProviderCode,
+          triggeredBy: (req as any).user?.username || 'admin',
+        });
+        cricosSyncRunQueued = true;
+      }
+
       res.status(201).json({
         success: true,
         data: university,
-        ...(ingestionJobId && { ingestionJobId, message: 'Program discovery job queued' }),
+        ...(ingestionJobId && { ingestionJobId }),
+        ...(cricosSyncRunQueued && { cricosSyncQueued: true }),
+        message: [
+          ingestionJobId ? 'Program discovery job queued' : null,
+          cricosSyncRunQueued ? 'CRICOS sync queued' : null,
+        ].filter(Boolean).join('; ') || undefined,
       });
     } catch (error) {
       next(error);
@@ -99,6 +147,17 @@ export const adminController = {
   async updateUniversity(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       const university = await universityService.update(req.params.id, req.body);
+
+      // Auto-trigger CRICOS sync if a provider code is present or was just set
+      if (university.cricosProviderCode) {
+        await cricosSyncQueue.add('sync-provider', {
+          providerCode: university.cricosProviderCode,
+          triggeredBy: (req as any).user?.username || 'admin',
+        });
+        res.status(200).json({ success: true, data: university, cricosSyncQueued: true, message: 'CRICOS sync queued' });
+        return;
+      }
+
       res.status(200).json({ success: true, data: university });
     } catch (error) {
       next(error);

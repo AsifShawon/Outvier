@@ -4,7 +4,7 @@
  */
 import mongoose, { Document, Schema, Types } from 'mongoose';
 
-export type EntityType = 'university' | 'program' | 'ranking' | 'tuition' | 'outcome' | 'scholarship' | 'campus' | 'programLocation' | 'cricosRaw';
+export type EntityType = 'university' | 'program' | 'ranking' | 'tuition' | 'outcome' | 'scholarship' | 'campus' | 'programLocation' | 'cricosRaw' | 'cricosInstitution' | 'cricosCourse' | 'cricosLocation' | 'cricosCourseLocation';
 export type ChangeType = 'create' | 'update' | 'delete' | 'possible_duplicate';
 export type StagedChangeStatus = 'pending' | 'approved' | 'rejected' | 'edited';
 
@@ -22,16 +22,25 @@ export interface IStagedChange extends Document {
   changeType: ChangeType;
   oldValue?: Record<string, unknown>;
   newValue: Record<string, unknown>;
-  diff?: Record<string, { old: unknown; new: unknown }>; // per-field diff
+  diff?: Record<string, { old: unknown; new: unknown }>;
   sourceUrl?: string;
-  sourceUrls?: string[];           // multiple source URLs
+  sourceUrls?: string[];
   confidence: number;
-  confidenceScore?: number;        // 0-100 alias
-  sourceEvidence?: Record<string, unknown>; // per-field evidence map
+  confidenceScore?: number;
+  sourceEvidence?: Record<string, unknown>;
   warnings?: IStagedChangeWarning[];
   missingFields?: string[];
   aiSummary?: string;
-  ingestionJobId?: Types.ObjectId; // link to IngestionJob
+  ingestionJobId?: Types.ObjectId;
+  // CRICOS sync tracking fields
+  externalKey?: string;
+  syncRunId?: Types.ObjectId;
+  sourceName?: string;
+  sourceResourceId?: string;
+  fetchedAt?: Date;
+  rawHash?: string;
+  diffSummary?: string;
+  autoApprovalEligible?: boolean;
   status: StagedChangeStatus;
   reviewedBy?: string;
   reviewedAt?: Date;
@@ -52,7 +61,7 @@ const StagedChangeSchema = new Schema<IStagedChange>(
   {
     entityType: {
       type: String,
-      enum: ['university', 'program', 'ranking', 'tuition', 'outcome', 'scholarship', 'campus', 'programLocation', 'cricosRaw'],
+      enum: ['university', 'program', 'ranking', 'tuition', 'outcome', 'scholarship', 'campus', 'programLocation', 'cricosRaw', 'cricosInstitution', 'cricosCourse', 'cricosLocation', 'cricosCourseLocation'],
       required: true,
     },
     entityId: { type: Schema.Types.ObjectId },
@@ -75,6 +84,15 @@ const StagedChangeSchema = new Schema<IStagedChange>(
     missingFields: [{ type: String }],
     aiSummary: String,
     ingestionJobId: { type: Schema.Types.ObjectId, ref: 'IngestionJob', index: true },
+    // CRICOS sync tracking
+    externalKey: { type: String, index: true },
+    syncRunId: { type: Schema.Types.ObjectId, ref: 'CricosSyncRun', index: true },
+    sourceName: { type: String },
+    sourceResourceId: { type: String },
+    fetchedAt: { type: Date },
+    rawHash: { type: String },
+    diffSummary: { type: String },
+    autoApprovalEligible: { type: Boolean, default: false },
     status: {
       type: String,
       enum: ['pending', 'approved', 'rejected', 'edited'],

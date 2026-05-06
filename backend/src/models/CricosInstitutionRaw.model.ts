@@ -15,8 +15,8 @@ export interface ICricosInstitutionRaw extends Document {
   postalAddressState?: string;
   postalAddressPostcode?: string;
   raw: any;
+  rawHash?: string;
   sourceResourceId: string;
-  sourceUpdatedAt?: Date;
   fetchedAt: Date;
   syncRunId?: mongoose.Types.ObjectId;
 }
@@ -37,8 +37,8 @@ const CricosInstitutionRawSchema = new Schema<ICricosInstitutionRaw>(
     postalAddressState: String,
     postalAddressPostcode: String,
     raw: { type: Schema.Types.Mixed },
+    rawHash: String,
     sourceResourceId: String,
-    sourceUpdatedAt: Date,
     fetchedAt: { type: Date, default: Date.now },
     syncRunId: { type: Schema.Types.ObjectId, ref: 'CricosSyncRun' },
   },

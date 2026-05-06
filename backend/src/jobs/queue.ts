@@ -42,6 +42,8 @@ export const programDiscoveryQueue = new Queue('program-discovery', {
 
 export const batchImportQueue = new Queue('batch-import', defaultQueueConfig);
 
+export const cricosSyncQueue = new Queue('cricos-sync', defaultQueueConfig);
+
 // Helper to gracefully shutdown queues
 export async function closeQueues() {
   await Promise.all([
@@ -53,5 +55,6 @@ export async function closeQueues() {
     outcomeSyncQueue.close(),
     programDiscoveryQueue.close(),
     batchImportQueue.close(),
+    cricosSyncQueue.close(),
   ]);
 }

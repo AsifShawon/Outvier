@@ -16,12 +16,14 @@ export interface ICampus extends Document {
   fullAddress?: string;
   sourceMetadata?: {
     sourceName: string;
-    sourceResourceId: string;
+    sourceResourceId?: string;
     sourceUrl?: string;
-    fetchedAt: Date;
+    fetchedAt?: Date;
+    lastApprovedAt?: Date;
     confidence: number;
+    importMethod?: 'cricos_api' | 'manual';
   };
-  status: 'active' | 'inactive' | 'draft';
+  status: 'active' | 'inactive' | 'draft' | 'archived';
   createdAt: Date;
   updatedAt: Date;
 }
@@ -46,9 +48,11 @@ const CampusSchema = new Schema<ICampus>(
       sourceResourceId: String,
       sourceUrl: String,
       fetchedAt: Date,
+      lastApprovedAt: Date,
       confidence: { type: Number, default: 1 },
+      importMethod: { type: String, enum: ['cricos_api', 'manual'] },
     },
-    status: { type: String, enum: ['active', 'inactive', 'draft'], default: 'active' },
+    status: { type: String, enum: ['active', 'inactive', 'draft', 'archived'], default: 'active' },
   },
   { timestamps: true }
 );

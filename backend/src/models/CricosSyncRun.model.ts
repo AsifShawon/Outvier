@@ -17,7 +17,7 @@ export interface ICricosSyncRun extends Document {
     programsMatched: number;
     errorsCount: number;
   };
-  errors: string[];
+  syncErrors: string[];
   triggeredBy: string;
   source: string;
   createdAt: Date;
@@ -42,7 +42,7 @@ const CricosSyncRunSchema = new Schema<ICricosSyncRun>(
       programsMatched: { type: Number, default: 0 },
       errorsCount: { type: Number, default: 0 },
     },
-    errors: [{ type: String }],
+    syncErrors: [{ type: String }],
     triggeredBy: { type: String, default: "admin" },
     source: { type: String, default: "data.gov.au CKAN DataStore API" },
   },

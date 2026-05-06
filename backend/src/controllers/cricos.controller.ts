@@ -18,6 +18,48 @@ export const cricosController = {
     }
   },
 
+  async getStats(req: Request, res: Response, next: NextFunction) {
+    try {
+      const { StagedChange } = await import('../models/StagedChange.model');
+      const [
+        totalInstitutions,
+        totalCourses,
+        totalLocations,
+        totalCourseLocations,
+        pendingChanges,
+        lastRun,
+        failedRuns,
+      ] = await Promise.all([
+        CricosInstitutionRaw.countDocuments(),
+        CricosCourseRaw.countDocuments(),
+        CricosLocationRaw.countDocuments(),
+        CricosCourseLocationRaw.countDocuments(),
+        StagedChange.countDocuments({
+          status: 'pending',
+          entityType: { $in: ['university', 'program', 'campus', 'programLocation'] },
+        }),
+        CricosSyncRun.findOne().sort({ createdAt: -1 }).lean(),
+        CricosSyncRun.countDocuments({ status: 'failed' }),
+      ]);
+      res.status(200).json({
+        success: true,
+        data: {
+          totalInstitutions,
+          totalCourses,
+          totalLocations,
+          totalCourseLocations,
+          pendingChanges,
+          lastSync: lastRun
+            ? { status: lastRun.status, startedAt: lastRun.startedAt, providerCode: lastRun.providerCode }
+            : null,
+          failedRuns,
+        },
+      });
+    } catch (error) {
+      next(error);
+    }
+  },
+
   async inspectFields(req: Request, res: Response, next: NextFunction) {
     try {
       const { resourceId } = req.body;
@@ -42,8 +84,25 @@ export const cricosController = {
   async syncProvider(req: Request, res: Response, next: NextFunction) {
     try {
       const { providerCode } = req.body;
+      if (!providerCode) {
+        return res.status(400).json({ success: false, message: 'providerCode is required' });
+      }
       const triggeredBy = (req as any).user?.username || 'admin';
       const syncRunId = await cricosSyncService.syncProvider(providerCode, triggeredBy);
+      res.status(202).json({ success: true, data: { syncRunId } });
+    } catch (error) {
+      next(error);
+    }
+  },
+
+  async recheckProvider(req: Request, res: Response, next: NextFunction) {
+    try {
+      const { providerCode } = req.body;
+      if (!providerCode) {
+        return res.status(400).json({ success: false, message: 'providerCode is required' });
+      }
+      const triggeredBy = (req as any).user?.username || 'admin';
+      const syncRunId = await cricosSyncService.recheckProvider(providerCode, triggeredBy);
       res.status(202).json({ success: true, data: { syncRunId } });
     } catch (error) {
       next(error);

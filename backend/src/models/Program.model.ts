@@ -94,7 +94,7 @@ export interface IProgram extends Document {
   university: Types.ObjectId;
   universityName: string;
   universitySlug: string;
-  level: 'bachelor' | 'master' | 'phd' | 'diploma' | 'certificate' | 'graduate_certificate';
+  level: 'bachelor' | 'master' | 'phd' | 'diploma' | 'certificate' | 'graduate_certificate' | 'secondary' | 'elicos' | 'non_award' | 'other';
   field: string;
   description: string;
   duration: string;
@@ -127,7 +127,23 @@ export interface IProgram extends Document {
   }[];
   status: 'active' | 'inactive' | 'draft' | 'published' | 'archived';
   dataQuality?: IDataQuality;
-  // --- AI Ingestion fields (new) ---
+  // --- CRICOS-specific fields ---
+  cricosProviderCode?: string;
+  institutionName?: string;
+  courseLevel?: string;
+  vetNationalCode?: string;
+  dualQualification?: boolean;
+  foundationStudies?: boolean;
+  fieldOfEducation1BroadField?: string;
+  fieldOfEducation1NarrowField?: string;
+  fieldOfEducation1DetailedField?: string;
+  fieldOfEducation2BroadField?: string;
+  fieldOfEducation2NarrowField?: string;
+  fieldOfEducation2DetailedField?: string;
+  expired?: boolean;
+  lastCricosSyncedAt?: Date;
+  cricosDataHash?: string;
+  // --- AI Ingestion fields ---
   degreeLevel?: string;
   faculty?: string;
   discipline?: string;
@@ -280,7 +296,7 @@ const ProgramSchema = new Schema<IProgram>(
     universitySlug: { type: String, required: true },
     level: {
       type: String,
-      enum: ['bachelor', 'master', 'phd', 'diploma', 'certificate', 'graduate_certificate'],
+      enum: ['bachelor', 'master', 'phd', 'diploma', 'certificate', 'graduate_certificate', 'secondary', 'elicos', 'non_award', 'other'],
       required: true,
     },
     field: { type: String, required: true },
@@ -319,11 +335,26 @@ const ProgramSchema = new Schema<IProgram>(
       index: true,
     },
     dataQuality: DataQualitySchema,
-    // CRICOS specific fields
+    // CRICOS-specific fields
+    cricosProviderCode: { type: String, trim: true, index: true },
+    institutionName: { type: String, trim: true },
+    courseLevel: { type: String, trim: true },
+    vetNationalCode: { type: String, trim: true },
+    dualQualification: { type: Boolean },
+    foundationStudies: { type: Boolean },
+    fieldOfEducation1BroadField: { type: String },
+    fieldOfEducation1NarrowField: { type: String },
+    fieldOfEducation1DetailedField: { type: String },
+    fieldOfEducation2BroadField: { type: String },
+    fieldOfEducation2NarrowField: { type: String },
+    fieldOfEducation2DetailedField: { type: String },
+    expired: { type: Boolean, default: false, index: true },
+    lastCricosSyncedAt: { type: Date },
+    cricosDataHash: { type: String },
     durationWeeks: Number,
     tuitionFeeAud: Number,
     nonTuitionFeeAud: Number,
-    estimatedTotalCourseCostAud: Number,
+    estimatedTotalCourseCostAud: { type: Number, index: true },
     workComponent: String,
     courseLanguage: String,
     // AI Ingestion fields
@@ -368,5 +399,6 @@ ProgramSchema.index({ name: 'text', description: 'text', field: 'text', fieldOfS
 ProgramSchema.index({ university: 1 });
 ProgramSchema.index({ level: 1 });
 ProgramSchema.index({ annualTuition: 1 });
+ProgramSchema.index({ cricosProviderCode: 1, cricosCourseCode: 1 }, { unique: true, sparse: true });
 
 export const Program = mongoose.model<IProgram>('Program', ProgramSchema);

@@ -23,10 +23,10 @@ import { Program } from '@/types/program';
 const schema = z.object({
   name: z.string().min(2),
   university: z.string().min(1),
-  level: z.enum(['bachelor', 'master', 'phd', 'diploma', 'certificate', 'graduate_certificate']),
+  level: z.enum(['bachelor', 'master', 'phd', 'diploma', 'certificate', 'graduate_certificate', 'secondary', 'elicos', 'non_award', 'other']),
   field: z.string().min(2),
-  description: z.string().min(10),
-  duration: z.string().min(1),
+  description: z.string().optional(),
+  duration: z.string().optional(),
   tuitionFeeLocal: z.coerce.number().optional().or(z.literal('')),
   tuitionFeeInternational: z.coerce.number().optional().or(z.literal('')),
   intakeMonths: z.string().optional(),
@@ -46,6 +46,10 @@ const PROGRAM_LEVELS = [
   { value: 'graduate_certificate', label: 'Graduate Certificate' },
   { value: 'diploma', label: 'Diploma' },
   { value: 'certificate', label: 'Certificate' },
+  { value: 'secondary', label: 'Secondary' },
+  { value: 'elicos', label: 'ELICOS' },
+  { value: 'non_award', label: 'Non-Award' },
+  { value: 'other', label: 'Other' },
 ];
 
 export default function EditProgramPage() {

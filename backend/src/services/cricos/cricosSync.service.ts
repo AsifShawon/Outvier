@@ -2,6 +2,7 @@ import mongoose from 'mongoose';
 import { CRICOS_RESOURCES } from '../../config/cricosResources';
 import { cricosCkanService } from './cricosCkan.service';
 import { cricosMapperService } from './cricosMapper.service';
+import { cricosDiffService } from './cricosDiff.service';
 import { CricosSyncRun } from '../../models/CricosSyncRun.model';
 import { CricosInstitutionRaw } from '../../models/CricosInstitutionRaw.model';
 import { CricosCourseRaw } from '../../models/CricosCourseRaw.model';
@@ -11,27 +12,340 @@ import { University } from '../../models/University.model';
 import { Program } from '../../models/Program.model';
 import { Campus } from '../../models/Campus.model';
 import { ProgramLocation } from '../../models/ProgramLocation.model';
-import { StagedChange } from '../../models/StagedChange.model';
+
+// ─── Upsert helpers ────────────────────────────────────────────────────────
+
+async function upsertRawInstitutions(
+  records: any[],
+  syncRunId: mongoose.Types.ObjectId
+): Promise<number> {
+  let count = 0;
+  for (const row of records) {
+    try {
+      const data = cricosMapperService.mapInstitutionRaw(row);
+      await CricosInstitutionRaw.findOneAndUpdate(
+        { cricosProviderCode: data.cricosProviderCode },
+        { $set: { ...data, syncRunId } },
+        { upsert: true, new: true }
+      );
+      count++;
+    } catch { /* skip bad rows */ }
+  }
+  return count;
+}
+
+async function upsertRawCourses(
+  records: any[],
+  syncRunId: mongoose.Types.ObjectId
+): Promise<number> {
+  let count = 0;
+  for (const row of records) {
+    try {
+      const data = cricosMapperService.mapCourseRaw(row);
+      if (!data.cricosProviderCode || !data.cricosCourseCode) continue;
+      await CricosCourseRaw.findOneAndUpdate(
+        { cricosProviderCode: data.cricosProviderCode, cricosCourseCode: data.cricosCourseCode },
+        { $set: { ...data, syncRunId } },
+        { upsert: true, new: true }
+      );
+      count++;
+    } catch { /* skip bad rows */ }
+  }
+  return count;
+}
+
+async function upsertRawLocations(
+  records: any[],
+  syncRunId: mongoose.Types.ObjectId
+): Promise<number> {
+  let count = 0;
+  for (const row of records) {
+    try {
+      const data = cricosMapperService.mapLocationRaw(row);
+      if (!data.cricosProviderCode || !data.locationName || !data.city || !data.postcode) continue;
+      await CricosLocationRaw.findOneAndUpdate(
+        {
+          cricosProviderCode: data.cricosProviderCode,
+          locationName: data.locationName,
+          addressLine1: data.addressLine1,
+          city: data.city,
+          postcode: data.postcode,
+        },
+        { $set: { ...data, syncRunId } },
+        { upsert: true, new: true }
+      );
+      count++;
+    } catch { /* skip bad rows */ }
+  }
+  return count;
+}
+
+async function upsertRawCourseLocations(
+  records: any[],
+  syncRunId: mongoose.Types.ObjectId
+): Promise<number> {
+  let count = 0;
+  for (const row of records) {
+    try {
+      const data = cricosMapperService.mapCourseLocationRaw(row);
+      if (!data.cricosProviderCode || !data.cricosCourseCode || !data.locationName) continue;
+      await CricosCourseLocationRaw.findOneAndUpdate(
+        {
+          cricosProviderCode: data.cricosProviderCode,
+          cricosCourseCode: data.cricosCourseCode,
+          locationName: data.locationName,
+        },
+        { $set: { ...data, syncRunId } },
+        { upsert: true, new: true }
+      );
+      count++;
+    } catch { /* skip bad rows */ }
+  }
+  return count;
+}
+
+// ─── Staged change creators ────────────────────────────────────────────────
+
+async function stageUniversity(
+  providerCode: string,
+  institutionRows: any[],
+  syncRunId: mongoose.Types.ObjectId,
+  fetchedAt: Date
+): Promise<{ university: any | null; stagedCount: number }> {
+  if (institutionRows.length === 0) return { university: null, stagedCount: 0 };
+
+  const rawInstitution = cricosMapperService.mapInstitutionRaw(institutionRows[0]);
+  const uniPayload = cricosMapperService.mapInstitutionToUniversity(rawInstitution, fetchedAt);
+
+  const existing = await University.findOne({ cricosProviderCode: providerCode }).lean();
+
+  const result = await cricosDiffService.createStagedChangeIfChanged({
+    entityType: 'university',
+    externalKey: providerCode,
+    oldValue: existing ? (existing as any) : undefined,
+    newValue: uniPayload as any,
+    entityId: existing ? (existing as any)._id : undefined,
+    syncRunId,
+    sourceResourceId: CRICOS_RESOURCES.INSTITUTIONS.id,
+    rawHash: rawInstitution.rawHash,
+  });
+
+  await University.findOneAndUpdate(
+    { cricosProviderCode: providerCode },
+    { $set: { lastCricosSyncedAt: fetchedAt, cricosSyncStatus: 'changes_pending' } },
+    { upsert: false }
+  );
+
+  return { university: existing, stagedCount: result === 'created' ? 1 : 0 };
+}
+
+async function stagePrograms(
+  providerCode: string,
+  courseRows: any[],
+  university: any,
+  syncRunId: mongoose.Types.ObjectId,
+  fetchedAt: Date
+): Promise<{ staged: number; unchanged: number; errors: number }> {
+  let staged = 0; let unchanged = 0; let errors = 0;
+
+  for (const row of courseRows) {
+    try {
+      const rawCourse = cricosMapperService.mapCourseRaw(row);
+      if (!rawCourse.cricosCourseCode) { errors++; continue; }
+
+      const programPayload = cricosMapperService.mapCourseToProgram(rawCourse, university, fetchedAt);
+
+      const existing = await Program.findOne({
+        cricosProviderCode: providerCode,
+        cricosCourseCode: rawCourse.cricosCourseCode,
+      }).lean();
+
+      const externalKey = `${providerCode}_${rawCourse.cricosCourseCode}`;
+      const result = await cricosDiffService.createStagedChangeIfChanged({
+        entityType: 'program',
+        externalKey,
+        oldValue: existing ? (existing as any) : undefined,
+        newValue: programPayload as any,
+        entityId: existing ? (existing as any)._id : undefined,
+        syncRunId,
+        universityId: university ? (university as any)._id : undefined,
+        sourceResourceId: CRICOS_RESOURCES.COURSES.id,
+        rawHash: rawCourse.rawHash,
+      });
+
+      if (result === 'created') staged++;
+      else unchanged++;
+    } catch { errors++; }
+  }
+
+  return { staged, unchanged, errors };
+}
+
+async function stageCampuses(
+  providerCode: string,
+  locationRows: any[],
+  university: any,
+  syncRunId: mongoose.Types.ObjectId,
+  fetchedAt: Date
+): Promise<{ staged: number; unchanged: number; errors: number }> {
+  let staged = 0; let unchanged = 0; let errors = 0;
+
+  for (const row of locationRows) {
+    try {
+      const rawLoc = cricosMapperService.mapLocationRaw(row);
+      if (!rawLoc.locationName || !rawLoc.city || !rawLoc.postcode) { errors++; continue; }
+
+      const campusPayload = cricosMapperService.mapLocationToCampus(rawLoc, university, fetchedAt);
+
+      const existing = await Campus.findOne({
+        cricosProviderCode: providerCode,
+        name: rawLoc.locationName,
+        city: rawLoc.city,
+        postcode: rawLoc.postcode,
+      }).lean();
+
+      const externalKey = `${providerCode}_${rawLoc.locationName}_${rawLoc.city}`;
+      const result = await cricosDiffService.createStagedChangeIfChanged({
+        entityType: 'campus',
+        externalKey,
+        oldValue: existing ? (existing as any) : undefined,
+        newValue: campusPayload as any,
+        entityId: existing ? (existing as any)._id : undefined,
+        syncRunId,
+        universityId: university ? (university as any)._id : undefined,
+        sourceResourceId: CRICOS_RESOURCES.LOCATIONS.id,
+        rawHash: rawLoc.rawHash,
+      });
+
+      if (result === 'created') staged++;
+      else unchanged++;
+    } catch { errors++; }
+  }
+
+  return { staged, unchanged, errors };
+}
+
+async function stageProgramLocations(
+  providerCode: string,
+  courseLocationRows: any[],
+  university: any,
+  syncRunId: mongoose.Types.ObjectId,
+  fetchedAt: Date
+): Promise<{ staged: number; unchanged: number; errors: number }> {
+  let staged = 0; let unchanged = 0; let errors = 0;
+
+  for (const row of courseLocationRows) {
+    try {
+      const rawCL = cricosMapperService.mapCourseLocationRaw(row);
+      if (!rawCL.cricosCourseCode || !rawCL.locationName) { errors++; continue; }
+
+      const program = await Program.findOne({
+        cricosProviderCode: providerCode,
+        cricosCourseCode: rawCL.cricosCourseCode,
+      }).lean();
+
+      const campus = await Campus.findOne({
+        cricosProviderCode: providerCode,
+        name: rawCL.locationName,
+      }).lean();
+
+      const plPayload = cricosMapperService.mapCourseLocationToProgramLocation(
+        rawCL, university, program, campus, fetchedAt
+      );
+
+      const existing = await ProgramLocation.findOne({
+        cricosProviderCode: providerCode,
+        cricosCourseCode: rawCL.cricosCourseCode,
+        locationName: rawCL.locationName,
+      }).lean();
+
+      const externalKey = `${providerCode}_${rawCL.cricosCourseCode}_${rawCL.locationName}`;
+      const result = await cricosDiffService.createStagedChangeIfChanged({
+        entityType: 'programLocation',
+        externalKey,
+        oldValue: existing ? (existing as any) : undefined,
+        newValue: plPayload as any,
+        entityId: existing ? (existing as any)._id : undefined,
+        syncRunId,
+        universityId: university ? (university as any)._id : undefined,
+        sourceResourceId: CRICOS_RESOURCES.COURSE_LOCATIONS.id,
+        rawHash: rawCL.rawHash,
+      });
+
+      if (result === 'created') staged++;
+      else unchanged++;
+    } catch { errors++; }
+  }
+
+  return { staged, unchanged, errors };
+}
+
+// ─── Public service ────────────────────────────────────────────────────────
 
 export const cricosSyncService = {
-  /**
-   * Sync a specific provider (University) and its related data
-   */
-  async syncProvider(providerCode: string, triggeredBy: string = "admin"): Promise<string> {
+
+  async previewProviderSync(providerCode: string) {
+    const code = cricosMapperService.normalizeProviderCode(providerCode);
+    const [institutions, courses, locations, courseLocations] = await Promise.all([
+      cricosCkanService.queryByProviderCode(CRICOS_RESOURCES.INSTITUTIONS.id, code),
+      cricosCkanService.queryByProviderCode(CRICOS_RESOURCES.COURSES.id, code),
+      cricosCkanService.queryByProviderCode(CRICOS_RESOURCES.LOCATIONS.id, code),
+      cricosCkanService.queryByProviderCode(CRICOS_RESOURCES.COURSE_LOCATIONS.id, code),
+    ]);
+
+    const activeCourses = courses.filter(
+      (c: any) => (c['Expired'] || '').toLowerCase() !== 'yes'
+    );
+    const expiredCourses = courses.filter(
+      (c: any) => (c['Expired'] || '').toLowerCase() === 'yes'
+    );
+
+    const warnings: string[] = [];
+    if (institutions.length === 0) warnings.push(`No institution found for provider code ${code}`);
+    if (courses.length === 0) warnings.push('No courses found');
+
+    return {
+      providerCode: code,
+      institutionFound: institutions.length > 0,
+      coursesCount: courses.length,
+      activeCoursesCount: activeCourses.length,
+      expiredCoursesCount: expiredCourses.length,
+      locationsCount: locations.length,
+      courseLocationsCount: courseLocations.length,
+      sampleCourses: courses.slice(0, 3),
+      sampleLocations: locations.slice(0, 3),
+      sampleInstitution: institutions[0] ?? null,
+      warnings,
+    };
+  },
+
+  async syncProvider(providerCode: string, triggeredBy = 'admin'): Promise<string> {
+    return this._runSync(providerCode, triggeredBy, false);
+  },
+
+  async recheckProvider(providerCode: string, triggeredBy = 'admin'): Promise<string> {
+    return this._runSync(providerCode, triggeredBy, true);
+  },
+
+  async _runSync(providerCode: string, triggeredBy: string, isRecheck: boolean): Promise<string> {
+    const code = cricosMapperService.normalizeProviderCode(providerCode);
+    const fetchedAt = new Date();
+
     const syncRun = await CricosSyncRun.create({
-      syncType: "provider",
-      providerCode,
+      syncType: 'provider',
+      providerCode: code,
       triggeredBy,
-      status: "running",
+      status: 'running',
+      startedAt: fetchedAt,
     });
+    const syncRunId = syncRun._id as mongoose.Types.ObjectId;
 
     try {
-      // 1. Fetch Raw Records
       const [institutions, courses, locations, courseLocations] = await Promise.all([
-        cricosCkanService.queryByProviderCode(CRICOS_RESOURCES.INSTITUTIONS.id, providerCode),
-        cricosCkanService.queryByProviderCode(CRICOS_RESOURCES.COURSES.id, providerCode),
-        cricosCkanService.queryByProviderCode(CRICOS_RESOURCES.LOCATIONS.id, providerCode),
-        cricosCkanService.queryByProviderCode(CRICOS_RESOURCES.COURSE_LOCATIONS.id, providerCode),
+        cricosCkanService.queryByProviderCode(CRICOS_RESOURCES.INSTITUTIONS.id, code),
+        cricosCkanService.queryByProviderCode(CRICOS_RESOURCES.COURSES.id, code),
+        cricosCkanService.queryByProviderCode(CRICOS_RESOURCES.LOCATIONS.id, code),
+        cricosCkanService.queryByProviderCode(CRICOS_RESOURCES.COURSE_LOCATIONS.id, code),
       ]);
 
       syncRun.stats.institutionsFetched = institutions.length;
@@ -40,94 +354,188 @@ export const cricosSyncService = {
       syncRun.stats.courseLocationsFetched = courseLocations.length;
       await syncRun.save();
 
-      // 2. Upsert Raw Records
-      await this.upsertRawInstitutions(institutions, syncRun._id as mongoose.Types.ObjectId);
-      await this.upsertRawCourses(courses, syncRun._id as mongoose.Types.ObjectId);
-      await this.upsertRawLocations(locations, syncRun._id as mongoose.Types.ObjectId);
-      await this.upsertRawCourseLocations(courseLocations, syncRun._id as mongoose.Types.ObjectId);
+      // Upsert raw records
+      await upsertRawInstitutions(institutions, syncRunId);
+      await upsertRawCourses(courses, syncRunId);
+      await upsertRawLocations(locations, syncRunId);
+      await upsertRawCourseLocations(courseLocations, syncRunId);
 
-      // 3. Map to Outvier Models & Create Staged Changes
-      if (institutions.length > 0) {
-        const uniData = cricosMapperService.mapInstitutionToUniversity(institutions[0]);
-        let university = await University.findOne({ cricosProviderCode: providerCode });
-        
-        await this.createStagedChangeIfChanged(
-          'university',
-          providerCode,
-          university?.toObject(),
-          uniData,
-          university?._id as mongoose.Types.ObjectId,
-          syncRun._id as mongoose.Types.ObjectId
-        );
+      // Create staged changes
+      const { university, stagedCount: uniStaged } =
+        await stageUniversity(code, institutions, syncRunId, fetchedAt);
 
-        if (university) syncRun.stats.universitiesMatched = 1;
+      const uniForMapping = university ?? (institutions.length > 0
+        ? await University.findOne({ cricosProviderCode: code }).lean()
+        : null);
 
-        // Sync Programs
-        for (const courseRow of courses) {
-          const programData = cricosMapperService.mapCourseToProgram(courseRow, university || uniData);
-          const externalKey = `${providerCode}_${programData.cricosCourseCode}`;
-          const existingProgram = await Program.findOne({ 
-            cricosCourseCode: programData.cricosCourseCode, 
-            cricosProviderCode: providerCode 
-          });
+      const programStats = await stagePrograms(code, courses, uniForMapping, syncRunId, fetchedAt);
+      const campusStats = await stageCampuses(code, locations, uniForMapping, syncRunId, fetchedAt);
+      const plStats = await stageProgramLocations(code, courseLocations, uniForMapping, syncRunId, fetchedAt);
 
-          await this.createStagedChangeIfChanged(
-            'program',
-            externalKey,
-            existingProgram?.toObject(),
-            programData,
-            existingProgram?._id as mongoose.Types.ObjectId,
-            syncRun._id as mongoose.Types.ObjectId,
-            university?._id as mongoose.Types.ObjectId
-          );
-          if (existingProgram) syncRun.stats.programsMatched++;
+      const totalStaged = uniStaged + programStats.staged + campusStats.staged + plStats.staged;
+      const totalUnchanged = programStats.unchanged + campusStats.unchanged + plStats.unchanged;
+      const totalErrors = programStats.errors + campusStats.errors + plStats.errors;
+
+      syncRun.stats.stagedChangesCreated = totalStaged;
+      syncRun.stats.errorsCount = totalErrors;
+      syncRun.status = 'completed';
+      syncRun.finishedAt = new Date();
+      syncRun.resourcesSynced = [
+        CRICOS_RESOURCES.INSTITUTIONS.id,
+        CRICOS_RESOURCES.COURSES.id,
+        CRICOS_RESOURCES.LOCATIONS.id,
+        CRICOS_RESOURCES.COURSE_LOCATIONS.id,
+      ];
+      await syncRun.save();
+
+      await University.findOneAndUpdate(
+        { cricosProviderCode: code },
+        {
+          $set: {
+            lastCricosSyncedAt: fetchedAt,
+            cricosSyncStatus: totalStaged > 0 ? 'changes_pending' : 'synced',
+          },
         }
+      );
 
-        // Sync Campuses
-        for (const locRow of locations) {
-          const campusData = cricosMapperService.mapLocationToCampus(locRow, university?._id?.toString() || university || uniData);
-          const externalKey = `${providerCode}_${campusData.name}_${campusData.city}`;
-          const existingCampus = await Campus.findOne({
-            cricosProviderCode: providerCode,
-            name: campusData.name,
-            city: campusData.city,
-            postcode: campusData.postcode
-          });
-
-          await this.createStagedChangeIfChanged(
-            'campus',
-            externalKey,
-            existingCampus?.toObject(),
-            campusData,
-            existingCampus?._id as mongoose.Types.ObjectId,
-            syncRun._id as mongoose.Types.ObjectId,
-            university?._id as mongoose.Types.ObjectId
-          );
-        }
-      }
-
-      syncRun.status = "completed";
+      return syncRun._id!.toString();
+    } catch (error: any) {
+      syncRun.status = 'failed';
+      syncRun.syncErrors = [error.message];
       syncRun.finishedAt = new Date();
       await syncRun.save();
 
-      return syncRun._id as string;
+      await University.findOneAndUpdate(
+        { cricosProviderCode: code },
+        { $set: { cricosSyncStatus: 'failed' } }
+      );
+
+      throw error;
+    }
+  },
+
+  async syncInstitutionOnly(providerCode: string, triggeredBy = 'admin'): Promise<string> {
+    const code = cricosMapperService.normalizeProviderCode(providerCode);
+    const fetchedAt = new Date();
+    const syncRun = await CricosSyncRun.create({
+      syncType: 'resource',
+      providerCode: code,
+      triggeredBy,
+      status: 'running',
+      startedAt: fetchedAt,
+    });
+
+    try {
+      const institutions = await cricosCkanService.queryByProviderCode(
+        CRICOS_RESOURCES.INSTITUTIONS.id, code
+      );
+      syncRun.stats.institutionsFetched = institutions.length;
+      await upsertRawInstitutions(institutions, syncRun._id as mongoose.Types.ObjectId);
+      const { stagedCount } = await stageUniversity(
+        code, institutions, syncRun._id as mongoose.Types.ObjectId, fetchedAt
+      );
+      syncRun.stats.stagedChangesCreated = stagedCount;
+      syncRun.status = 'completed';
+      syncRun.finishedAt = new Date();
+      await syncRun.save();
+      return syncRun._id!.toString();
     } catch (error: any) {
-      syncRun.status = "failed";
-      syncRun.errors.push(error.message);
+      syncRun.status = 'failed';
+      syncRun.syncErrors = [error.message];
       syncRun.finishedAt = new Date();
       await syncRun.save();
       throw error;
     }
   },
 
-  /**
-   * Sync all Australian institutions from CRICOS
-   */
-  async syncAllInstitutions(triggeredBy: string = "admin"): Promise<string> {
+  async syncCoursesOnly(providerCode: string, triggeredBy = 'admin'): Promise<string> {
+    const code = cricosMapperService.normalizeProviderCode(providerCode);
+    const fetchedAt = new Date();
     const syncRun = await CricosSyncRun.create({
-      syncType: "all",
+      syncType: 'resource',
+      providerCode: code,
       triggeredBy,
-      status: "running",
+      status: 'running',
+      startedAt: fetchedAt,
+    });
+
+    try {
+      const courses = await cricosCkanService.queryByProviderCode(
+        CRICOS_RESOURCES.COURSES.id, code
+      );
+      syncRun.stats.coursesFetched = courses.length;
+      await upsertRawCourses(courses, syncRun._id as mongoose.Types.ObjectId);
+      const university = await University.findOne({ cricosProviderCode: code }).lean();
+      const stats = await stagePrograms(
+        code, courses, university, syncRun._id as mongoose.Types.ObjectId, fetchedAt
+      );
+      syncRun.stats.stagedChangesCreated = stats.staged;
+      syncRun.stats.errorsCount = stats.errors;
+      syncRun.status = 'completed';
+      syncRun.finishedAt = new Date();
+      await syncRun.save();
+      return syncRun._id!.toString();
+    } catch (error: any) {
+      syncRun.status = 'failed';
+      syncRun.syncErrors = [error.message];
+      syncRun.finishedAt = new Date();
+      await syncRun.save();
+      throw error;
+    }
+  },
+
+  async syncLocationsOnly(providerCode: string, triggeredBy = 'admin'): Promise<string> {
+    const code = cricosMapperService.normalizeProviderCode(providerCode);
+    const fetchedAt = new Date();
+    const syncRun = await CricosSyncRun.create({
+      syncType: 'resource',
+      providerCode: code,
+      triggeredBy,
+      status: 'running',
+      startedAt: fetchedAt,
+    });
+
+    try {
+      const [locations, courseLocations] = await Promise.all([
+        cricosCkanService.queryByProviderCode(CRICOS_RESOURCES.LOCATIONS.id, code),
+        cricosCkanService.queryByProviderCode(CRICOS_RESOURCES.COURSE_LOCATIONS.id, code),
+      ]);
+      syncRun.stats.locationsFetched = locations.length;
+      syncRun.stats.courseLocationsFetched = courseLocations.length;
+
+      await upsertRawLocations(locations, syncRun._id as mongoose.Types.ObjectId);
+      await upsertRawCourseLocations(courseLocations, syncRun._id as mongoose.Types.ObjectId);
+
+      const university = await University.findOne({ cricosProviderCode: code }).lean();
+      const campusStats = await stageCampuses(
+        code, locations, university, syncRun._id as mongoose.Types.ObjectId, fetchedAt
+      );
+      const plStats = await stageProgramLocations(
+        code, courseLocations, university, syncRun._id as mongoose.Types.ObjectId, fetchedAt
+      );
+
+      syncRun.stats.stagedChangesCreated = campusStats.staged + plStats.staged;
+      syncRun.stats.errorsCount = campusStats.errors + plStats.errors;
+      syncRun.status = 'completed';
+      syncRun.finishedAt = new Date();
+      await syncRun.save();
+      return syncRun._id!.toString();
+    } catch (error: any) {
+      syncRun.status = 'failed';
+      syncRun.syncErrors = [error.message];
+      syncRun.finishedAt = new Date();
+      await syncRun.save();
+      throw error;
+    }
+  },
+
+  async syncAllInstitutions(triggeredBy = 'admin'): Promise<string> {
+    const fetchedAt = new Date();
+    const syncRun = await CricosSyncRun.create({
+      syncType: 'all',
+      triggeredBy,
+      status: 'running',
+      startedAt: fetchedAt,
     });
 
     try {
@@ -135,222 +543,45 @@ export const cricosSyncService = {
       syncRun.stats.institutionsFetched = institutions.length;
       await syncRun.save();
 
-      await this.upsertRawInstitutions(institutions, syncRun._id as mongoose.Types.ObjectId);
+      await upsertRawInstitutions(institutions, syncRun._id as mongoose.Types.ObjectId);
+
+      let totalStaged = 0;
+      let totalErrors = 0;
 
       for (const row of institutions) {
         try {
-          const uniData = cricosMapperService.mapInstitutionToUniversity(row);
-          const university = await University.findOne({ cricosProviderCode: uniData.cricosProviderCode });
-          
-          await this.createStagedChangeIfChanged(
-            'university',
-            uniData.cricosProviderCode,
-            university?.toObject(),
-            uniData,
-            university?._id as mongoose.Types.ObjectId,
-            syncRun._id as mongoose.Types.ObjectId
-          );
-          if (university) syncRun.stats.universitiesMatched++;
-        } catch (err) {
-          syncRun.stats.errorsCount++;
-          console.error(`[CRICOS] Error mapping institution ${row["Institution Name"]}:`, err);
-        }
+          const raw = cricosMapperService.mapInstitutionRaw(row);
+          if (!raw.cricosProviderCode) continue;
+          const uniPayload = cricosMapperService.mapInstitutionToUniversity(raw, fetchedAt);
+          const existing = await University.findOne({ cricosProviderCode: raw.cricosProviderCode }).lean();
+
+          const result = await cricosDiffService.createStagedChangeIfChanged({
+            entityType: 'university',
+            externalKey: raw.cricosProviderCode,
+            oldValue: existing ? (existing as any) : undefined,
+            newValue: uniPayload as any,
+            entityId: existing ? (existing as any)._id : undefined,
+            syncRunId: syncRun._id as mongoose.Types.ObjectId,
+            sourceResourceId: CRICOS_RESOURCES.INSTITUTIONS.id,
+            rawHash: raw.rawHash,
+          });
+
+          if (result === 'created') totalStaged++;
+        } catch { totalErrors++; }
       }
 
-      syncRun.status = "completed";
+      syncRun.stats.stagedChangesCreated = totalStaged;
+      syncRun.stats.errorsCount = totalErrors;
+      syncRun.status = 'completed';
       syncRun.finishedAt = new Date();
       await syncRun.save();
-      return syncRun._id as string;
+      return syncRun._id!.toString();
     } catch (error: any) {
-      syncRun.status = "failed";
-      syncRun.errors.push(error.message);
+      syncRun.status = 'failed';
+      syncRun.syncErrors = [error.message];
       syncRun.finishedAt = new Date();
       await syncRun.save();
       throw error;
-    }
-  },
-
-  /**
-   * Sync all courses (CAUTION: Large dataset)
-   */
-  async syncAllCourses(triggeredBy: string = "admin"): Promise<string> {
-    const syncRun = await CricosSyncRun.create({
-      syncType: "resource",
-      triggeredBy,
-      status: "running",
-    });
-
-    try {
-      const courses = await cricosCkanService.getAllRecords(CRICOS_RESOURCES.COURSES.id);
-      syncRun.stats.coursesFetched = courses.length;
-      await syncRun.save();
-
-      await this.upsertRawCourses(courses, syncRun._id as mongoose.Types.ObjectId);
-
-      syncRun.status = "completed";
-      syncRun.finishedAt = new Date();
-      await syncRun.save();
-      return syncRun._id as string;
-    } catch (error: any) {
-      syncRun.status = "failed";
-      syncRun.errors.push(error.message);
-      syncRun.finishedAt = new Date();
-      await syncRun.save();
-      throw error;
-    }
-  },
-
-
-  async previewProviderSync(providerCode: string) {
-    const [institutions, courses, locations, courseLocations] = await Promise.all([
-      cricosCkanService.queryByProviderCode(CRICOS_RESOURCES.INSTITUTIONS.id, providerCode),
-      cricosCkanService.queryByProviderCode(CRICOS_RESOURCES.COURSES.id, providerCode),
-      cricosCkanService.queryByProviderCode(CRICOS_RESOURCES.LOCATIONS.id, providerCode),
-      cricosCkanService.queryByProviderCode(CRICOS_RESOURCES.COURSE_LOCATIONS.id, providerCode),
-    ]);
-
-    return {
-      providerCode,
-      counts: {
-        institutions: institutions.length,
-        courses: courses.length,
-        locations: locations.length,
-        courseLocations: courseLocations.length,
-      },
-      samples: {
-        institution: institutions[0],
-        course: courses[0],
-        location: locations[0],
-      },
-    };
-  },
-
-  /**
-   * Helper: Create staged change if data differs
-   */
-  async createStagedChangeIfChanged(
-    entityType: string,
-    externalKey: string,
-    oldValue: any,
-    newValue: any,
-    entityId?: mongoose.Types.ObjectId,
-    syncRunId?: mongoose.Types.ObjectId,
-    universityId?: mongoose.Types.ObjectId
-  ) {
-    // Basic change detection (can be more sophisticated)
-    const hasChanged = !oldValue || JSON.stringify(this.stripMetadata(oldValue)) !== JSON.stringify(this.stripMetadata(newValue));
-    
-    if (!hasChanged) return;
-
-    // Avoid duplicate pending changes
-    const pending = await StagedChange.findOne({
-      entityType,
-      status: 'pending',
-      $or: [
-        { entityId: entityId },
-        { 'newValue.cricosProviderCode': newValue.cricosProviderCode, 'newValue.cricosCourseCode': newValue.cricosCourseCode }
-      ]
-    });
-
-    if (pending) return;
-
-    await StagedChange.create({
-      entityType,
-      entityId,
-      universityId,
-      changeType: oldValue ? 'update' : 'create',
-      oldValue,
-      newValue,
-      confidence: 0.95,
-      sourceUrl: `https://cricos.education.gov.au/`, // Placeholder/Generic
-      status: 'pending',
-      // @ts-ignore
-      syncRunId,
-      externalKey,
-    });
-  },
-
-  stripMetadata(obj: any) {
-    const { _id, __v, createdAt, updatedAt, sourceMetadata, dataQuality, ...rest } = obj;
-    return rest;
-  },
-
-  async upsertRawInstitutions(records: any[], syncRunId: mongoose.Types.ObjectId) {
-    for (const row of records) {
-      const data = cricosMapperService.mapInstitutionToUniversity(row);
-      await CricosInstitutionRaw.findOneAndUpdate(
-        { cricosProviderCode: data.cricosProviderCode },
-        { 
-          ...data, 
-          raw: row, 
-          syncRunId, 
-          fetchedAt: new Date(),
-          sourceResourceId: CRICOS_RESOURCES.INSTITUTIONS.id 
-        },
-        { upsert: true }
-      );
-    }
-  },
-
-  async upsertRawCourses(records: any[], syncRunId: mongoose.Types.ObjectId) {
-    for (const row of records) {
-      const data = cricosMapperService.mapCourseToProgram(row);
-      await CricosCourseRaw.findOneAndUpdate(
-        { cricosCourseCode: data.cricosCourseCode, cricosProviderCode: data.cricosProviderCode },
-        { 
-          ...data, 
-          raw: row, 
-          syncRunId, 
-          fetchedAt: new Date(),
-          sourceResourceId: CRICOS_RESOURCES.COURSES.id 
-        },
-        { upsert: true }
-      );
-    }
-  },
-
-  async upsertRawLocations(records: any[], syncRunId: mongoose.Types.ObjectId) {
-    for (const row of records) {
-      const data = cricosMapperService.mapLocationToCampus(row);
-      await CricosLocationRaw.findOneAndUpdate(
-        { 
-          cricosProviderCode: data.cricosProviderCode, 
-          locationName: data.name, 
-          addressLine1: data.addressLine1,
-          city: data.city,
-          postcode: data.postcode
-        },
-        { 
-          ...data, 
-          locationName: data.name,
-          raw: row, 
-          syncRunId, 
-          fetchedAt: new Date(),
-          sourceResourceId: CRICOS_RESOURCES.LOCATIONS.id 
-        },
-        { upsert: true }
-      );
-    }
-  },
-
-  async upsertRawCourseLocations(records: any[], syncRunId: mongoose.Types.ObjectId) {
-    for (const row of records) {
-      const pCode = cricosMapperService.getField(row, ["CRICOS Provider Code", "Provider Code"]);
-      const cCode = cricosMapperService.getField(row, ["CRICOS Course Code", "Course Code"]);
-      const lName = cricosMapperService.getField(row, ["Location Name", "Name"]);
-      
-      if (pCode && cCode && lName) {
-        await CricosCourseLocationRaw.findOneAndUpdate(
-          { cricosProviderCode: pCode, cricosCourseCode: cCode, locationName: lName },
-          { 
-            raw: row, 
-            syncRunId, 
-            fetchedAt: new Date(),
-            sourceResourceId: CRICOS_RESOURCES.COURSE_LOCATIONS.id 
-          },
-          { upsert: true }
-        );
-      }
     }
   },
 };

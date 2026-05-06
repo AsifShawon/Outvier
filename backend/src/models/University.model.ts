@@ -29,6 +29,17 @@ export interface ISourceMetadata {
 }
 
 export type IngestionStatus = 'not_started' | 'queued' | 'running' | 'completed' | 'failed' | 'partial';
+export type CricosSyncStatus = 'not_synced' | 'synced' | 'changes_pending' | 'failed';
+
+export interface IPostalAddress {
+  line1?: string;
+  line2?: string;
+  line3?: string;
+  line4?: string;
+  city?: string;
+  state?: string;
+  postcode?: string;
+}
 
 export interface IUniversity extends Document {
   // --- Legacy fields kept for backward compat ---
@@ -55,15 +66,35 @@ export interface IUniversity extends Document {
   providerType?: string;
   status: 'active' | 'inactive' | 'draft';
   sourceMetadata?: ISourceMetadata;
-  // --- Ingestion tracking fields (new) ---
+  // --- Ingestion tracking fields ---
   teqsaProviderId?: string;
   sourceUrls?: string[];
   ingestionStatus?: IngestionStatus;
   lastSyncedAt?: Date;
   autoDiscoverPrograms?: boolean;
+  // --- CRICOS-specific fields ---
+  institutionType?: string;
+  institutionCapacity?: number;
+  postalAddress?: IPostalAddress;
+  lastCricosSyncedAt?: Date;
+  cricosSyncStatus?: CricosSyncStatus;
+  cricosDataHash?: string;
   createdAt: Date;
   updatedAt: Date;
 }
+
+const PostalAddressSchema = new Schema<IPostalAddress>(
+  {
+    line1: String,
+    line2: String,
+    line3: String,
+    line4: String,
+    city: String,
+    state: String,
+    postcode: String,
+  },
+  { _id: false }
+);
 
 const CampusSchema = new Schema<ICampus>(
   {
@@ -129,6 +160,18 @@ const UniversitySchema = new Schema<IUniversity>(
     },
     lastSyncedAt: Date,
     autoDiscoverPrograms: { type: Boolean, default: false },
+    // CRICOS-specific
+    institutionType: { type: String, trim: true },
+    institutionCapacity: { type: Number },
+    postalAddress: PostalAddressSchema,
+    lastCricosSyncedAt: { type: Date, index: true },
+    cricosSyncStatus: {
+      type: String,
+      enum: ['not_synced', 'synced', 'changes_pending', 'failed'],
+      default: 'not_synced',
+      index: true,
+    },
+    cricosDataHash: { type: String },
   },
   { timestamps: true }
 );

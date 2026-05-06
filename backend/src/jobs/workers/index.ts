@@ -5,6 +5,7 @@ import { scholarshipSyncWorker } from './scholarshipSync.worker';
 import { rankingSyncWorker } from './rankingSync.worker';
 import { outcomeSyncWorker } from './outcomeSync.worker';
 import { programDiscoveryWorker } from './programDiscovery.worker';
+import { cricosSyncWorker } from './cricosSync.worker';
 
 // Export workers to prevent them from being garbage collected
 export const workers = {
@@ -15,6 +16,7 @@ export const workers = {
   rankingSyncWorker,
   outcomeSyncWorker,
   programDiscoveryWorker,
+  cricosSyncWorker,
 };
 
 // Graceful shutdown helper for all workers

@@ -15,6 +15,9 @@ router.post('/bulk-approve', stagedChangesController.bulkApprove);
 /** POST /api/v1/admin/staged-changes/bulk-reject */
 router.post('/bulk-reject', stagedChangesController.bulkReject);
 
+/** POST /api/v1/admin/staged-changes/bulk-approve-cricos */
+router.post('/bulk-approve-cricos', stagedChangesController.bulkApproveCricos);
+
 /** POST /api/v1/admin/staged-changes/:id/approve */
 router.post('/:id/approve', stagedChangesController.approve);
 

@@ -8,9 +8,11 @@ const router = Router();
 router.use(protect, adminOnly);
 
 router.get('/resources', cricosController.getResources);
+router.get('/stats', cricosController.getStats);
 router.post('/inspect-fields', cricosController.inspectFields);
 router.post('/preview-provider', cricosController.previewProvider);
 router.post('/sync-provider', cricosController.syncProvider);
+router.post('/recheck-provider', cricosController.recheckProvider);
 router.post('/sync-university/:universityId', cricosController.syncUniversity);
 router.get('/sync-runs', cricosController.getSyncRuns);
 router.get('/sync-runs/:id', cricosController.getSyncRunDetail);

@@ -6,9 +6,11 @@ export interface ICricosCourseLocationRaw extends Document {
   cricosCourseCode: string;
   courseName?: string;
   locationName: string;
+  locationCity?: string;
+  locationState?: string;
   raw: any;
+  rawHash?: string;
   sourceResourceId: string;
-  sourceUpdatedAt?: Date;
   fetchedAt: Date;
   syncRunId?: mongoose.Types.ObjectId;
 }
@@ -20,9 +22,11 @@ const CricosCourseLocationRawSchema = new Schema<ICricosCourseLocationRaw>(
     cricosCourseCode: { type: String, required: true, index: true },
     courseName: String,
     locationName: { type: String, required: true, index: true },
+    locationCity: String,
+    locationState: String,
     raw: { type: Schema.Types.Mixed },
+    rawHash: String,
     sourceResourceId: String,
-    sourceUpdatedAt: Date,
     fetchedAt: { type: Date, default: Date.now },
     syncRunId: { type: Schema.Types.ObjectId, ref: 'CricosSyncRun' },
   },

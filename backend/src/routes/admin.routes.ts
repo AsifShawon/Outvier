@@ -19,6 +19,8 @@ router.get('/dashboard/stats', adminController.getStats);
 router.get('/users', adminController.getUsers);
 
 // University CRUD
+router.get('/universities', adminController.listUniversities);
+router.get('/universities/:id', adminController.getUniversity);
 router.get('/universities/:slug/programs', programController.getByUniversity);
 router.post('/universities', validate(createUniversitySchema), adminController.createUniversity);
 router.post('/universities/:id/trigger-enrichment', syncController.triggerUniversitySync);

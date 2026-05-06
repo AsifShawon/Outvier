@@ -3,7 +3,11 @@
 import { useQuery } from '@tanstack/react-query';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
-import { Clock, DollarSign, Globe, BookOpen, ChevronRight, CheckCircle2, Calendar, Monitor, GraduationCap } from 'lucide-react';
+import {
+  Clock, DollarSign, Globe, BookOpen, ChevronRight, CheckCircle2,
+  Calendar, Monitor, GraduationCap, ExternalLink, AlertTriangle,
+  Languages, Briefcase, FlaskConical, Layers, BadgeCheck,
+} from 'lucide-react';
 import { Navbar } from '@/components/layout/Navbar';
 import { Footer } from '@/components/layout/Footer';
 import { Badge } from '@/components/ui/badge';
@@ -18,6 +22,10 @@ const levelColors: Record<string, string> = {
   diploma: 'bg-amber-100 text-amber-800',
   certificate: 'bg-green-100 text-green-800',
   graduate_certificate: 'bg-teal-100 text-teal-800',
+  secondary: 'bg-sky-100 text-sky-800',
+  elicos: 'bg-violet-100 text-violet-800',
+  non_award: 'bg-slate-100 text-slate-800',
+  other: 'bg-slate-100 text-slate-800',
 };
 
 const levelLabels: Record<string, string> = {
@@ -27,7 +35,29 @@ const levelLabels: Record<string, string> = {
   diploma: 'Diploma',
   certificate: 'Certificate',
   graduate_certificate: 'Graduate Certificate',
+  secondary: 'Secondary',
+  elicos: 'ELICOS',
+  non_award: 'Non-Award',
+  other: 'Other',
 };
+
+function fmt(n: number | undefined) {
+  if (!n) return null;
+  return `$${n.toLocaleString('en-AU', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+}
+
+function DetailRow({ icon: Icon, label, value }: { icon: any; label: string; value: React.ReactNode }) {
+  if (!value && value !== 0) return null;
+  return (
+    <div className="flex items-start gap-3">
+      <Icon className="h-4 w-4 text-muted-foreground shrink-0 mt-0.5" />
+      <div>
+        <dt className="text-[10px] text-muted-foreground uppercase tracking-wide">{label}</dt>
+        <dd className="text-sm font-medium">{value}</dd>
+      </div>
+    </div>
+  );
+}
 
 export default function ProgramDetailPage() {
   const params = useParams();
@@ -39,6 +69,11 @@ export default function ProgramDetailPage() {
   });
 
   const program: Program | undefined = data?.data?.data;
+
+  const hasCricosData = !!(program?.cricosProviderCode || program?.cricosCourseCode);
+  const hasFeeData = !!(program?.tuitionFeeAud || program?.estimatedTotalCourseCostAud || program?.tuitionFeeLocal || program?.tuitionFeeInternational);
+  const hasWorkComponent = program?.workComponent === 'Yes' || (program?.workComponentHoursPerWeek ?? 0) > 0;
+  const hasFoE2 = !!(program?.fieldOfEducation2BroadField);
 
   return (
     <div className="flex flex-col min-h-screen">
@@ -67,18 +102,42 @@ export default function ProgramDetailPage() {
                 <Skeleton className="h-5 w-56 bg-white/10" />
               </div>
             ) : program ? (
-              <div>
-                <span className={`inline-flex items-center px-3 py-1 rounded-lg text-xs font-semibold uppercase tracking-wide mb-4 ${levelColors[program.level]}`}>
-                  {levelLabels[program.level]}
-                </span>
-                <h1 className="text-3xl font-bold font-display mb-2">{program.name}</h1>
-                <Link
-                  href={`/universities/${program.universitySlug}`}
-                  className="text-white/70 hover:text-white transition-colors text-sm flex items-center gap-1"
-                >
-                  <GraduationCap className="h-4 w-4" />
-                  {program.universityName}
-                </Link>
+              <div className="flex items-start justify-between gap-4 flex-wrap">
+                <div>
+                  <div className="flex items-center gap-2 mb-4 flex-wrap">
+                    <span className={`inline-flex items-center px-3 py-1 rounded-lg text-xs font-semibold uppercase tracking-wide ${levelColors[program.level] ?? levelColors.other}`}>
+                      {levelLabels[program.level] ?? program.level}
+                    </span>
+                    {program.expired && (
+                      <span className="inline-flex items-center gap-1 px-3 py-1 rounded-lg text-xs font-semibold uppercase tracking-wide bg-red-500/20 text-red-300 border border-red-500/30">
+                        <AlertTriangle className="h-3 w-3" /> Expired
+                      </span>
+                    )}
+                    {program.courseLevel && (
+                      <span className="inline-flex items-center px-3 py-1 rounded-lg text-xs font-medium bg-white/10 text-white/80">
+                        {program.courseLevel}
+                      </span>
+                    )}
+                  </div>
+                  <h1 className="text-3xl font-bold font-display mb-2">{program.name}</h1>
+                  <Link
+                    href={`/universities/${program.universitySlug}`}
+                    className="text-white/70 hover:text-white transition-colors text-sm flex items-center gap-1"
+                  >
+                    <GraduationCap className="h-4 w-4" />
+                    {program.universityName}
+                    {program.institutionName && program.institutionName !== program.universityName && (
+                      <span className="ml-1 text-white/50">({program.institutionName})</span>
+                    )}
+                  </Link>
+                </div>
+                {hasCricosData && (
+                  <div className="text-right text-white/60 text-xs space-y-0.5">
+                    {program.cricosProviderCode && <div>Provider: <span className="font-mono text-white/80">{program.cricosProviderCode}</span></div>}
+                    {program.cricosCourseCode && <div>Course Code: <span className="font-mono text-white/80">{program.cricosCourseCode}</span></div>}
+                    {program.vetNationalCode && <div>VET: <span className="font-mono text-white/80">{program.vetNationalCode}</span></div>}
+                  </div>
+                )}
               </div>
             ) : null}
           </div>
@@ -88,20 +147,140 @@ export default function ProgramDetailPage() {
           {isLoading ? (
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
               <div className="lg:col-span-2 space-y-4">
-                {Array.from({ length: 6 }).map((_, i) => (
-                  <Skeleton key={i} className="h-6 w-full" />
-                ))}
+                {Array.from({ length: 6 }).map((_, i) => <Skeleton key={i} className="h-6 w-full" />)}
               </div>
             </div>
           ) : program ? (
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-              {/* Main */}
+
+              {/* ── Main column ─────────────────────────────────────────── */}
               <div className="lg:col-span-2 space-y-8">
-                {/* Description */}
+
+                {/* Description / About */}
                 <div>
                   <h2 className="text-xl font-bold font-display mb-3">About this Program</h2>
-                  <p className="text-muted-foreground leading-relaxed">{program.description}</p>
+                  {program.description ? (
+                    <p className="text-muted-foreground leading-relaxed">{program.description}</p>
+                  ) : (
+                    <p className="text-muted-foreground leading-relaxed">
+                      {program.courseLevel ? `${program.courseLevel} programme` : 'This programme'} at {program.universityName},
+                      registered with CRICOS{program.cricosProviderCode ? ` under provider code ${program.cricosProviderCode}` : ''}.
+                      {program.durationWeeks ? ` Total duration: ${program.durationWeeks} weeks.` : ''}
+                      {program.courseLanguage ? ` Delivered in ${program.courseLanguage}.` : ''}
+                    </p>
+                  )}
                 </div>
+
+                {/* Field of Education */}
+                {(program.fieldOfEducation1BroadField || program.fieldOfStudy) && (
+                  <div>
+                    <h2 className="text-xl font-bold font-display mb-4 flex items-center gap-2">
+                      <Layers className="h-5 w-5 text-primary" /> Field of Education
+                    </h2>
+                    <div className="space-y-3">
+                      {/* FoE 1 */}
+                      <div className="rounded-xl border border-border/60 bg-card p-4">
+                        <p className="text-[10px] uppercase tracking-wider text-muted-foreground mb-2 font-semibold">Primary Field</p>
+                        <div className="flex flex-wrap gap-2">
+                          {program.fieldOfEducation1BroadField && (
+                            <Badge variant="secondary">{program.fieldOfEducation1BroadField}</Badge>
+                          )}
+                          {program.fieldOfEducation1NarrowField && (
+                            <Badge variant="outline" className="text-xs">{program.fieldOfEducation1NarrowField}</Badge>
+                          )}
+                          {program.fieldOfEducation1DetailedField && (
+                            <Badge variant="outline" className="text-xs text-muted-foreground">{program.fieldOfEducation1DetailedField}</Badge>
+                          )}
+                        </div>
+                      </div>
+                      {/* FoE 2 */}
+                      {hasFoE2 && (
+                        <div className="rounded-xl border border-border/60 bg-card p-4">
+                          <p className="text-[10px] uppercase tracking-wider text-muted-foreground mb-2 font-semibold">Secondary Field</p>
+                          <div className="flex flex-wrap gap-2">
+                            {program.fieldOfEducation2BroadField && (
+                              <Badge variant="secondary">{program.fieldOfEducation2BroadField}</Badge>
+                            )}
+                            {program.fieldOfEducation2NarrowField && (
+                              <Badge variant="outline" className="text-xs">{program.fieldOfEducation2NarrowField}</Badge>
+                            )}
+                            {program.fieldOfEducation2DetailedField && (
+                              <Badge variant="outline" className="text-xs text-muted-foreground">{program.fieldOfEducation2DetailedField}</Badge>
+                            )}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                {/* Fees breakdown */}
+                {hasFeeData && (
+                  <div>
+                    <h2 className="text-xl font-bold font-display mb-4 flex items-center gap-2">
+                      <DollarSign className="h-5 w-5 text-primary" /> Course Fees (AUD)
+                    </h2>
+                    <div className="rounded-xl border border-border/60 bg-card overflow-hidden">
+                      <table className="w-full text-sm">
+                        <tbody className="divide-y divide-border/40">
+                          {program.tuitionFeeAud != null && (
+                            <tr className="px-4 py-3 flex items-center justify-between">
+                              <td className="px-4 py-3 text-muted-foreground">Tuition Fee</td>
+                              <td className="px-4 py-3 font-semibold text-right">{fmt(program.tuitionFeeAud)}</td>
+                            </tr>
+                          )}
+                          {program.nonTuitionFeeAud != null && (
+                            <tr className="px-4 py-3 flex items-center justify-between">
+                              <td className="px-4 py-3 text-muted-foreground">Non-Tuition Fee</td>
+                              <td className="px-4 py-3 font-semibold text-right">{fmt(program.nonTuitionFeeAud)}</td>
+                            </tr>
+                          )}
+                          {program.estimatedTotalCourseCostAud != null && (
+                            <tr className="px-4 py-3 flex items-center justify-between bg-primary/5">
+                              <td className="px-4 py-3 font-semibold">Estimated Total Course Cost</td>
+                              <td className="px-4 py-3 font-bold text-primary text-right">{fmt(program.estimatedTotalCourseCostAud)}</td>
+                            </tr>
+                          )}
+                          {!program.tuitionFeeAud && program.tuitionFeeInternational && (
+                            <tr className="px-4 py-3 flex items-center justify-between">
+                              <td className="px-4 py-3 text-muted-foreground">International Fees</td>
+                              <td className="px-4 py-3 font-semibold text-right">{fmt(program.tuitionFeeInternational)} / yr</td>
+                            </tr>
+                          )}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                )}
+
+                {/* Work Integrated Learning */}
+                {hasWorkComponent && (
+                  <div>
+                    <h2 className="text-xl font-bold font-display mb-4 flex items-center gap-2">
+                      <Briefcase className="h-5 w-5 text-primary" /> Work Integrated Learning
+                    </h2>
+                    <div className="rounded-xl border border-border/60 bg-card p-4 grid grid-cols-2 sm:grid-cols-3 gap-4">
+                      {program.workComponentHoursPerWeek != null && (
+                        <div>
+                          <p className="text-[10px] uppercase tracking-wider text-muted-foreground mb-0.5">Hours / Week</p>
+                          <p className="text-sm font-semibold">{program.workComponentHoursPerWeek} hrs</p>
+                        </div>
+                      )}
+                      {program.workComponentWeeks != null && (
+                        <div>
+                          <p className="text-[10px] uppercase tracking-wider text-muted-foreground mb-0.5">Weeks</p>
+                          <p className="text-sm font-semibold">{program.workComponentWeeks} wks</p>
+                        </div>
+                      )}
+                      {program.workComponentTotalHours != null && (
+                        <div>
+                          <p className="text-[10px] uppercase tracking-wider text-muted-foreground mb-0.5">Total Hours</p>
+                          <p className="text-sm font-semibold">{program.workComponentTotalHours} hrs</p>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
 
                 {/* Requirements */}
                 {(program.academicRequirements || program.englishRequirements) && (
@@ -144,81 +323,69 @@ export default function ProgramDetailPage() {
                     </div>
                   </div>
                 )}
+
+                {/* CRICOS Data Source note */}
+                {hasCricosData && program.dataQuality?.sourceName && (
+                  <div className="rounded-xl border border-border/40 bg-muted/20 p-4 flex items-start gap-3">
+                    <BadgeCheck className="h-4 w-4 text-emerald-400 shrink-0 mt-0.5" />
+                    <p className="text-xs text-muted-foreground">
+                      Data sourced from <span className="text-foreground font-medium">{program.dataQuality.sourceName}</span>.
+                      {program.dataQuality.lastFetchedAt && (
+                        <> Last synced {new Date(program.dataQuality.lastFetchedAt).toLocaleDateString('en-AU')}.</>
+                      )}
+                    </p>
+                  </div>
+                )}
               </div>
 
-              {/* Sidebar */}
+              {/* ── Sidebar ──────────────────────────────────────────────── */}
               <aside className="space-y-5">
+
                 {/* Quick Facts */}
                 <div className="rounded-xl border border-border/60 bg-card p-5">
                   <h3 className="font-semibold mb-4">Program Details</h3>
                   <dl className="space-y-4">
-                    <div className="flex items-center gap-3">
-                      <Clock className="h-4 w-4 text-muted-foreground shrink-0" />
-                      <div>
-                        <dt className="text-[10px] text-muted-foreground uppercase tracking-wide">Duration</dt>
-                        <dd className="text-sm font-medium">{program.duration}</dd>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-3">
-                      <Monitor className="h-4 w-4 text-muted-foreground shrink-0" />
-                      <div>
-                        <dt className="text-[10px] text-muted-foreground uppercase tracking-wide">Campus Mode</dt>
-                        <dd className="text-sm font-medium capitalize">{program.campusMode}</dd>
-                      </div>
-                    </div>
+                    <DetailRow icon={Clock} label="Duration"
+                      value={program.durationWeeks
+                        ? `${program.durationWeeks} weeks`
+                        : program.duration || null} />
+                    <DetailRow icon={Monitor} label="Campus Mode"
+                      value={program.campusMode ? <span className="capitalize">{program.campusMode.replace('-', ' ')}</span> : null} />
+                    <DetailRow icon={Languages} label="Language" value={program.courseLanguage ?? null} />
                     {program.intakeMonths && program.intakeMonths.length > 0 && (
-                      <div className="flex items-center gap-3">
-                        <Calendar className="h-4 w-4 text-muted-foreground shrink-0" />
-                        <div>
-                          <dt className="text-[10px] text-muted-foreground uppercase tracking-wide">Intake</dt>
-                          <dd className="text-sm font-medium">{program.intakeMonths.join(', ')}</dd>
-                        </div>
-                      </div>
+                      <DetailRow icon={Calendar} label="Intake" value={program.intakeMonths.join(', ')} />
                     )}
-                    {program.tuitionFeeLocal && (
-                      <div className="flex items-center gap-3">
-                        <DollarSign className="h-4 w-4 text-muted-foreground shrink-0" />
-                        <div>
-                          <dt className="text-[10px] text-muted-foreground uppercase tracking-wide">Domestic Fees</dt>
-                          <dd className="text-sm font-medium">${program.tuitionFeeLocal.toLocaleString()} / yr</dd>
-                        </div>
-                      </div>
-                    )}
-                    {program.tuitionFeeInternational && (
-                      <div className="flex items-center gap-3">
-                        <DollarSign className="h-4 w-4 text-muted-foreground shrink-0" />
-                        <div>
-                          <dt className="text-[10px] text-muted-foreground uppercase tracking-wide">International Fees</dt>
-                          <dd className="text-sm font-medium">${program.tuitionFeeInternational.toLocaleString()} / yr</dd>
-                        </div>
-                      </div>
-                    )}
+                    <DetailRow icon={DollarSign} label="Tuition Fee (total)"
+                      value={fmt(program.estimatedTotalCourseCostAud) ?? fmt(program.tuitionFeeInternational ?? undefined)} />
                     {program.cricosCourseCode && (
-                      <div className="flex items-center gap-3">
-                        <CheckCircle2 className="h-4 w-4 text-primary shrink-0" />
-                        <div>
-                          <dt className="text-[10px] text-muted-foreground uppercase tracking-wide">CRICOS Code</dt>
-                          <dd className="text-sm font-medium">{program.cricosCourseCode}</dd>
-                        </div>
-                      </div>
+                      <DetailRow icon={CheckCircle2} label="CRICOS Code" value={<span className="font-mono">{program.cricosCourseCode}</span>} />
+                    )}
+                    {program.vetNationalCode && (
+                      <DetailRow icon={FlaskConical} label="VET Code" value={<span className="font-mono">{program.vetNationalCode}</span>} />
+                    )}
+                    {program.dualQualification && (
+                      <DetailRow icon={CheckCircle2} label="Dual Qualification" value="Yes" />
+                    )}
+                    {program.foundationStudies && (
+                      <DetailRow icon={CheckCircle2} label="Foundation Studies" value="Yes" />
                     )}
                   </dl>
                 </div>
 
                 {/* Field badge */}
-                <div className="rounded-xl border border-border/60 bg-card p-5">
-                  <p className="text-xs text-muted-foreground mb-2">Field of Study</p>
-                  <Badge variant="secondary" className="text-sm px-3 py-1">{program.field}</Badge>
-                </div>
+                {(program.field || program.fieldOfEducation1BroadField) && (
+                  <div className="rounded-xl border border-border/60 bg-card p-5">
+                    <p className="text-xs text-muted-foreground mb-2">Field of Study</p>
+                    <Badge variant="secondary" className="text-sm px-3 py-1">
+                      {program.fieldOfEducation1BroadField ?? program.field}
+                    </Badge>
+                  </div>
+                )}
 
-                {/* Official link */}
+                {/* Links */}
                 {program.website && (
-                  <a
-                    href={program.website}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="flex items-center justify-center gap-2 w-full rounded-xl border border-border/60 bg-card p-4 text-sm font-medium hover:bg-muted/50 hover:border-primary/30 transition-colors"
-                  >
+                  <a href={program.website} target="_blank" rel="noopener noreferrer"
+                    className="flex items-center justify-center gap-2 w-full rounded-xl border border-border/60 bg-card p-4 text-sm font-medium hover:bg-muted/50 hover:border-primary/30 transition-colors">
                     <Globe className="h-4 w-4 text-muted-foreground" />
                     View on University Site
                   </a>
@@ -227,8 +394,7 @@ export default function ProgramDetailPage() {
                 {program.cricosCourseCode && (
                   <a
                     href={`https://cricos.education.gov.au/course/coursedetails.aspx?coursecode=${program.cricosCourseCode}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
+                    target="_blank" rel="noopener noreferrer"
                     className="flex items-center justify-center gap-2 w-full rounded-xl border border-primary/20 bg-primary/5 p-4 text-sm font-medium hover:bg-primary/10 transition-colors text-primary"
                   >
                     <ExternalLink className="h-4 w-4" />
@@ -236,7 +402,6 @@ export default function ProgramDetailPage() {
                   </a>
                 )}
 
-                {/* University link */}
                 <Link href={`/universities/${program.universitySlug}`}>
                   <div className="flex items-center justify-center gap-2 w-full rounded-xl border border-border/60 bg-card p-4 text-sm font-medium hover:bg-muted/50 hover:border-primary/30 transition-colors cursor-pointer">
                     <GraduationCap className="h-4 w-4 text-muted-foreground" />

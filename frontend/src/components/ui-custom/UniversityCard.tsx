@@ -103,7 +103,7 @@ export function UniversityCard({ university }: UniversityCardProps) {
             </div>
             
             <div className="flex gap-2">
-              <span className={cn('px-2 py-1 rounded-md text-[10px] font-bold uppercase tracking-wide', stateColors[university.state] || 'bg-slate-100 text-slate-600')}>
+              <span className={cn('px-2 py-1 rounded-md text-[10px] font-bold uppercase tracking-wide', university.state ? (stateColors[university.state] ?? 'bg-slate-100 text-slate-600') : 'bg-slate-100 text-slate-600')}>
                 {university.state}
               </span>
               <span className="px-2 py-1 rounded-md text-[10px] font-bold uppercase tracking-wide bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400">

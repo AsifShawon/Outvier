@@ -33,6 +33,12 @@ export const adminApi = {
     api.post(`/admin/staged-changes/${id}/reject`),
   editApproveStagedChange: (id: string, newValue: Record<string, unknown>) =>
     api.post(`/admin/staged-changes/${id}/edit-approve`, { newValue }),
+  bulkApproveStagedChanges: (ids: string[]) =>
+    api.post('/admin/staged-changes/bulk-approve', { ids }),
+  bulkRejectStagedChanges: (ids: string[]) =>
+    api.post('/admin/staged-changes/bulk-reject', { ids }),
+  bulkApproveCricos: (params: { providerCode?: string; entityType?: string } = {}) =>
+    api.post('/admin/staged-changes/bulk-approve-cricos', params),
 
   // ── Sync Jobs ─────────────────────────────────────────────────────────────
   listSyncJobs: (params: Record<string, string> = {}) =>

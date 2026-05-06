@@ -13,8 +13,8 @@ export interface ICricosLocationRaw extends Document {
   state: string;
   postcode: string;
   raw: any;
+  rawHash?: string;
   sourceResourceId: string;
-  sourceUpdatedAt?: Date;
   fetchedAt: Date;
   syncRunId?: mongoose.Types.ObjectId;
 }
@@ -33,8 +33,8 @@ const CricosLocationRawSchema = new Schema<ICricosLocationRaw>(
     state: { type: String, required: true },
     postcode: { type: String, required: true },
     raw: { type: Schema.Types.Mixed },
+    rawHash: String,
     sourceResourceId: String,
-    sourceUpdatedAt: Date,
     fetchedAt: { type: Date, default: Date.now },
     syncRunId: { type: Schema.Types.ObjectId, ref: 'CricosSyncRun' },
   },

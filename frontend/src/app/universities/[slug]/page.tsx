@@ -3,7 +3,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { useParams, notFound } from 'next/navigation';
 import Link from 'next/link';
-import { MapPin, Globe, Calendar, Award, Users, ChevronRight, BookOpen } from 'lucide-react';
+import { MapPin, Globe, Calendar, Award, Users, ChevronRight, BookOpen, CheckCircle2 } from 'lucide-react';
 import { Navbar } from '@/components/layout/Navbar';
 import { Footer } from '@/components/layout/Footer';
 import { ProgramCard } from '@/components/ui-custom/ProgramCard';
