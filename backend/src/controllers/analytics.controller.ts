@@ -70,6 +70,7 @@ export const analyticsController = {
         avgTuitionByField,
         totalUniversities,
         totalPrograms,
+        featuredStateStats,
       ] = await Promise.all([
         University.aggregate([
           { $match: { status: 'active' } },
@@ -107,6 +108,21 @@ export const analyticsController = {
         ]),
         University.countDocuments({ status: 'active' }),
         Program.countDocuments({ status: 'active' }),
+        // Featured state stats
+        Promise.all(['NSW', 'VIC', 'QLD'].map(async (state) => {
+          const [programCount, avgTuition] = await Promise.all([
+            Program.countDocuments({ state, status: 'active' }),
+            Program.aggregate([
+              { $match: { state, status: 'active', tuitionFeeInternational: { $gt: 0 } } },
+              { $group: { _id: null, avg: { $avg: '$tuitionFeeInternational' } } }
+            ])
+          ]);
+          return {
+            state,
+            programCount,
+            avgTuition: avgTuition[0]?.avg || 0
+          };
+        }))
       ]);
 
       res.status(200).json({
@@ -118,6 +134,7 @@ export const analyticsController = {
           programsByField,
           programsByLevel,
           avgTuitionByField,
+          featuredStateStats
         },
       });
     } catch (error) {

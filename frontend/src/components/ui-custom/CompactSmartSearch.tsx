@@ -1,6 +1,8 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
+import { useQuery } from '@tanstack/react-query';
+import { programsApi } from '@/lib/api/programs.api';
 import { Search, MapPin, GraduationCap, DollarSign, Calendar, Sparkles, X, ChevronDown, Check } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -21,21 +23,7 @@ import {
   CommandList,
 } from "@/components/ui/command";
 
-const subjects = [
-  "Information Technology", 
-  "Business & Management", 
-  "Engineering", 
-  "Health & Medicine", 
-  "Arts & Humanities",
-  "Data Science",
-  "Artificial Intelligence",
-  "Cyber Security",
-  "Digital Marketing",
-  "MBA"
-];
-
-const cities = ["Sydney", "Melbourne", "Brisbane", "Perth", "Adelaide", "Canberra", "Gold Coast", "Hobart"];
-
+// Budgets are still constant as they are defined by the UI ranges
 const budgets = [
   { label: "Under $20k", value: "under-20k" },
   { label: "$20k - $30k", value: "20k-30k" },
@@ -50,6 +38,20 @@ export function CompactSmartSearch() {
   const router = useRouter();
   const [searchQuery, setSearchQuery] = useState('');
   const [filters, setFilters] = useState<Record<string, string>>({});
+
+  // Fetch subjects (fields) and cities from database
+  const { data: fieldsData } = useQuery({
+    queryKey: ['program-fields'],
+    queryFn: () => programsApi.getFields().then(res => res.data.data),
+  });
+
+  const { data: citiesData } = useQuery({
+    queryKey: ['program-cities'],
+    queryFn: () => programsApi.getCities().then(res => res.data.data),
+  });
+
+  const subjectOptions = useMemo(() => fieldsData || [], [fieldsData]);
+  const cityOptions = useMemo(() => citiesData || [], [citiesData]);
 
   const handleFilterSelect = (key: string, value: string) => {
     setFilters(prev => {
@@ -117,7 +119,7 @@ export function CompactSmartSearch() {
         <FilterCombobox 
           label="Subject" 
           icon={GraduationCap} 
-          options={subjects} 
+          options={subjectOptions} 
           value={filters.subject} 
           onSelect={(v) => handleFilterSelect('subject', v)} 
           searchPlaceholder="Search subjects..."
@@ -125,7 +127,7 @@ export function CompactSmartSearch() {
         <FilterCombobox 
           label="City" 
           icon={MapPin} 
-          options={cities} 
+          options={cityOptions} 
           value={filters.city} 
           onSelect={(v) => handleFilterSelect('city', v)} 
           searchPlaceholder="Search cities..."

@@ -4,7 +4,7 @@ import { programService } from '../services/program.service';
 export const programController = {
   async getAll(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
-      const { page, limit, search, level, field, campusMode, city, sortBy, sortOrder } = req.query;
+      const { page, limit, search, level, field, campusMode, city, budget, intake, sortBy, sortOrder } = req.query;
       const result = await programService.getAll({
         page: page ? parseInt(page as string) : 1,
         limit: limit ? parseInt(limit as string) : 12,
@@ -13,6 +13,8 @@ export const programController = {
         field: field as string,
         campusMode: campusMode as string,
         city: city as string,
+        budget: budget as string,
+        intake: intake as string,
         sortBy: sortBy as string,
         sortOrder: sortOrder as ('asc' | 'desc'),
       });

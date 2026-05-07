@@ -1,6 +1,6 @@
 import { UniversityTable } from '@/components/admin/UniversityTable';
 import { Button } from '@/components/ui/button';
-import { Plus, Upload, RefreshCw } from 'lucide-react';
+import { Plus, RefreshCw } from 'lucide-react';
 import Link from 'next/link';
 
 export default function AdminUniversitiesPage() {
@@ -18,16 +18,10 @@ export default function AdminUniversitiesPage() {
               Import/Sync
             </Link>
           </Button>
-          <Button variant="outline" size="sm" asChild className="bg-white">
-            <Link href="/admin/uploads">
-              <Upload className="h-4 w-4 mr-2" />
-              Bulk Upload
-            </Link>
-          </Button>
           <Button size="sm" asChild className="bg-deep-green hover:bg-deep-green/90">
-            <Link href="/admin/universities/new">
+            <Link href="/admin/cricos/provider-sync">
               <Plus className="h-4 w-4 mr-2" />
-              Add University
+              Add University (CRICOS)
             </Link>
           </Button>
         </div>

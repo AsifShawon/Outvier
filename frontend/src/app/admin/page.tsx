@@ -1,13 +1,13 @@
 'use client';
 
 import { useQuery } from '@tanstack/react-query';
-import { 
-  University, 
-  BookOpen, 
-  MapPin, 
-  GitCompare, 
-  RefreshCw, 
-  AlertTriangle, 
+import {
+  University,
+  BookOpen,
+  MapPin,
+  GitCompare,
+  RefreshCw,
+  AlertTriangle,
   TrendingUp,
   Users,
   Award,
@@ -28,13 +28,13 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { formatDistanceToNow, format } from 'date-fns';
-import { 
-  BarChart, 
-  Bar, 
-  XAxis, 
-  YAxis, 
-  CartesianGrid, 
-  Tooltip as RechartsTooltip, 
+import {
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip as RechartsTooltip,
   ResponsiveContainer,
   Cell,
   PieChart,
@@ -72,19 +72,18 @@ export default function AdminDashboardPage() {
     { title: 'Students', value: stats?.totalUsers || 0, icon: Users, colorClass: 'bg-cream-100 text-deep-green border-cream-200' },
     { title: 'Scholarships', value: stats?.totalScholarships || 0, icon: Award, colorClass: 'bg-green-50 text-green-700 border-green-100' },
     { title: 'Applications', value: stats?.totalApplications || 0, icon: FileText, colorClass: 'bg-slate-50 text-slate-700 border-slate-100' },
-    { 
-      title: 'Pending Changes', 
-      value: stats?.pendingStagedChanges || 0, 
-      icon: GitCompare, 
-      colorClass: stats?.pendingStagedChanges > 0 ? 'bg-amber-50 text-amber-700 border-amber-100' : 'bg-slate-50 text-slate-700 border-slate-100' 
+    {
+      title: 'Pending Changes',
+      value: stats?.pendingStagedChanges || 0,
+      icon: GitCompare,
+      colorClass: stats?.pendingStagedChanges > 0 ? 'bg-amber-50 text-amber-700 border-amber-100' : 'bg-slate-50 text-slate-700 border-slate-100'
     },
   ];
 
   const quickActions = [
-    { title: 'Add University', icon: Plus, href: '/admin/universities/new', color: 'text-green-600 bg-green-50' },
+    { title: 'Add University', icon: Plus, href: '/admin/cricos/provider-sync', color: 'text-green-600 bg-green-50' },
     { title: 'Review Staged', icon: GitCompare, href: '/admin/staged-changes', color: 'text-amber-600 bg-amber-50' },
     { title: 'Sync CRICOS', icon: RefreshCw, href: '/admin/cricos', color: 'text-blue-600 bg-blue-50' },
-    { title: 'Bulk Upload', icon: FileText, href: '/admin/uploads', color: 'text-slate-600 bg-slate-50' },
   ];
 
   const getActivityIcon = (type: string) => {
@@ -126,23 +125,23 @@ export default function AdminDashboardPage() {
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
         {isLoadingStats
           ? Array.from({ length: 6 }).map((_, i) => (
-              <Skeleton key={i} className="h-32 rounded-2xl" />
-            ))
+            <Skeleton key={i} className="h-32 rounded-2xl" />
+          ))
           : statsCards.map((card) => (
-              <Card key={card.title} className={`${card.colorClass} border shadow-none rounded-2xl overflow-hidden`}>
-                <CardContent className="p-5">
-                  <div className="flex justify-between items-start mb-4">
-                    <div className="p-2 bg-white/60 rounded-lg shadow-sm">
-                      <card.icon className="h-5 w-5" />
-                    </div>
+            <Card key={card.title} className={`${card.colorClass} border shadow-none rounded-2xl overflow-hidden`}>
+              <CardContent className="p-5">
+                <div className="flex justify-between items-start mb-4">
+                  <div className="p-2 bg-white/60 rounded-lg shadow-sm">
+                    <card.icon className="h-5 w-5" />
                   </div>
-                  <div>
-                    <p className="text-sm font-medium opacity-80">{card.title}</p>
-                    <p className="text-2xl font-bold font-display mt-1">{card.value}</p>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
+                </div>
+                <div>
+                  <p className="text-sm font-medium opacity-80">{card.title}</p>
+                  <p className="text-2xl font-bold font-display mt-1">{card.value}</p>
+                </div>
+              </CardContent>
+            </Card>
+          ))}
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
@@ -169,16 +168,16 @@ export default function AdminDashboardPage() {
                   <ResponsiveContainer width="100%" height="100%">
                     <BarChart data={stats?.userSignups}>
                       <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
-                      <XAxis 
-                        dataKey="_id" 
-                        fontSize={10} 
-                        tickFormatter={(val) => format(new Date(val), 'MMM dd')} 
+                      <XAxis
+                        dataKey="_id"
+                        fontSize={10}
+                        tickFormatter={(val) => format(new Date(val), 'MMM dd')}
                         axisLine={false}
                         tickLine={false}
                         tick={{ fill: '#64748b' }}
                       />
                       <YAxis axisLine={false} tickLine={false} fontSize={10} tick={{ fill: '#64748b' }} />
-                      <RechartsTooltip 
+                      <RechartsTooltip
                         contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}
                       />
                       <Bar dataKey="count" fill="#5A7863" radius={[4, 4, 0, 0]} />
@@ -338,7 +337,7 @@ export default function AdminDashboardPage() {
         {/* Sidebar Analytics Area */}
         <div className="lg:col-span-4 space-y-8">
           {/* Quick Actions */}
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 gap-4">
             {quickActions.map((action) => (
               <Link key={action.title} href={action.href}>
                 <Card className="hover:border-deep-green/30 hover:shadow-md transition-all cursor-pointer h-full group">
@@ -370,7 +369,7 @@ export default function AdminDashboardPage() {
                   </Badge>
                 </div>
                 <p className="text-lg font-bold">
-                  {stats?.lastCricosSync?.startedAt 
+                  {stats?.lastCricosSync?.startedAt
                     ? formatDistanceToNow(new Date(stats.lastCricosSync.startedAt), { addSuffix: true })
                     : 'Never run'}
                 </p>
@@ -419,7 +418,7 @@ export default function AdminDashboardPage() {
                   <TabsTrigger value="programs" className="text-[10px] px-0 py-2 rounded-none border-b-2 border-transparent data-[state=active]:border-deep-green data-[state=active]:text-deep-green data-[state=active]:bg-transparent shadow-none font-bold text-slate-500">Programs</TabsTrigger>
                   <TabsTrigger value="users" className="text-[10px] px-0 py-2 rounded-none border-b-2 border-transparent data-[state=active]:border-deep-green data-[state=active]:text-deep-green data-[state=active]:bg-transparent shadow-none font-bold text-slate-500">Users</TabsTrigger>
                 </TabsList>
-                
+
                 <div className="p-4">
                   <TabsContent value="universities" className="m-0 focus-visible:ring-0">
                     <div className="space-y-4">

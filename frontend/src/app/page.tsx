@@ -30,13 +30,34 @@ const valueProps = [
 ];
 
 const journeySteps = [
-  { number: '1', title: 'Explore States', description: 'Discover the best Australian states for your studies, lifestyle, and career goals.', icon: Map },
-  { number: '2', title: 'Compare Universities', description: 'Filter Australian institutions by ranking, location, and campus life.', icon: Building },
-  { number: '3', title: 'Choose Programs', description: 'Find the exact degree, check intakes, and tuition fees across Australia.', icon: BookOpen },
-  { number: '4', title: 'Estimate Costs', description: 'Use our calculators to plan your Australian study budget confidently.', icon: Calculator },
+  { number: '1', title: 'Explore States', description: 'Discover the best Australian states for your studies, lifestyle, and career goals.', icon: Map, href: '/universities' },
+  { number: '2', title: 'Compare Universities', description: 'Filter Australian institutions by ranking, location, and campus life.', icon: Building, href: '/universities' },
+  { number: '3', title: 'Choose Programs', description: 'Find the exact degree, check intakes, and tuition fees across Australia.', icon: BookOpen, href: '/programs' },
+  { number: '4', title: 'Estimate Costs', description: 'Use our calculators to plan your Australian study budget confidently.', icon: Calculator, href: '/dashboard/budget' },
 ];
+import { publicAnalyticsApi } from '@/lib/api/publicAnalytics.api';
 
 export default function HomePage() {
+  const { data: statsData } = useQuery({
+    queryKey: ['publicAnalytics'],
+    queryFn: () => publicAnalyticsApi.getStats(),
+    staleTime: 1000 * 60 * 30, // 30 mins
+  });
+
+  const featuredStats = statsData?.data?.data?.featuredStateStats || [];
+  
+  const getStatsForState = (stateCode: string) => {
+    const stats = featuredStats.find((s: any) => s.state === stateCode);
+    if (!stats) return null;
+    return {
+      programs: `${stats.programCount}+`,
+      budget: stats.avgTuition > 0 ? `$${Math.round(stats.avgTuition/1000)}k - $${Math.round(stats.avgTuition/1000) + 15}k` : '$25k - $45k'
+    };
+  };
+
+  const nswStats = getStatsForState('NSW');
+  const vicStats = getStatsForState('VIC');
+  const qldStats = getStatsForState('QLD');
   const { data: uniData, isLoading: uniLoading } = useQuery({
     queryKey: ['home-universities'],
     queryFn: () => universitiesApi.getAll({ limit: 4 }),
@@ -157,23 +178,26 @@ export default function HomePage() {
           <div className="grid md:grid-cols-3 gap-6">
             <FeaturedCountryCard 
               country="New South Wales"
+              stateCode="NSW"
               image="https://images.unsplash.com/photo-1506973035872-a4ec16b8e8d9?q=80&w=2070&auto=format&fit=crop"
-              budget="$30k - $50k"
-              programs="500+"
+              budget={nswStats?.budget || "$30k - $50k"}
+              programs={nswStats?.programs || "500+"}
               intakes="Feb, Jul"
             />
             <FeaturedCountryCard 
               country="Victoria"
+              stateCode="VIC"
               image="https://images.unsplash.com/photo-1514395462725-fb4566210144?q=80&w=2071&auto=format&fit=crop"
-              budget="$28k - $48k"
-              programs="450+"
+              budget={vicStats?.budget || "$28k - $48k"}
+              programs={vicStats?.programs || "450+"}
               intakes="Feb, Jul"
             />
             <FeaturedCountryCard 
               country="Queensland"
+              stateCode="QLD"
               image="https://images.unsplash.com/photo-1554350342-9443214a937c?q=80&w=2070&auto=format&fit=crop"
-              budget="$25k - $42k"
-              programs="300+"
+              budget={qldStats?.budget || "$25k - $42k"}
+              programs={qldStats?.programs || "300+"}
               intakes="Feb, Jul, Nov"
             />
           </div>

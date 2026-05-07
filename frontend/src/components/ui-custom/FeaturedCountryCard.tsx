@@ -3,13 +3,14 @@ import { ArrowRight, MapPin } from 'lucide-react';
 
 interface FeaturedCountryCardProps {
   country: string;
+  stateCode?: string;
   image: string;
   budget: string;
   programs: string;
   intakes: string;
 }
 
-export function FeaturedCountryCard({ country, image, budget, programs, intakes }: FeaturedCountryCardProps) {
+export function FeaturedCountryCard({ country, stateCode, image, budget, programs, intakes }: FeaturedCountryCardProps) {
   return (
     <div className="group relative rounded-3xl overflow-hidden shadow-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 h-[400px] card-hover">
       {/* Background Image Header */}
@@ -42,7 +43,7 @@ export function FeaturedCountryCard({ country, image, budget, programs, intakes 
           </div>
         </div>
 
-        <Link href="/universities" className="w-full">
+        <Link href={stateCode ? `/universities?state=${stateCode}` : "/universities"} className="w-full">
           <button className="w-full py-3 rounded-xl bg-primary-50 hover:bg-primary-600 text-primary-600 hover:text-white dark:bg-slate-800 dark:text-primary-400 dark:hover:bg-primary-600 dark:hover:text-white font-semibold flex items-center justify-center gap-2 transition-colors">
             Explore {country} <ArrowRight className="w-4 h-4" />
           </button>

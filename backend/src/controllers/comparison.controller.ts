@@ -3,6 +3,8 @@ import { Types } from 'mongoose';
 import { ComparisonSession } from '../models/ComparisonSession.model';
 import { StudentProfile } from '../models/StudentProfile.model';
 import { Program } from '../models/Program.model';
+import { RankingRecord } from '../models/RankingRecord.model';
+import { OutcomeMetric } from '../models/OutcomeMetric.model';
 import { fitScoreService } from '../services/fitScore.service';
 
 export const comparisonController = {
@@ -45,8 +47,40 @@ export const comparisonController = {
         res.status(404).json({ success: false, message: 'Session not found' });
         return;
       }
-      
-      res.status(200).json({ success: true, data: session });
+
+      // Collect unique university IDs from programs and universities
+      const uniIdsFromPrograms = (session.selectedProgramIds as any[])
+        .map(p => String(p.university?._id || p.university))
+        .filter(Boolean);
+      const uniIdsFromUnis = (session.selectedUniversityIds as any[])
+        .map(u => String(u._id || u))
+        .filter(Boolean);
+      const allUniIds = [...new Set([...uniIdsFromPrograms, ...uniIdsFromUnis])];
+
+      const [rankings, outcomes] = await Promise.all([
+        RankingRecord.find({ universityId: { $in: allUniIds }, status: 'approved' }).sort({ year: -1 }).lean(),
+        OutcomeMetric.find({ universityId: { $in: allUniIds }, status: 'approved' }).sort({ year: -1 }).lean(),
+      ]);
+
+      const analytics: Record<string, object> = {};
+      for (const id of allUniIds) {
+        const rank = rankings.find(r => String(r.universityId) === id);
+        const outcome = outcomes.find(o => String(o.universityId) === id);
+        analytics[id] = {
+          globalRank: rank?.globalRank ?? null,
+          nationalRank: rank?.nationalRank ?? null,
+          subjectRank: rank?.subjectRank ?? null,
+          rankingSource: rank?.source ?? null,
+          graduateEmploymentRate: outcome?.graduateEmploymentRate ?? null,
+          medianSalary: outcome?.medianSalary ?? null,
+          teachingQuality: outcome?.teachingQuality ?? null,
+          studentSupport: outcome?.studentSupport ?? null,
+          learnerEngagement: outcome?.learnerEngagement ?? null,
+          overallExperience: outcome?.overallExperience ?? null,
+        };
+      }
+
+      res.status(200).json({ success: true, data: { ...session.toObject(), analytics } });
     } catch (error) {
       next(error);
     }

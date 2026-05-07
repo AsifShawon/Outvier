@@ -11,7 +11,7 @@ import { SkeletonCard } from '@/components/ui-custom/SkeletonCard';
 import { EmptyState } from '@/components/ui-custom/EmptyState';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
-import { BookOpen, MapPin, Layers, ArrowUpDown, Filter } from 'lucide-react';
+import { BookOpen, MapPin, Layers, ArrowUpDown, Filter, GraduationCap, DollarSign, Calendar } from 'lucide-react';
 import { programsApi } from '@/lib/api/programs.api';
 import { Program } from '@/types/program';
 
@@ -30,6 +30,15 @@ const CAMPUS_MODES = [
   { value: 'hybrid', label: 'Hybrid' },
 ];
 
+const BUDGET_OPTIONS = [
+  { label: "Under $20k", value: "under-20k" },
+  { label: "$20k - $30k", value: "20k-30k" },
+  { label: "$30k - $40k", value: "30k-40k" },
+  { label: "Over $40k", value: "over-40k" }
+];
+
+const INTAKE_OPTIONS = ["February", "July", "November"];
+
 import { useDebounce } from '@/hooks/useDebounce';
 import { useSearchParams } from 'next/navigation';
 
@@ -43,8 +52,11 @@ function ProgramsContent() {
   const searchParams = useSearchParams();
   const [search, setSearch] = useState(searchParams.get('search') ?? '');
   const [level, setLevel] = useState(searchParams.get('level') ?? '');
+  const [field, setField] = useState(searchParams.get('field') ?? '');
   const [campusMode, setCampusMode] = useState(searchParams.get('campusMode') ?? '');
   const [city, setCity] = useState(searchParams.get('city') ?? '');
+  const [budget, setBudget] = useState(searchParams.get('budget') ?? '');
+  const [intake, setIntake] = useState(searchParams.get('intake') ?? '');
   const [sort, setSort] = useState(searchParams.get('sort') ?? 'name_asc');
   const [page, setPage] = useState(parseInt(searchParams.get('page') ?? '1'));
   const debouncedSearch = useDebounce(search, 350);
@@ -55,16 +67,25 @@ function ProgramsContent() {
   });
   const cities = citiesRes?.data || [];
 
+  const { data: fieldsRes } = useQuery({
+    queryKey: ['program-fields'],
+    queryFn: () => programsApi.getFields().then(r => r.data),
+  });
+  const fields = fieldsRes?.data || [];
+
   const selectedSort = SORT_OPTIONS.find(s => s.value === sort) || SORT_OPTIONS[0];
 
   const { data, isLoading } = useQuery({
-    queryKey: ['programs', { search: debouncedSearch, level, campusMode, city, sort, page }],
+    queryKey: ['programs', { search: debouncedSearch, level, field, campusMode, city, budget, intake, sort, page }],
     queryFn: () =>
       programsApi.getAll({
         ...(debouncedSearch && { search: debouncedSearch }),
         ...(level && level !== 'all' && { level }),
+        ...(field && field !== 'all' && { field }),
         ...(campusMode && campusMode !== 'all' && { campusMode }),
         ...(city && city !== 'all' && { city }),
+        ...(budget && budget !== 'all' && { budget }),
+        ...(intake && intake !== 'all' && { intake }),
         sortBy: selectedSort.sortBy,
         sortOrder: selectedSort.sortOrder,
         page,
@@ -78,8 +99,11 @@ function ProgramsContent() {
   const handleFilter = (key: string, value: string) => {
     setPage(1);
     if (key === 'level') setLevel(value === 'all' ? '' : value);
+    if (key === 'field') setField(value === 'all' ? '' : value);
     if (key === 'campusMode') setCampusMode(value === 'all' ? '' : value);
     if (key === 'city') setCity(value === 'all' ? '' : value);
+    if (key === 'budget') setBudget(value === 'all' ? '' : value);
+    if (key === 'intake') setIntake(value === 'all' ? '' : value);
     if (key === 'sort') setSort(value);
   };
 
@@ -141,6 +165,45 @@ function ProgramsContent() {
                   <SelectItem value="all">All Modes</SelectItem>
                   {CAMPUS_MODES.map((m) => (
                     <SelectItem key={m.value} value={m.value}>{m.label}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+
+              <Select value={field || 'all'} onValueChange={(v) => handleFilter('field', v as string)}>
+                <SelectTrigger className="w-[160px]" id="filter-field">
+                  <GraduationCap className="h-3.5 w-3.5 text-muted-foreground mr-1" />
+                  <SelectValue placeholder="All Subjects" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Subjects</SelectItem>
+                  {fields.map((f: string) => (
+                    <SelectItem key={f} value={f}>{f}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+
+              <Select value={budget || 'all'} onValueChange={(v) => handleFilter('budget', v as string)}>
+                <SelectTrigger className="w-[150px]" id="filter-budget">
+                  <DollarSign className="h-3.5 w-3.5 text-muted-foreground mr-1" />
+                  <SelectValue placeholder="All Budgets" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Budgets</SelectItem>
+                  {BUDGET_OPTIONS.map((b) => (
+                    <SelectItem key={b.value} value={b.value}>{b.label}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+
+              <Select value={intake || 'all'} onValueChange={(v) => handleFilter('intake', v as string)}>
+                <SelectTrigger className="w-[140px]" id="filter-intake">
+                  <Calendar className="h-3.5 w-3.5 text-muted-foreground mr-1" />
+                  <SelectValue placeholder="All Intakes" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Intakes</SelectItem>
+                  {INTAKE_OPTIONS.map((i) => (
+                    <SelectItem key={i} value={i}>{i}</SelectItem>
                   ))}
                 </SelectContent>
               </Select>

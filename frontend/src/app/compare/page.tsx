@@ -7,14 +7,14 @@ import { Footer } from '@/components/layout/Footer';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { 
-  CheckCircle2, 
-  AlertTriangle, 
-  Info, 
-  MapPin, 
-  GraduationCap, 
-  DollarSign, 
-  Languages, 
+import {
+  CheckCircle2,
+  AlertTriangle,
+  Info,
+  MapPin,
+  GraduationCap,
+  DollarSign,
+  Languages,
   Calendar,
   Search,
   Plus,
@@ -26,12 +26,14 @@ import {
   ArrowRight,
   ChevronDown,
   Building2,
-  ExternalLink
+  ExternalLink,
+  Briefcase,
 } from 'lucide-react';
 import { useComparison } from '@/context/ComparisonContext';
 import { programsApi } from '@/lib/api/programs.api';
 import { universitiesApi } from '@/lib/api/universities.api';
 import { comparisonApi } from '@/lib/api/comparison.api';
+import { ComparisonCharts } from '@/components/ui-custom/ComparisonCharts';
 import { cn } from '@/lib/utils';
 import { 
   Command,
@@ -70,6 +72,9 @@ const PROGRAM_ROWS: ComparisonRow[] = [
   { label: 'Scholarship', icon: Globe, key: 'scholarshipAvailable', formatter: (val) => val ? <Badge className="bg-emerald-100 text-emerald-700 border-none">Available</Badge> : 'Not listed' },
   { label: 'IELTS', icon: Languages, key: 'ieltsRequirement', formatter: (val) => val ? val.toString() : '6.5' },
   { label: 'Min. GPA', icon: TrendingUp, key: 'minimumGPA', formatter: (val) => val || 'Not specified' },
+  { label: 'Total Course Cost', icon: DollarSign, key: 'tuitionDetails.totalEstimatedTuitionFee', formatter: (val) => val ? `$${Number(val).toLocaleString()} AUD` : 'N/A' },
+  { label: 'Intl. Deadline', icon: Calendar, key: 'intakeDetails.internationalDeadline', formatter: (val) => val || 'See website' },
+  { label: 'Internship / Placement', icon: Briefcase, key: 'courseStructure.hasInternship', formatter: (val) => val ? <Badge className="bg-emerald-100 text-emerald-700 border-none">Included</Badge> : 'Not listed' },
   { label: 'Description', icon: Info, key: 'description', formatter: (val) => <p className="line-clamp-3 text-xs font-normal leading-relaxed text-slate-500">{val || 'No description available.'}</p> },
 ];
 
@@ -84,6 +89,10 @@ const UNI_ROWS: ComparisonRow[] = [
   { label: 'Capacity', icon: GraduationCap, key: 'institutionCapacity', formatter: (val) => val ? `${val.toLocaleString()} students` : 'N/A' },
   { label: 'Website', icon: Globe, key: 'officialWebsite', formatter: (val) => val ? <a href={val} target="_blank" className="text-primary-600 hover:underline inline-flex items-center gap-1">Visit <ExternalLink className="h-3 w-3" /></a> : 'N/A' },
   { label: 'Programs', icon: BookOpen, key: 'programCount', formatter: (val) => val?.toString() || '0' },
+  { label: 'Graduate Employment %', icon: TrendingUp, key: '_analytics.graduateEmploymentRate', formatter: (val) => val != null ? `${val}%` : 'N/A' },
+  { label: 'Graduate Salary', icon: DollarSign, key: '_analytics.medianSalary', formatter: (val) => val != null ? `$${Number(val).toLocaleString()} AUD` : 'N/A' },
+  { label: 'Teaching Quality', icon: BookOpen, key: '_analytics.teachingQuality', formatter: (val) => val != null ? `${val}%` : 'N/A' },
+  { label: 'Student Support', icon: GraduationCap, key: '_analytics.studentSupport', formatter: (val) => val != null ? `${val}%` : 'N/A' },
 ];
 
 export default function ComparisonWorkspacePage() {
@@ -114,7 +123,12 @@ export default function ComparisonWorkspacePage() {
 
   const session = sessionData?.data?.data;
   const programs = session?.selectedProgramIds || [];
-  const universities = session?.selectedUniversityIds || [];
+  const analytics: Record<string, any> = session?.analytics ?? {};
+  const enrichedUniversities = (session?.selectedUniversityIds || []).map((u: any) => ({
+    ...u,
+    _analytics: analytics[String(u._id)] ?? {},
+  }));
+  const universities = enrichedUniversities;
   const scores = scoresData?.data?.data || [];
 
   const getNestedValue = (obj: any, path: string) => {
@@ -214,6 +228,16 @@ export default function ComparisonWorkspacePage() {
             </Button>
           </div>
         ) : (
+          <>
+          {/* Visual Analytics Charts */}
+          <ComparisonCharts
+            mode={activeTab}
+            programs={activeTab === 'programs' ? programs : undefined}
+            universities={activeTab === 'universities' ? universities : undefined}
+            scores={activeTab === 'programs' ? scores : undefined}
+            analytics={analytics}
+          />
+
           <div className="bg-white rounded-[40px] border border-slate-200 shadow-2xl shadow-slate-200/40 overflow-hidden">
             <div className="overflow-x-auto custom-scrollbar">
               <table className="w-full border-collapse">
@@ -307,6 +331,32 @@ export default function ComparisonWorkspacePage() {
                     </tr>
                   ))}
 
+                  {/* Analytics-sourced rows for programs */}
+                  {activeTab === 'programs' && [
+                    { label: 'Graduate Salary', icon: DollarSign, field: 'medianSalary', format: (v: any) => v ? `$${Number(v).toLocaleString()} AUD` : 'N/A' },
+                    { label: 'Teaching Quality', icon: BookOpen, field: 'teachingQuality', format: (v: any) => v != null ? `${v}%` : 'N/A' },
+                  ].map(({ label, icon: Icon, field, format }) => (
+                    <tr key={label} className="group hover:bg-primary-50/30 transition-colors">
+                      <td className="p-6 border-b border-slate-100 text-sm font-bold text-slate-400">
+                        <div className="flex items-center gap-3">
+                          <div className="p-2 bg-slate-50 rounded-lg text-slate-400 group-hover:bg-white group-hover:text-primary-600 transition-colors">
+                            <Icon className="h-4 w-4" />
+                          </div>
+                          {label}
+                        </div>
+                      </td>
+                      {programs.map((program: any) => {
+                        const score = scores.find((s: any) => s.programId === String(program._id));
+                        const val = (score?.rawMetrics as any)?.[field];
+                        return (
+                          <td key={program._id} className="p-6 border-b border-l border-slate-100 text-sm text-slate-900 font-bold align-top">
+                            {format(val)}
+                          </td>
+                        );
+                      })}
+                    </tr>
+                  ))}
+
                   {/* Fit Reasons for Programs */}
                   {activeTab === 'programs' && (
                     <tr className="bg-primary-50/20">
@@ -344,6 +394,7 @@ export default function ComparisonWorkspacePage() {
               </table>
             </div>
           </div>
+          </>
         )}
 
         {/* Search Modal */}

@@ -1,5 +1,6 @@
 import { motion } from 'framer-motion';
 import { LucideIcon } from 'lucide-react';
+import Link from 'next/link';
 
 interface JourneyStepCardProps {
   number: string;
@@ -7,16 +8,17 @@ interface JourneyStepCardProps {
   description: string;
   icon: LucideIcon;
   index: number;
+  href?: string;
 }
 
-export function JourneyStepCard({ number, title, description, icon: Icon, index }: JourneyStepCardProps) {
-  return (
+export function JourneyStepCard({ number, title, description, icon: Icon, index, href }: JourneyStepCardProps) {
+  const CardContent = (
     <motion.div 
       initial={{ opacity: 0, y: 20 }}
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true, margin: "-50px" }}
       transition={{ delay: index * 0.15, duration: 0.5 }}
-      className="relative flex flex-col md:flex-row items-start md:items-center gap-6 p-6 md:p-8 bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-sm hover:shadow-xl transition-all group overflow-hidden"
+      className="relative flex flex-col md:flex-row items-start md:items-center gap-6 p-6 md:p-8 bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-sm hover:shadow-xl transition-all group overflow-hidden h-full cursor-pointer"
     >
       {/* Decorative background element */}
       <div className="absolute -right-8 -top-8 w-32 h-32 bg-primary-50 dark:bg-primary-900/10 rounded-full blur-2xl group-hover:bg-primary-100 dark:group-hover:bg-primary-900/20 transition-colors" />
@@ -42,4 +44,10 @@ export function JourneyStepCard({ number, title, description, icon: Icon, index 
       </div>
     </motion.div>
   );
+
+  if (href) {
+    return <Link href={href} className="block h-full">{CardContent}</Link>;
+  }
+
+  return CardContent;
 }
