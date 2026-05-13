@@ -78,7 +78,8 @@ export function CompactSmartSearch() {
     setSearchQuery('');
   };
 
-  const handleSearch = () => {
+  const handleSearch = (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
     const params = new URLSearchParams();
     if (searchQuery) params.set('search', searchQuery);
     if (filters.subject) params.set('field', filters.subject);
@@ -93,7 +94,7 @@ export function CompactSmartSearch() {
   };
 
   return (
-    <div className="w-full bg-white dark:bg-slate-900 rounded-3xl shadow-2xl border border-slate-200 dark:border-slate-800 p-2 sm:p-3 overflow-hidden">
+    <form onSubmit={handleSearch} className="w-full bg-white dark:bg-slate-900 rounded-3xl shadow-2xl border border-slate-200 dark:border-slate-800 p-2 sm:p-3 overflow-hidden">
       {/* Top Row: Search Input */}
       <div className="flex flex-col sm:flex-row gap-2">
         <div className="relative flex-1">
@@ -103,11 +104,10 @@ export function CompactSmartSearch() {
             className="w-full h-14 pl-12 pr-4 bg-transparent border-none focus-visible:ring-0 text-base sm:text-lg placeholder:text-slate-400 font-medium"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
           />
         </div>
         <Button 
-          onClick={handleSearch}
+          type="submit"
           className="h-14 px-8 bg-primary-600 hover:bg-primary-700 text-white font-bold rounded-2xl shadow-lg shadow-primary-500/20 transition-all active:scale-95 text-base"
         >
           Find Matches
@@ -182,7 +182,7 @@ export function CompactSmartSearch() {
           </button>
         </div>
       )}
-    </div>
+    </form>
   );
 }
 

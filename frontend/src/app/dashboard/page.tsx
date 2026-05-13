@@ -181,56 +181,7 @@ export default function DashboardPage() {
               </div>
             </Card>
 
-            {/* Budget Plan Preview */}
-            <Card className="rounded-2xl border-slate-200 shadow-sm overflow-hidden flex flex-col">
-              <CardHeader className="pb-4">
-                <div className="flex justify-between items-center">
-                  <div className="p-2 bg-green-50 rounded-lg">
-                    <Wallet className="h-5 w-5 text-green-600" />
-                  </div>
-                  <Badge variant="outline" className="text-[10px] uppercase font-bold border-green-100 text-green-600">
-                    Financial Health
-                  </Badge>
-                </div>
-                <CardTitle className="text-xl font-display mt-4">Budget Calculator</CardTitle>
-                <CardDescription>Manage tuition and living expenses.</CardDescription>
-              </CardHeader>
-              <CardContent className="flex-1 space-y-4">
-                {activeBudget ? (
-                  <div className="space-y-4">
-                    <div className="flex justify-between items-center bg-slate-900 text-white p-4 rounded-xl">
-                      <div>
-                        <p className="text-[10px] uppercase font-bold opacity-60 tracking-wider">Total Est. Cost</p>
-                        <p className="text-xl font-black">${((activeBudget.tuitionFeesAud || 0) + (activeBudget.livingExpensesAud || 0)).toLocaleString()}</p>
-                      </div>
-                      <div className="text-right">
-                        <p className="text-[10px] uppercase font-bold opacity-60 tracking-wider">Net Gap</p>
-                        <p className="text-lg font-bold text-green-400">-${(activeBudget.scholarshipAud || 0).toLocaleString()}</p>
-                      </div>
-                    </div>
-                    <div className="space-y-1">
-                      <div className="flex justify-between text-[10px] font-bold text-slate-500 uppercase">
-                        <span>Funding Covered</span>
-                        <span>{Math.min(100, Math.round(((activeBudget.savingsAud || 0) / ((activeBudget.tuitionFeesAud || 1) + (activeBudget.livingExpensesAud || 0))) * 100))}%</span>
-                      </div>
-                      <Progress value={Math.min(100, Math.round(((activeBudget.savingsAud || 0) / ((activeBudget.tuitionFeesAud || 1) + (activeBudget.livingExpensesAud || 0))) * 100))} className="h-1.5" />
-                    </div>
-                  </div>
-                ) : (
-                  <div className="py-6 text-center bg-slate-50 rounded-xl border border-dashed border-slate-200">
-                    <p className="text-xs text-slate-400 font-medium px-4">Setup your first budget plan to see a financial summary.</p>
-                  </div>
-                )}
-              </CardContent>
-              <div className="p-4 bg-slate-50 border-t">
-                <Button className="w-full rounded-xl bg-white text-slate-900 border-slate-200 hover:bg-slate-100" asChild>
-                  <Link href="/dashboard/budget">
-                    Open Calculator
-                    <ChevronRight className="h-4 w-4 ml-2" />
-                  </Link>
-                </Button>
-              </div>
-            </Card>
+
           </div>
 
           {/* Fit Score & Shortlist Section */}

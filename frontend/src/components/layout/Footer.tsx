@@ -16,9 +16,7 @@ export function Footer() {
                 Out<span className="text-primary-600 dark:text-primary-400">vier</span>
               </span>
             </Link>
-            <p className="text-slate-500 dark:text-slate-400 max-w-md leading-relaxed mb-6">
-              Empowering students worldwide to make data-driven decisions about their study-abroad journey. Find the right university, compare programs, and plan your budget.
-            </p>
+              Empowering students worldwide to make data-driven decisions about their study-abroad journey. Find the right university and compare programs.
             <div className="flex items-center gap-4">
               {/* Social icons placeholders */}
               {['twitter', 'linkedin', 'facebook'].map((social) => (
@@ -37,7 +35,6 @@ export function Footer() {
                 { href: '/universities', label: 'Universities' },
                 { href: '/programs', label: 'Programs' },
                 { href: '/compare', label: 'Compare Tool' },
-                { href: '/budget', label: 'Cost Estimator' },
               ].map((link) => (
                 <li key={link.href}>
                   <Link href={link.href} className="text-slate-500 dark:text-slate-400 hover:text-primary-600 dark:hover:text-primary-400 transition-colors font-medium">

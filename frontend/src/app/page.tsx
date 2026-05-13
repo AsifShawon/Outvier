@@ -15,7 +15,7 @@ import { CompactSmartSearch } from '@/components/ui-custom/CompactSmartSearch';
 import { HeroImageSlider } from '@/components/ui-custom/HeroImageSlider';
 import { FeaturedCountryCard } from '@/components/ui-custom/FeaturedCountryCard';
 import { JourneyStepCard } from '@/components/ui-custom/JourneyStepCard';
-import { BudgetPreviewSection } from '@/components/ui-custom/BudgetPreviewSection';
+
 import { ComparisonPreview } from '@/components/ui-custom/ComparisonPreview';
 import { TestimonialCard } from '@/components/ui-custom/TestimonialCard';
 import { UniversityCard } from '@/components/ui-custom/UniversityCard';
@@ -25,7 +25,6 @@ import { SkeletonCard } from '@/components/ui-custom/SkeletonCard';
 const valueProps = [
   { icon: Compass, title: 'Personalized Support', description: 'Tailored recommendations based on your unique academic background, budget, and career goals.' },
   { icon: BarChart, title: 'Side-by-Side Comparison', description: 'Compare universities, programs, tuition, and living costs easily in one dashboard.' },
-  { icon: Calculator, title: 'Budget Clarity', description: 'No hidden costs. Get accurate estimates for tuition, housing, and everyday living.' },
   { icon: FileCheck, title: 'Verified Data', description: 'Information sourced directly from official university guidelines and trusted institutional partners.' },
 ];
 
@@ -33,7 +32,6 @@ const journeySteps = [
   { number: '1', title: 'Explore States', description: 'Discover the best Australian states for your studies, lifestyle, and career goals.', icon: Map, href: '/universities' },
   { number: '2', title: 'Compare Universities', description: 'Filter Australian institutions by ranking, location, and campus life.', icon: Building, href: '/universities' },
   { number: '3', title: 'Choose Programs', description: 'Find the exact degree, check intakes, and tuition fees across Australia.', icon: BookOpen, href: '/programs' },
-  { number: '4', title: 'Estimate Costs', description: 'Use our calculators to plan your Australian study budget confidently.', icon: Calculator, href: '/dashboard/budget' },
 ];
 import { publicAnalyticsApi } from '@/lib/api/publicAnalytics.api';
 
@@ -112,7 +110,7 @@ export default function HomePage() {
 
                 {/* Trust Chips - Compact */}
                 <div className="flex flex-wrap gap-2 mb-10">
-                  {['Australian universities', 'Program comparison', 'Budget estimate', 'Scholarships'].map((chip, idx) => (
+                  {['Australian universities', 'Program comparison', 'Scholarships'].map((chip, idx) => (
                     <div key={idx} className="flex items-center text-[11px] sm:text-xs font-semibold text-slate-600 dark:text-slate-400 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 px-2.5 py-1.5 rounded-lg shadow-sm">
                       <CheckCircle2 className="w-3 h-3 text-primary-500 mr-2" />
                       {chip}
@@ -259,12 +257,7 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* Budget Confidence Section */}
-      <section className="py-24 bg-white dark:bg-slate-950">
-        <div className="container mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <BudgetPreviewSection />
-        </div>
-      </section>
+
 
       {/* Compare Before You Apply */}
       <section className="py-24 bg-slate-50 dark:bg-slate-900/30">
