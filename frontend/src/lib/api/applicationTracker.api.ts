@@ -4,9 +4,11 @@ import { ApiResponse } from '@/types/api';
 export interface TrackerColumn {
   id: string;
   title: string;
+  description?: string;
   color?: string;
   order: number;
   isArchived: boolean;
+  wipLimit?: number;
 }
 
 export interface TrackerBoard {
@@ -28,8 +30,9 @@ export interface TrackerBoard {
 export interface TrackerDocument {
   id: string;
   name: string;
-  status: 'pending' | 'uploaded' | 'verified' | 'completed' | 'not_required';
+  status: 'pending' | 'preparing' | 'uploaded' | 'submitted' | 'verified' | 'completed' | 'not_required';
   fileUrl?: string;
+  notes?: string;
   updatedAt: string;
 }
 
@@ -38,11 +41,22 @@ export interface TrackerTask {
   title: string;
   completed: boolean;
   dueDate?: string;
+  category?: string;
+  order?: number;
   createdAt: string;
 }
 
+export interface TrackerReminder {
+  id: string;
+  type: 'deadline' | 'document' | 'interview' | 'visa' | 'payment' | 'custom';
+  title: string;
+  date: string;
+  note?: string;
+  completed: boolean;
+}
+
 export interface TrackerHistory {
-  type: 'created' | 'moved' | 'edited' | 'document_updated' | 'task_updated' | 'archived';
+  type: 'created' | 'moved' | 'edited' | 'document_updated' | 'task_updated' | 'archived' | 'reminder_set' | 'note_updated';
   fromColumnId?: string;
   toColumnId?: string;
   note?: string;
@@ -54,13 +68,15 @@ export interface ApplicationTrackerItem {
   boardId: string;
   columnId: string;
   order: number;
-  itemType: 'university' | 'program' | 'custom';
+  itemType: 'university' | 'program' | 'scholarship' | 'visa' | 'custom';
   programId?: any; // Populated
   universityId?: any; // Populated
   customProgramName?: string;
   customUniversityName?: string;
   title: string;
   subtitle?: string;
+  description?: string;
+  country?: string;
   priority: 'low' | 'medium' | 'high';
   intake?: string;
   deadline?: string;
@@ -69,8 +85,10 @@ export interface ApplicationTrackerItem {
   tags: string[];
   documentChecklist: TrackerDocument[];
   tasks: TrackerTask[];
+  reminders: TrackerReminder[];
   history: TrackerHistory[];
   archived: boolean;
+  archivedAt?: string;
   createdAt: string;
   updatedAt: string;
 }
@@ -83,7 +101,10 @@ export const applicationTrackerApi = {
   updateBoard: (data: Partial<TrackerBoard>): Promise<{ data: ApiResponse<TrackerBoard> }> =>
     api.patch('/tracker/board', data),
 
-  addColumn: (data: { title: string; color?: string }): Promise<{ data: ApiResponse<TrackerColumn> }> =>
+  resetDefaultColumns: (): Promise<{ data: ApiResponse<TrackerBoard> }> =>
+    api.post('/tracker/board/reset-columns'),
+
+  addColumn: (data: { title: string; color?: string; description?: string; wipLimit?: number }): Promise<{ data: ApiResponse<TrackerColumn> }> =>
     api.post('/tracker/columns', data),
 
   updateColumn: (columnId: string, data: Partial<TrackerColumn>): Promise<{ data: ApiResponse<TrackerColumn> }> =>
@@ -123,11 +144,10 @@ export const applicationTrackerApi = {
   deleteItem: (id: string): Promise<{ data: ApiResponse<void> }> =>
     api.delete(`/tracker/items/${id}`),
 
-  // Legacy (Map to new methods if needed)
+  // Legacy
   getAll: (): Promise<{ data: ApiResponse<ApplicationTrackerItem[]> }> =>
     api.get('/tracker/items'),
-  
+
   updateStatus: (id: string, status: string): Promise<{ data: ApiResponse<ApplicationTrackerItem> }> =>
     api.patch(`/tracker/items/${id}/move`, { toColumnId: status }),
 };
-

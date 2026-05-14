@@ -88,7 +88,7 @@ export function TrackerItemDialog({
   const isEditing = !!item?._id;
   
   // Basic Info
-  const [itemType, setItemType] = useState<'university' | 'program' | 'custom'>(item?.itemType || 'program');
+  const [itemType, setItemType] = useState<'university' | 'program' | 'scholarship' | 'visa' | 'custom'>(item?.itemType || 'program');
   const [title, setTitle] = useState(item?.title || '');
   const [subtitle, setSubtitle] = useState(item?.subtitle || '');
   const [columnId, setColumnId] = useState(item?.columnId || (columns.length > 0 ? columns[0].id : ''));
@@ -437,7 +437,7 @@ export function TrackerItemDialog({
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label className="text-xs font-black uppercase tracking-widest text-slate-400">Stage / Column</Label>
-                    <Select value={columnId} onValueChange={setColumnId}>
+                    <Select value={columnId} onValueChange={(v) => v && setColumnId(v)}>
                       <SelectTrigger className="rounded-xl border-slate-200 h-11">
                         <SelectValue />
                       </SelectTrigger>

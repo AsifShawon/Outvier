@@ -3,9 +3,11 @@ import mongoose, { Document, Schema, Types } from 'mongoose';
 export interface ITrackerColumn {
   id: string;
   title: string;
+  description?: string;
   color?: string;
   order: number;
   isArchived: boolean;
+  wipLimit?: number;
 }
 
 export interface ITrackerBoard extends Document {
@@ -26,10 +28,12 @@ export interface ITrackerBoard extends Document {
 const TrackerColumnSchema = new Schema<ITrackerColumn>({
   id: { type: String, required: true },
   title: { type: String, required: true },
+  description: { type: String },
   color: { type: String },
   order: { type: Number, default: 0 },
-  isArchived: { type: Boolean, default: false }
-}, { _id: false, timestamps: true });
+  isArchived: { type: Boolean, default: false },
+  wipLimit: { type: Number },
+}, { _id: false });
 
 const TrackerBoardSchema = new Schema<ITrackerBoard>(
   {
