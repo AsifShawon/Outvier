@@ -37,7 +37,7 @@ export function TrackerColumn({
   onArchiveColumn 
 }: TrackerColumnProps) {
   return (
-    <div className="w-80 shrink-0 flex flex-col gap-4 bg-slate-50/50 rounded-3xl p-3 border border-slate-200/50">
+    <div className="w-72 shrink-0 flex flex-col gap-3 bg-slate-50/50 rounded-2xl p-2 border border-slate-200/50">
       <div className="flex items-center justify-between px-2 py-1">
         <div className="flex items-center gap-2">
           <div 
@@ -81,7 +81,7 @@ export function TrackerColumn({
         </div>
       </div>
 
-      <div className="flex flex-col gap-3 min-h-[500px] overflow-y-auto custom-scrollbar pr-1">
+      <div className="flex flex-col gap-2 min-h-[400px] overflow-y-auto custom-scrollbar pr-1">
         <AnimatePresence mode="popLayout">
           {items.map((item) => (
             <motion.div

@@ -11,33 +11,15 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { Separator } from '@/components/ui/separator';
 import { 
-  InfoIcon, 
-  Save, 
-  RefreshCw, 
   CheckCircle2, 
   ChevronRight, 
   ChevronLeft,
   GraduationCap,
-  Globe,
-  Wallet,
-  Target,
-  Settings2,
-  Sparkles
+  Target
 } from 'lucide-react';
-import { Progress } from '@/components/ui/progress';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '@/lib/utils';
-
-interface IPriorityWeights {
-  affordability: number;
-  ranking: number;
-  employability: number;
-  admissionMatch: number;
-  location: number;
-  scholarship: number;
-}
 
 interface ProfileFormData {
   preferredField: string;
@@ -52,11 +34,8 @@ interface ProfileFormData {
     migrationInterest: boolean;
     fundingSource: 'self' | 'loan' | 'scholarship' | 'family';
   };
-  priorityWeights: IPriorityWeights;
-  priorityPreset: 'balanced' | 'budget' | 'career' | 'prestige' | 'easy-admission' | 'scholarship';
 }
 
-const STATES = ['SA', 'QLD', 'VIC', 'NSW', 'WA', 'TAS', 'NT', 'ACT'];
 const LEVELS = [
   { value: 'bachelor', label: 'Bachelor Degree' },
   { value: 'master', label: 'Master Degree' },
@@ -66,17 +45,9 @@ const LEVELS = [
   { value: 'graduate_certificate', label: 'Graduate Certificate' },
 ];
 
-const PRESETS = [
-  { id: 'balanced', label: 'Balanced', description: 'All factors considered equally', icon: Sparkles, weights: { affordability: 25, ranking: 20, employability: 20, admissionMatch: 15, location: 10, scholarship: 10 } },
-  { id: 'budget', label: 'Budget First', description: 'Prioritises affordable tuition', icon: Wallet, weights: { affordability: 45, scholarship: 20, admissionMatch: 15, employability: 10, location: 5, ranking: 5 } },
-  { id: 'career', label: 'Career Growth', description: 'Focus on graduate outcomes', icon: Target, weights: { employability: 40, ranking: 20, affordability: 15, admissionMatch: 10, scholarship: 10, location: 5 } },
-  { id: 'prestige', label: 'Academic Prestige', description: 'Prioritises world rankings', icon: GraduationCap, weights: { ranking: 45, employability: 20, affordability: 10, admissionMatch: 10, scholarship: 5, location: 10 } },
-];
-
 const STEPS = [
-  { id: 'academic', title: 'Academic', description: 'Education & Language', icon: GraduationCap },
-  { id: 'goals', title: 'Goals', description: 'Career & Migration', icon: Target },
-  { id: 'fit', title: 'Fit Strategy', description: 'Recommendation Weights', icon: Settings2 },
+  { id: 'academic', title: 'Academic Profile', description: 'Education & Language', icon: GraduationCap },
+  { id: 'goals', title: 'Future Goals', description: 'Career & Finance', icon: Target },
 ];
 
 export default function ProfilePage() {
@@ -94,16 +65,7 @@ export default function ProfilePage() {
       targetRole: '',
       migrationInterest: false,
       fundingSource: 'family'
-    },
-    priorityPreset: 'balanced',
-    priorityWeights: {
-      affordability: 25,
-      ranking: 20,
-      employability: 20,
-      admissionMatch: 15,
-      location: 10,
-      scholarship: 10,
-    },
+    }
   });
 
   const { data: profileRes, isLoading: isLoadingProfile } = useQuery({
@@ -123,7 +85,6 @@ export default function ProfilePage() {
         ...prev,
         ...p,
         careerGoals: p.careerGoals || prev.careerGoals,
-        priorityWeights: p.priorityWeights || prev.priorityWeights,
       }));
     }
   }, [profileRes]);
@@ -146,28 +107,28 @@ export default function ProfilePage() {
     if (currentStep > 0) setCurrentStep(currentStep - 1);
   };
 
-  if (isLoadingProfile) return <div className="p-12 text-center">Loading profile...</div>;
+  if (isLoadingProfile) return <div className="p-12 text-center text-sm font-medium text-slate-500">Loading your profile...</div>;
 
   return (
-    <div className="max-w-4xl mx-auto py-8 px-4 pb-20">
+    <div className="max-w-3xl mx-auto py-6 px-4 pb-24">
       {/* Header & Stepper */}
-      <div className="mb-12">
-        <h1 className="text-4xl font-black font-display text-slate-900 tracking-tight">Profile Builder</h1>
-        <p className="text-slate-500 mt-2">Help us find the perfect Australian university for your goals.</p>
+      <div className="mb-8">
+        <h1 className="text-3xl font-bold font-display text-slate-900 tracking-tight">Profile Builder</h1>
+        <p className="text-sm text-slate-500 mt-1">Keep your profile updated for better recommendations.</p>
         
-        <div className="mt-10 flex items-center justify-between relative">
-           <div className="absolute top-1/2 left-0 right-0 h-0.5 bg-slate-100 -translate-y-1/2 z-0" />
+        <div className="mt-8 flex items-center justify-center gap-12 relative">
+           <div className="absolute top-1/2 left-[20%] right-[20%] h-0.5 bg-slate-100 -translate-y-1/2 z-0" />
            {STEPS.map((step, i) => (
              <div key={step.id} className="relative z-10 flex flex-col items-center gap-2 group cursor-pointer" onClick={() => setCurrentStep(i)}>
                 <div className={cn(
-                  "w-12 h-12 rounded-2xl flex items-center justify-center transition-all duration-300",
-                  currentStep === i ? "bg-deep-green text-white shadow-lg shadow-deep-green/20" : 
+                  "w-10 h-10 rounded-xl flex items-center justify-center transition-all duration-300",
+                  currentStep === i ? "bg-deep-green text-white shadow-md shadow-deep-green/20" : 
                   currentStep > i ? "bg-green-100 text-green-600" : "bg-white border border-slate-200 text-slate-300"
                 )}>
-                  {currentStep > i ? <CheckCircle2 className="h-6 w-6" /> : <step.icon className="h-6 w-6" />}
+                  {currentStep > i ? <CheckCircle2 className="h-5 w-5" /> : <step.icon className="h-5 w-5" />}
                 </div>
-                <div className="text-center">
-                  <p className={cn("text-xs font-black uppercase tracking-widest", currentStep === i ? "text-deep-green" : "text-slate-400")}>{step.title}</p>
+                <div className="text-center bg-background px-2">
+                  <p className={cn("text-[11px] font-bold uppercase tracking-wider", currentStep === i ? "text-deep-green" : "text-slate-400")}>{step.title}</p>
                 </div>
              </div>
            ))}
@@ -177,29 +138,29 @@ export default function ProfilePage() {
       <AnimatePresence mode="wait">
         <motion.div
           key={currentStep}
-          initial={{ opacity: 0, x: 20 }}
+          initial={{ opacity: 0, x: 10 }}
           animate={{ opacity: 1, x: 0 }}
-          exit={{ opacity: 0, x: -20 }}
-          transition={{ duration: 0.3 }}
+          exit={{ opacity: 0, x: -10 }}
+          transition={{ duration: 0.2 }}
         >
           {currentStep === 0 && (
-            <Card className="rounded-3xl border-slate-200 shadow-sm overflow-hidden">
-               <CardHeader className="bg-slate-50/50 p-8 border-b">
-                 <CardTitle className="text-2xl font-display">Academic Background</CardTitle>
-                 <CardDescription>Tell us about your previous education and language skills.</CardDescription>
+            <Card className="rounded-2xl border-slate-200 shadow-sm overflow-hidden bg-white">
+               <CardHeader className="p-6 border-b border-slate-100 bg-slate-50/50">
+                 <CardTitle className="text-xl font-bold text-slate-900">Academic Background</CardTitle>
+                 <CardDescription className="text-sm">Your previous education and language skills.</CardDescription>
                </CardHeader>
-               <CardContent className="p-8 space-y-8">
-                 <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                    <div className="space-y-3">
-                      <Label className="text-xs font-black text-slate-400 uppercase tracking-widest">Preferred Field</Label>
+               <CardContent className="p-6 space-y-6">
+                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                    <div className="space-y-2">
+                      <Label className="text-[11px] font-bold text-slate-500 uppercase tracking-widest">Preferred Field</Label>
                       <Select 
                         value={formData.preferredField} 
                         onValueChange={(v) => setFormData(prev => ({ ...prev, preferredField: v }))}
                       >
-                        <SelectTrigger className="h-12 rounded-xl border-slate-200 font-bold">
+                        <SelectTrigger className="h-11 rounded-lg border-slate-200 font-medium">
                           <SelectValue placeholder="Select Field" />
                         </SelectTrigger>
-                        <SelectContent className="rounded-xl">
+                        <SelectContent className="rounded-lg">
                           {fieldsRes?.data?.data?.map((f: string) => (
                             <SelectItem key={f} value={f}>{f}</SelectItem>
                           ))}
@@ -207,16 +168,16 @@ export default function ProfilePage() {
                       </Select>
                     </div>
 
-                    <div className="space-y-3">
-                      <Label className="text-xs font-black text-slate-400 uppercase tracking-widest">Study Level</Label>
+                    <div className="space-y-2">
+                      <Label className="text-[11px] font-bold text-slate-500 uppercase tracking-widest">Study Level</Label>
                       <Select 
                         value={formData.preferredLevel} 
                         onValueChange={(v) => setFormData(prev => ({ ...prev, preferredLevel: v }))}
                       >
-                        <SelectTrigger className="h-12 rounded-xl border-slate-200 font-bold">
+                        <SelectTrigger className="h-11 rounded-lg border-slate-200 font-medium">
                           <SelectValue placeholder="Select Level" />
                         </SelectTrigger>
-                        <SelectContent className="rounded-xl">
+                        <SelectContent className="rounded-lg">
                           {LEVELS.map((l) => (
                             <SelectItem key={l.value} value={l.value}>{l.label}</SelectItem>
                           ))}
@@ -225,35 +186,35 @@ export default function ProfilePage() {
                     </div>
                  </div>
 
-                 <div className="grid grid-cols-1 md:grid-cols-2 gap-8 pt-4">
-                    <div className="space-y-3">
-                      <Label className="text-xs font-black text-slate-400 uppercase tracking-widest">IELTS Score</Label>
+                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                    <div className="space-y-2">
+                      <Label className="text-[11px] font-bold text-slate-500 uppercase tracking-widest">IELTS Score</Label>
                       <Input 
                         type="number" step="0.5" 
                         value={formData.ieltsScore} 
                         onChange={(e) => setFormData(prev => ({ ...prev, ieltsScore: parseFloat(e.target.value) }))}
-                        className="h-12 rounded-xl border-slate-200 font-bold"
+                        className="h-11 rounded-lg border-slate-200 font-medium"
                       />
                     </div>
-                    <div className="space-y-3">
-                      <Label className="text-xs font-black text-slate-400 uppercase tracking-widest">PTE Score</Label>
+                    <div className="space-y-2">
+                      <Label className="text-[11px] font-bold text-slate-500 uppercase tracking-widest">PTE Score</Label>
                       <Input 
                         type="number" 
                         value={formData.pteScore} 
                         onChange={(e) => setFormData(prev => ({ ...prev, pteScore: parseInt(e.target.value) }))}
-                        className="h-12 rounded-xl border-slate-200 font-bold"
+                        className="h-11 rounded-lg border-slate-200 font-medium"
                       />
                     </div>
                  </div>
 
-                 <div className="space-y-3 pt-4">
-                    <Label className="text-xs font-black text-slate-400 uppercase tracking-widest">Education History (GPA, Degree, Institution)</Label>
+                 <div className="space-y-2">
+                    <Label className="text-[11px] font-bold text-slate-500 uppercase tracking-widest">Education History (GPA, Degree, Institution)</Label>
                     <Textarea 
-                      rows={4} 
+                      rows={3} 
                       value={formData.academicBackground}
                       onChange={(e) => setFormData(prev => ({ ...prev, academicBackground: e.target.value }))}
                       placeholder="e.g. Bachelor of IT from University of Dhaka, GPA 3.8/4.0"
-                      className="rounded-2xl border-slate-200 p-4 font-medium"
+                      className="rounded-lg border-slate-200 p-3 font-medium resize-none"
                     />
                  </div>
                </CardContent>
@@ -261,15 +222,15 @@ export default function ProfilePage() {
           )}
 
           {currentStep === 1 && (
-            <Card className="rounded-3xl border-slate-200 shadow-sm overflow-hidden">
-               <CardHeader className="bg-slate-50/50 p-8 border-b">
-                 <CardTitle className="text-2xl font-display">Goals & Preferences</CardTitle>
-                 <CardDescription>Your career aspirations and financial constraints.</CardDescription>
+            <Card className="rounded-2xl border-slate-200 shadow-sm overflow-hidden bg-white">
+               <CardHeader className="p-6 border-b border-slate-100 bg-slate-50/50">
+                 <CardTitle className="text-xl font-bold text-slate-900">Goals & Preferences</CardTitle>
+                 <CardDescription className="text-sm">Your career aspirations and financial constraints.</CardDescription>
                </CardHeader>
-               <CardContent className="p-8 space-y-10">
-                 <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                    <div className="space-y-3">
-                      <Label className="text-xs font-black text-slate-400 uppercase tracking-widest">Target Career Role</Label>
+               <CardContent className="p-6 space-y-7">
+                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                    <div className="space-y-2">
+                      <Label className="text-[11px] font-bold text-slate-500 uppercase tracking-widest">Target Career Role</Label>
                       <Input 
                         placeholder="e.g. Software Engineer, Data Scientist"
                         value={formData.careerGoals.targetRole}
@@ -277,11 +238,11 @@ export default function ProfilePage() {
                           ...prev, 
                           careerGoals: { ...prev.careerGoals, targetRole: e.target.value } 
                         }))}
-                        className="h-12 rounded-xl border-slate-200 font-bold"
+                        className="h-11 rounded-lg border-slate-200 font-medium"
                       />
                     </div>
-                    <div className="space-y-3">
-                      <Label className="text-xs font-black text-slate-400 uppercase tracking-widest">Funding Source</Label>
+                    <div className="space-y-2">
+                      <Label className="text-[11px] font-bold text-slate-500 uppercase tracking-widest">Funding Source</Label>
                       <Select 
                         value={formData.careerGoals.fundingSource} 
                         onValueChange={(v) => setFormData(prev => ({ 
@@ -289,10 +250,10 @@ export default function ProfilePage() {
                           careerGoals: { ...prev.careerGoals, fundingSource: v as any } 
                         }))}
                       >
-                        <SelectTrigger className="h-12 rounded-xl border-slate-200 font-bold">
+                        <SelectTrigger className="h-11 rounded-lg border-slate-200 font-medium">
                           <SelectValue placeholder="Select Funding" />
                         </SelectTrigger>
-                        <SelectContent className="rounded-xl">
+                        <SelectContent className="rounded-lg">
                           <SelectItem value="self">Self Funded</SelectItem>
                           <SelectItem value="family">Family Support</SelectItem>
                           <SelectItem value="loan">Bank Loan</SelectItem>
@@ -302,75 +263,32 @@ export default function ProfilePage() {
                     </div>
                  </div>
 
-                 <div className="space-y-6 bg-slate-50 p-6 rounded-2xl border border-slate-100">
+                 <div className="space-y-4 bg-slate-50 p-5 rounded-xl border border-slate-100">
                     <div className="flex justify-between items-center">
-                      <Label className="text-xs font-black text-slate-900 uppercase tracking-widest">Max Annual Budget (AUD)</Label>
+                      <Label className="text-[11px] font-bold text-slate-700 uppercase tracking-widest">Max Annual Budget (AUD)</Label>
                       <span className="text-lg font-black text-deep-green">${formData.budgetMaxAud.toLocaleString()}</span>
                     </div>
                     <input 
                       type="range" min="15000" max="80000" step="1000"
                       value={formData.budgetMaxAud}
                       onChange={(e) => setFormData(prev => ({ ...prev, budgetMaxAud: parseInt(e.target.value) }))}
-                      className="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-deep-green"
+                      className="w-full h-1.5 bg-slate-200 rounded-full appearance-none cursor-pointer accent-deep-green"
                     />
                  </div>
 
-                 <div className="space-y-4">
-                    <Label className="text-xs font-black text-slate-400 uppercase tracking-widest">Interested in Permanent Residency (PR)?</Label>
-                    <div className="flex gap-4">
+                 <div className="space-y-3">
+                    <Label className="text-[11px] font-bold text-slate-500 uppercase tracking-widest">Interested in Permanent Residency (PR)?</Label>
+                    <div className="flex gap-3">
                        <Button 
                          variant={formData.careerGoals.migrationInterest ? 'default' : 'outline'} 
-                         className={cn("flex-1 rounded-xl h-12 font-bold", formData.careerGoals.migrationInterest && "bg-deep-green")}
+                         className={cn("flex-1 rounded-lg h-11 font-semibold", formData.careerGoals.migrationInterest && "bg-deep-green")}
                          onClick={() => setFormData(prev => ({ ...prev, careerGoals: { ...prev.careerGoals, migrationInterest: true } }))}
-                       >Yes</Button>
+                       >Yes, interested</Button>
                        <Button 
                          variant={!formData.careerGoals.migrationInterest ? 'default' : 'outline'} 
-                         className={cn("flex-1 rounded-xl h-12 font-bold", !formData.careerGoals.migrationInterest && "bg-deep-green")}
+                         className={cn("flex-1 rounded-lg h-11 font-semibold", !formData.careerGoals.migrationInterest && "bg-deep-green")}
                          onClick={() => setFormData(prev => ({ ...prev, careerGoals: { ...prev.careerGoals, migrationInterest: false } }))}
-                       >No</Button>
-                    </div>
-                 </div>
-               </CardContent>
-            </Card>
-          )}
-
-          {currentStep === 2 && (
-            <Card className="rounded-3xl border-slate-200 shadow-sm overflow-hidden">
-               <CardHeader className="bg-slate-50/50 p-8 border-b">
-                 <CardTitle className="text-2xl font-display">Recommendation Strategy</CardTitle>
-                 <CardDescription>How should we weight different factors for your Fit Score?</CardDescription>
-               </CardHeader>
-               <CardContent className="p-8 space-y-8">
-                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {PRESETS.map((preset) => (
-                      <div 
-                        key={preset.id}
-                        onClick={() => setFormData(prev => ({ ...prev, priorityPreset: preset.id as any, priorityWeights: preset.weights }))}
-                        className={cn(
-                          "p-6 rounded-2xl border-2 cursor-pointer transition-all flex items-start gap-4 hover:shadow-md",
-                          formData.priorityPreset === preset.id ? "border-deep-green bg-green-50/50" : "border-slate-100 hover:border-slate-200"
-                        )}
-                      >
-                        <div className={cn("p-2 rounded-lg", formData.priorityPreset === preset.id ? "bg-deep-green text-white" : "bg-slate-100 text-slate-400")}>
-                           <preset.icon className="h-5 w-5" />
-                        </div>
-                        <div>
-                          <p className="font-bold text-slate-900">{preset.label}</p>
-                          <p className="text-[10px] text-slate-500 font-medium mt-1">{preset.description}</p>
-                        </div>
-                      </div>
-                    ))}
-                 </div>
-
-                 <div className="bg-slate-900 text-white p-6 rounded-2xl">
-                    <h4 className="text-[10px] font-black uppercase tracking-widest text-white/50 mb-4">Algorithm Weights</h4>
-                    <div className="flex flex-wrap gap-4">
-                       {Object.entries(formData.priorityWeights).map(([key, val]) => (
-                         <div key={key} className="flex flex-col">
-                            <span className="text-[9px] text-white/40 uppercase font-black">{key}</span>
-                            <span className="text-sm font-black text-green-400">{val}%</span>
-                         </div>
-                       ))}
+                       >No, just studying</Button>
                     </div>
                  </div>
                </CardContent>
@@ -380,22 +298,22 @@ export default function ProfilePage() {
       </AnimatePresence>
 
       {/* Footer Actions */}
-      <div className="fixed bottom-0 left-0 right-0 p-6 bg-white/80 backdrop-blur-md border-t border-slate-100 z-50">
-        <div className="max-w-4xl mx-auto flex justify-between items-center">
+      <div className="fixed bottom-0 left-0 right-0 p-4 bg-white/80 backdrop-blur-md border-t border-slate-100 z-50">
+        <div className="max-w-3xl mx-auto flex justify-between items-center px-2">
            <Button 
             variant="ghost" 
             disabled={currentStep === 0}
             onClick={handlePrev}
-            className="rounded-xl h-12 px-6 font-bold text-slate-500"
+            className="rounded-lg h-10 px-4 font-semibold text-slate-600"
            >
-             <ChevronLeft className="h-4 w-4 mr-2" />
+             <ChevronLeft className="h-4 w-4 mr-1.5" />
              Back
            </Button>
 
-           <div className="flex gap-4">
+           <div className="flex gap-3">
               <Button 
                 variant="outline" 
-                className="rounded-xl h-12 px-6 font-bold border-slate-200 hidden sm:flex"
+                className="rounded-lg h-10 px-5 font-semibold border-slate-200 hidden sm:flex"
                 onClick={() => mutation.mutate(formData)}
                 disabled={mutation.isPending}
               >
@@ -404,10 +322,10 @@ export default function ProfilePage() {
               <Button 
                 onClick={handleNext}
                 disabled={mutation.isPending}
-                className="rounded-xl h-12 px-8 font-black bg-deep-green hover:bg-deep-green/90 shadow-lg shadow-deep-green/10"
+                className="rounded-lg h-10 px-6 font-bold bg-deep-green hover:bg-deep-green/90 shadow-sm"
               >
-                {currentStep === STEPS.length - 1 ? 'Finish & Analyze' : 'Next Step'}
-                {currentStep < STEPS.length - 1 && <ChevronRight className="h-4 w-4 ml-2" />}
+                {currentStep === STEPS.length - 1 ? 'Save Profile' : 'Continue'}
+                {currentStep < STEPS.length - 1 && <ChevronRight className="h-4 w-4 ml-1.5" />}
               </Button>
            </div>
         </div>

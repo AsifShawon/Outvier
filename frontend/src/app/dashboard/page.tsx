@@ -3,10 +3,8 @@
 import { useQuery } from '@tanstack/react-query';
 import { authApi } from '@/lib/api/auth.api';
 import { profileApi } from '@/lib/api/profile.api';
-import { comparisonApi } from '@/lib/api/comparison.api';
 import { applicationTrackerApi } from '@/lib/api/applicationTracker.api';
 import { budgetPlanApi } from '@/lib/api/budgetPlan.api';
-import { useComparison } from '@/context/ComparisonContext';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
@@ -15,28 +13,17 @@ import {
   User, 
   Settings, 
   Bookmark, 
-  LineChart, 
-  Calendar, 
   CheckCircle2, 
-  Circle,
   ChevronRight,
-  TrendingUp,
-  MapPin,
   GraduationCap,
   ClipboardList,
-  Wallet,
-  LayoutDashboard,
   Clock,
-  ArrowUpRight,
   Plus,
   Rocket
 } from 'lucide-react';
 import Link from 'next/link';
-import { formatDistanceToNow } from 'date-fns';
 
 export default function DashboardPage() {
-  const { hash } = useComparison();
-
   const { data: userRes } = useQuery({
     queryKey: ['me'],
     queryFn: () => authApi.getMe(),
@@ -52,16 +39,9 @@ export default function DashboardPage() {
     queryFn: () => applicationTrackerApi.getAll(),
   });
 
-  const { data: budgetRes } = useQuery({
-    queryKey: ['budget-plans'],
-    queryFn: () => budgetPlanApi.getAll(),
-  });
-
   const user = userRes?.data?.data;
   const profile = profileRes?.data?.data;
   const applications = trackerRes?.data?.data || [];
-  const budgetPlans = budgetRes?.data?.data || [];
-  const activeBudget = budgetPlans[0]; // Just take the latest for summary
 
   // Calculate profile completion
   const completionFields = [
@@ -80,29 +60,29 @@ export default function DashboardPage() {
   const stats = [
     { label: 'Applications', value: applications.length, icon: ClipboardList, color: 'text-blue-600', bg: 'bg-blue-50' },
     { label: 'Shortlisted', value: profile?.savedPrograms?.length || 0, icon: Bookmark, color: 'text-amber-600', bg: 'bg-amber-50' },
-    { label: 'Tasks Pending', value: applications.reduce((acc, app) => acc + (app.tasks?.filter(t => !t.completed).length || 0), 0), icon: Clock, color: 'text-purple-600', bg: 'bg-purple-50' },
+    { label: 'Tasks Pending', value: applications.reduce((acc: number, app: any) => acc + (app.tasks?.filter((t: any) => !t.completed).length || 0), 0), icon: Clock, color: 'text-purple-600', bg: 'bg-purple-50' },
   ];
 
   return (
-    <div className="space-y-8 pb-16 max-w-7xl mx-auto">
+    <div className="space-y-6 pb-16 max-w-6xl mx-auto">
       {/* Premium Workspace Header */}
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-white p-6 rounded-2xl border border-slate-100 shadow-sm">
         <div>
-          <h1 className="text-4xl font-bold font-display tracking-tight text-slate-900">
-            Planning Workspace
+          <h1 className="text-2xl font-bold font-display tracking-tight text-slate-900">
+            Welcome back, {user?.name || 'Student'}
           </h1>
-          <p className="text-slate-500 mt-2 flex items-center gap-2">
-            Welcome back, <span className="font-bold text-slate-900">{user?.name || 'Student'}</span>. Your study abroad roadmap is active.
+          <p className="text-sm text-slate-500 mt-1">
+            Your study abroad roadmap is active and ready.
           </p>
         </div>
-        <div className="flex items-center gap-3">
-          <Button variant="outline" size="sm" asChild className="rounded-xl border-slate-200 bg-white">
+        <div className="flex items-center gap-3 w-full md:w-auto">
+          <Button variant="outline" size="sm" asChild className="rounded-xl border-slate-200 bg-white flex-1 md:flex-none h-10">
             <Link href="/dashboard/settings">
               <Settings className="h-4 w-4 mr-2" />
               Settings
             </Link>
           </Button>
-          <Button size="sm" asChild className="rounded-xl bg-deep-green hover:bg-deep-green/90 shadow-md">
+          <Button size="sm" asChild className="rounded-xl bg-deep-green hover:bg-deep-green/90 shadow-md flex-1 md:flex-none h-10">
             <Link href="/programs">
               <Plus className="h-4 w-4 mr-2" />
               Add Program
@@ -112,157 +92,151 @@ export default function DashboardPage() {
       </div>
 
       {/* KPI Overview */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         {stats.map((stat) => (
-          <Card key={stat.label} className="border-slate-100 shadow-sm rounded-2xl overflow-hidden bg-white">
-            <CardContent className="p-6 flex items-center justify-between">
-              <div className="flex items-center gap-4">
-                <div className={`p-3 ${stat.bg} rounded-xl`}>
-                  <stat.icon className={`h-6 w-6 ${stat.color}`} />
-                </div>
-                <div>
-                  <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">{stat.label}</p>
-                  <p className="text-2xl font-black text-slate-900">{stat.value}</p>
-                </div>
+          <Card key={stat.label} className="border-slate-200/60 shadow-sm rounded-xl overflow-hidden bg-white/80 backdrop-blur-sm hover:shadow-md transition-all">
+            <CardContent className="p-4 flex items-center gap-4">
+              <div className={`p-3 ${stat.bg} rounded-xl`}>
+                <stat.icon className={`h-5 w-5 ${stat.color}`} />
               </div>
-              <ArrowUpRight className="h-4 w-4 text-slate-300" />
+              <div>
+                <p className="text-[11px] font-bold text-slate-500 uppercase tracking-widest">{stat.label}</p>
+                <p className="text-2xl font-black text-slate-900 leading-none mt-1">{stat.value}</p>
+              </div>
             </CardContent>
           </Card>
         ))}
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
         {/* Left Column: Tools & Trackers */}
-        <div className="lg:col-span-8 space-y-8">
-          {/* Main Planning Tools Grid */}
+        <div className="lg:col-span-8 space-y-6">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {/* Application Tracker Preview */}
-            <Card className="rounded-2xl border-slate-200 shadow-sm overflow-hidden flex flex-col">
-              <CardHeader className="pb-4">
+            <Card className="rounded-2xl border-slate-200 shadow-sm flex flex-col">
+              <CardHeader className="p-5 border-b border-slate-100 pb-4">
                 <div className="flex justify-between items-center">
-                  <div className="p-2 bg-blue-50 rounded-lg">
-                    <Rocket className="h-5 w-5 text-blue-600" />
+                  <div className="flex items-center gap-2.5">
+                    <div className="p-2 bg-blue-50 rounded-lg">
+                      <Rocket className="h-4 w-4 text-blue-600" />
+                    </div>
+                    <div>
+                      <CardTitle className="text-base font-bold text-slate-900">Active Tracker</CardTitle>
+                      <CardDescription className="text-xs">Your pipeline status</CardDescription>
+                    </div>
                   </div>
-                  <Badge variant="outline" className="text-[10px] uppercase font-bold border-blue-100 text-blue-600">
-                    Active Pipeline
-                  </Badge>
                 </div>
-                <CardTitle className="text-xl font-display mt-4">Application Tracker</CardTitle>
-                <CardDescription>Track status and document checklists.</CardDescription>
               </CardHeader>
-              <CardContent className="flex-1 space-y-4">
+              <CardContent className="flex-1 p-5">
                 {applications.length > 0 ? (
                   <div className="space-y-3">
-                    {applications.slice(0, 2).map((app) => (
-                      <div key={app._id} className="p-3 rounded-xl bg-slate-50 border border-slate-100 flex items-center justify-between">
-                        <div className="min-w-0">
-                          <p className="text-sm font-bold truncate">{app.programName}</p>
-                          <p className="text-[10px] text-slate-500 truncate">{app.universityName}</p>
+                    {applications.slice(0, 4).map((app: any) => (
+                      <div key={app._id} className="p-3 rounded-xl bg-slate-50/50 border border-slate-100 flex items-center justify-between group hover:border-slate-200 transition-colors">
+                        <div className="min-w-0 pr-3">
+                          <p className="text-sm font-semibold text-slate-900 truncate">{app.programName}</p>
+                          <p className="text-xs text-slate-500 truncate mt-0.5">{app.universityName}</p>
                         </div>
-                        <Badge className="text-[10px] capitalize bg-white text-slate-700 border-slate-200 hover:bg-white">
+                        <Badge variant="secondary" className="text-[10px] uppercase font-bold tracking-wider shrink-0 bg-white shadow-sm">
                           {app.status?.replace('_', ' ')}
                         </Badge>
                       </div>
                     ))}
                   </div>
                 ) : (
-                  <div className="py-6 text-center bg-slate-50 rounded-xl border border-dashed border-slate-200">
-                    <p className="text-xs text-slate-400 font-medium px-4">No active applications. Move a saved program to start tracking.</p>
+                  <div className="py-8 text-center flex flex-col items-center justify-center h-full">
+                    <ClipboardList className="h-8 w-8 text-slate-200 mb-3" />
+                    <p className="text-sm text-slate-500 font-medium">No active applications</p>
+                    <p className="text-xs text-slate-400 mt-1">Move a saved program to start tracking.</p>
                   </div>
                 )}
               </CardContent>
-              <div className="p-4 bg-slate-50 border-t">
-                <Button className="w-full rounded-xl bg-white text-slate-900 border-slate-200 hover:bg-slate-100" asChild>
+              <div className="p-3 bg-slate-50/80 border-t border-slate-100 mt-auto">
+                <Button variant="ghost" className="w-full text-sm font-semibold h-10 text-slate-600 hover:text-slate-900 hover:bg-slate-200/50 rounded-lg" asChild>
                   <Link href="/dashboard/tracker">
-                    Open Kanban Board
-                    <ChevronRight className="h-4 w-4 ml-2" />
+                    Open Kanban Board <ChevronRight className="h-4 w-4 ml-1.5" />
                   </Link>
                 </Button>
               </div>
             </Card>
 
-
+            {/* Quick Actions & Shortlist */}
+            <div className="space-y-6">
+              <Card className="rounded-2xl border-slate-200 shadow-sm flex flex-col h-full">
+                <CardHeader className="p-5 border-b border-slate-100 pb-4">
+                  <div className="flex justify-between items-center">
+                    <div>
+                      <CardTitle className="text-base font-bold text-slate-900">Recent Shortlist</CardTitle>
+                      <CardDescription className="text-xs">Saved programs</CardDescription>
+                    </div>
+                    <Button variant="ghost" size="sm" className="text-deep-green font-semibold text-xs h-8 px-3" asChild>
+                      <Link href="/dashboard/saved">View All</Link>
+                    </Button>
+                  </div>
+                </CardHeader>
+                <CardContent className="flex-1 p-0">
+                   {profile?.savedPrograms?.length > 0 ? (
+                     <div className="divide-y divide-slate-100">
+                        {profile.savedPrograms.slice(0, 3).map((prog: any) => (
+                          <div key={prog._id} className="p-4 flex items-center justify-between hover:bg-slate-50/50 transition-colors">
+                            <div className="flex items-center gap-3">
+                              <div className="h-10 w-10 rounded-xl bg-white border border-slate-100 shadow-sm flex items-center justify-center shrink-0">
+                                 {prog.logoUrl ? (
+                                   <img src={prog.logoUrl} alt="" className="w-6 h-6 object-contain" />
+                                 ) : (
+                                   <GraduationCap className="h-5 w-5 text-slate-400" />
+                                 )}
+                              </div>
+                              <div className="min-w-0 pr-3">
+                                <p className="text-sm font-semibold text-slate-900 truncate">{prog.name}</p>
+                                <p className="text-[10px] text-slate-500 truncate uppercase font-bold tracking-wider mt-0.5">{prog.universityName}</p>
+                              </div>
+                            </div>
+                            <Button variant="ghost" size="icon" className="shrink-0 h-8 w-8 rounded-full hover:bg-slate-200/50" asChild>
+                              <Link href={`/programs/${prog.slug}`}>
+                                 <ChevronRight className="h-4 w-4 text-slate-400" />
+                              </Link>
+                            </Button>
+                          </div>
+                        ))}
+                     </div>
+                   ) : (
+                     <div className="py-8 text-center flex flex-col items-center justify-center h-full">
+                       <Bookmark className="h-8 w-8 text-slate-200 mb-3" />
+                       <p className="text-sm text-slate-500 font-medium">No shortlisted programs</p>
+                       <Button variant="link" size="sm" asChild className="text-deep-green mt-1 h-auto p-0">
+                          <Link href="/programs">Explore Programs</Link>
+                       </Button>
+                     </div>
+                   )}
+                </CardContent>
+              </Card>
+            </div>
           </div>
-
-          {/* Fit Score & Shortlist Section */}
-          <Card className="rounded-2xl border-slate-200 shadow-sm overflow-hidden">
-            <CardHeader className="bg-slate-50/50 border-b">
-              <div className="flex justify-between items-center">
-                <div>
-                  <CardTitle className="text-xl font-display">My Shortlisted Programs</CardTitle>
-                  <CardDescription>Quick view of your saved programs.</CardDescription>
-                </div>
-                <Button variant="ghost" size="sm" className="text-deep-green font-bold text-xs" asChild>
-                  <Link href="/dashboard/saved">View All Saved</Link>
-                </Button>
-              </div>
-            </CardHeader>
-            <CardContent className="p-0">
-               {profile?.savedPrograms?.length > 0 ? (
-                 <div className="divide-y divide-slate-100">
-                    {profile.savedPrograms.slice(0, 4).map((prog: any) => (
-                      <div key={prog._id} className="p-4 flex items-center justify-between hover:bg-slate-50 transition-colors">
-                        <div className="flex items-center gap-4">
-                          <div className="h-10 w-10 rounded-xl bg-white border border-slate-100 flex items-center justify-center shrink-0">
-                             {prog.logoUrl ? (
-                               <img src={prog.logoUrl} alt="" className="w-6 h-6 object-contain" />
-                             ) : (
-                               <GraduationCap className="h-5 w-5 text-slate-400" />
-                             )}
-                          </div>
-                          <div className="min-w-0">
-                            <p className="text-sm font-bold text-slate-900 truncate">{prog.name}</p>
-                            <p className="text-[10px] text-slate-500 truncate uppercase font-medium">{prog.universityName}</p>
-                          </div>
-                        </div>
-                        <div className="flex items-center gap-6">
-                           {/* Fit Score hidden for now */}
-                           <div className="text-right hidden sm:block">
-                              <p className="text-[10px] text-slate-400 uppercase font-bold">Status</p>
-                              <p className="text-sm font-bold text-slate-600">Saved</p>
-                           </div>
-                           <Button variant="ghost" size="icon" className="rounded-xl hover:bg-white border border-transparent hover:border-slate-100" asChild>
-                             <Link href={`/programs/${prog.slug}`}>
-                                <ChevronRight className="h-4 w-4" />
-                             </Link>
-                           </Button>
-                        </div>
-                      </div>
-                    ))}
-                 </div>
-               ) : (
-                 <div className="p-12 text-center">
-                   <Bookmark className="h-12 w-12 text-slate-200 mx-auto mb-4" />
-                   <p className="text-sm text-slate-500 mb-4">You haven't shortlisted any programs yet.</p>
-                   <Button asChild className="bg-deep-green rounded-xl">
-                      <Link href="/programs">Start Exploring Programs</Link>
-                   </Button>
-                 </div>
-               )}
-            </CardContent>
-          </Card>
         </div>
 
-        {/* Right Column: Profile & Checklist */}
-        <div className="lg:col-span-4 space-y-8">
-          {/* Profile Completion Stepper-like Widget */}
-          <Card className="rounded-3xl border-none shadow-xl bg-gradient-to-br from-slate-900 to-slate-800 text-white overflow-hidden relative">
-            <div className="absolute top-0 right-0 p-8 opacity-10">
+        {/* Right Column: Profile Completion */}
+        <div className="lg:col-span-4 space-y-6">
+          <Card className="rounded-2xl border-none shadow-xl bg-slate-900 text-white overflow-hidden relative">
+            <div className="absolute top-0 right-0 p-6 opacity-5 pointer-events-none">
                <User className="h-32 w-32" />
             </div>
-            <CardHeader className="relative z-10">
-               <p className="text-[10px] uppercase font-black text-green-400 tracking-widest mb-2">Academic Profile</p>
-               <CardTitle className="text-2xl font-display">Profile Strength</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-6 relative z-10 pt-0">
-              <div className="flex items-center gap-4">
-                <div className="text-4xl font-black text-white">{completionPercentage}%</div>
-                <div className="flex-1">
-                   <Progress value={completionPercentage} className="h-2 bg-white/10" />
-                </div>
-              </div>
-              
-              <div className="space-y-3 pt-2">
+            {/* Soft subtle gradient overlay */}
+            <div className="absolute inset-0 bg-gradient-to-br from-deep-green/20 to-transparent pointer-events-none" />
+            
+            <CardContent className="p-6 relative z-10">
+               <div className="flex justify-between items-start mb-6">
+                 <div>
+                   <p className="text-[10px] uppercase font-black text-green-400 tracking-widest mb-1.5">Your Profile</p>
+                   <CardTitle className="text-2xl font-display font-bold">Strength</CardTitle>
+                 </div>
+                 <div className="text-4xl font-black text-white/90">{completionPercentage}%</div>
+               </div>
+               
+               <Progress value={completionPercentage} className="h-2 bg-white/10 mb-8 rounded-full overflow-hidden">
+                 <div className="h-full bg-green-400 transition-all duration-500 ease-in-out" style={{ width: `${completionPercentage}%` }} />
+               </Progress>
+               
+               <div className="space-y-4">
                  {[
                    { label: 'Academic History', complete: !!profile?.academicBackground },
                    { label: 'English Proficiency', complete: !!profile?.ieltsScore || !!profile?.pteScore },
@@ -270,41 +244,19 @@ export default function DashboardPage() {
                    { label: 'Career Goals', complete: !!profile?.careerGoals?.targetRole },
                  ].map((step, i) => (
                    <div key={i} className="flex items-center gap-3">
-                      <div className={`h-5 w-5 rounded-full flex items-center justify-center shrink-0 ${step.complete ? 'bg-green-500' : 'bg-white/10'}`}>
-                         {step.complete ? <CheckCircle2 className="h-3 w-3 text-white" /> : <span className="text-[10px] font-bold text-white/40">{i+1}</span>}
+                      <div className={`h-6 w-6 rounded-full flex items-center justify-center shrink-0 transition-colors ${step.complete ? 'bg-green-500 text-slate-900' : 'bg-white/10 text-white/40'}`}>
+                         {step.complete ? <CheckCircle2 className="h-3.5 w-3.5" /> : <span className="text-[10px] font-bold">{i+1}</span>}
                       </div>
-                      <span className={`text-xs font-bold ${step.complete ? 'text-white/90' : 'text-white/40'}`}>{step.label}</span>
+                      <span className={`text-sm font-medium ${step.complete ? 'text-white/90' : 'text-white/50'}`}>{step.label}</span>
                    </div>
                  ))}
-              </div>
+               </div>
 
-              <Button className="w-full rounded-2xl bg-green-500 hover:bg-green-600 text-slate-900 font-black border-none mt-4 shadow-lg shadow-green-500/20" asChild>
-                <Link href="/dashboard/profile">
-                  Complete My Profile
-                </Link>
-              </Button>
+               <Button className="w-full rounded-xl bg-green-500 hover:bg-green-400 text-slate-900 font-bold border-none mt-8 h-12 shadow-lg shadow-green-500/20 transition-all" asChild>
+                 <Link href="/dashboard/profile">Complete My Profile</Link>
+               </Button>
             </CardContent>
           </Card>
-
-          {/* Quick Actions / Shortcuts */}
-          <div className="space-y-4">
-             <h3 className="text-sm font-bold text-slate-900 uppercase tracking-widest ml-1">Quick Tools</h3>
-             <div className="grid grid-cols-1 gap-3">
-                 {/* Fit Score tool hidden */}
-                <Link href="/dashboard/saved" className="group">
-                   <div className="p-4 rounded-2xl bg-white border border-slate-200 hover:border-deep-green hover:shadow-md transition-all flex items-center gap-4">
-                      <div className="p-2 bg-cream-100 rounded-xl group-hover:bg-deep-green group-hover:text-white transition-colors">
-                         <Bookmark className="h-5 w-5" />
-                      </div>
-                      <div className="flex-1">
-                         <p className="text-xs font-bold text-slate-900">My Shortlist</p>
-                         <p className="text-[10px] text-slate-500">Manage saved programs</p>
-                      </div>
-                      <ChevronRight className="h-4 w-4 text-slate-300" />
-                   </div>
-                </Link>
-             </div>
-          </div>
         </div>
       </div>
     </div>

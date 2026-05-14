@@ -194,7 +194,7 @@ export function ApplicationKanban() {
             
             <button 
               onClick={handleAddColumn}
-              className="w-80 shrink-0 h-[600px] rounded-3xl border-2 border-dashed border-slate-200 hover:border-primary/30 hover:bg-slate-50 transition-all flex flex-col items-center justify-center group"
+              className="w-72 shrink-0 h-[400px] rounded-2xl border-2 border-dashed border-slate-200 hover:border-primary/30 hover:bg-slate-50 transition-all flex flex-col items-center justify-center group"
             >
               <div className="h-12 w-12 rounded-2xl bg-white border border-slate-100 shadow-sm flex items-center justify-center group-hover:scale-110 transition-transform">
                 <Plus className="h-6 w-6 text-slate-400 group-hover:text-primary" />

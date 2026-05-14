@@ -29,8 +29,8 @@ export default function TrackerPage() {
             
             <div className="flex items-center gap-6 bg-white p-4 rounded-3xl border border-slate-100 shadow-sm">
               <div className="flex flex-col">
-                <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">Strategy</span>
-                <span className="text-sm font-bold text-slate-900">Custom Workflow</span>
+                <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">Status</span>
+                <span className="text-sm font-bold text-slate-900">Active Board</span>
               </div>
               <div className="h-8 w-px bg-slate-100" />
               <div className="flex flex-col">

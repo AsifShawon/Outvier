@@ -7,25 +7,25 @@ import { University } from '../models/University.model';
 const generateId = (prefix = 'col') => `${prefix}_${Math.random().toString(36).substr(2, 9)}`;
 
 const DEFAULT_COLUMNS = [
-  { title: 'Shortlisted', color: '#64748b' },
+  { title: 'Researching', color: '#64748b' },
   { title: 'Preparing', color: '#3b82f6' },
   { title: 'Applied', color: '#f59e0b' },
-  { title: 'Offer Received', color: '#10b981' },
-  { title: 'Visa Process', color: '#8b5cf6' },
-  { title: 'Enrolled', color: '#059669' }
+  { title: 'In Progress', color: '#8b5cf6' },
+  { title: 'Onboarding', color: '#10b981' },
+  { title: 'Archived', color: '#94a3b8' }
 ];
 
 const STATUS_MAP: Record<string, string> = {
-  'researching': 'Shortlisted',
-  'shortlisted': 'Shortlisted',
+  'researching': 'Researching',
+  'shortlisted': 'Researching',
   'preparing_documents': 'Preparing',
   'applied': 'Applied',
-  'offer_received': 'Offer Received',
-  'accepted': 'Visa Process',
-  'visa_process': 'Visa Process',
-  'enrolled': 'Enrolled',
-  'rejected': 'Applied', // Keep it in applied or elsewhere
-  'archived': 'Enrolled' // Just a fallback
+  'offer_received': 'In Progress',
+  'accepted': 'Onboarding',
+  'visa_process': 'In Progress',
+  'enrolled': 'Onboarding',
+  'rejected': 'Archived',
+  'archived': 'Archived'
 };
 
 export const applicationTrackerController = {

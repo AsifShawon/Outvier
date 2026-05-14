@@ -35,7 +35,7 @@ export function TrackerCard({ item, onClick }: TrackerCardProps) {
       className="group relative rounded-2xl border-slate-200 shadow-sm hover:shadow-md hover:border-primary/50 transition-all cursor-pointer bg-white overflow-hidden"
       onClick={() => onClick(item)}
     >
-      <CardContent className="p-4 space-y-3">
+      <CardContent className="p-3 space-y-2.5">
         <div className="flex justify-between items-start gap-2">
           <div className="flex flex-wrap gap-1">
             <Badge 
