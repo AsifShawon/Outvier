@@ -6,12 +6,13 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { cricosApi } from '@/lib/api/cricos.api';
 import {
-  RefreshCw, Database, FileText, Search, Building2,
+  RefreshCw, Building2,
   BookOpen, MapPin, Network, AlertCircle, CheckCircle2,
-  Clock, Loader2,
+  Clock, Loader2, BarChart as BarChartIcon
 } from 'lucide-react';
 import Link from 'next/link';
 import { format } from 'date-fns';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, ResponsiveContainer, Tooltip as RechartsTooltip } from 'recharts';
 
 interface CricosStats {
   totalInstitutions: number;
@@ -132,61 +133,38 @@ export default function CricosDashboard() {
       )}
 
       {/* Quick actions */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 gap-6">
 
         <Card className="p-6 space-y-3">
           <h2 className="text-lg font-bold flex items-center gap-2">
-            <FileText className="h-5 w-5 text-primary" />
-            Raw Data Explorer
+            <BarChartIcon className="h-5 w-5 text-primary" />
+            Data Overview
           </h2>
-          <p className="text-sm text-muted-foreground">
-            Browse raw CRICOS source records stored from last sync.
-          </p>
-          <div className="flex flex-wrap gap-2">
-            <Link href="/admin/cricos/raw/institutions"><Button variant="outline" size="sm">Institutions</Button></Link>
-            <Link href="/admin/cricos/raw/courses"><Button variant="outline" size="sm">Courses</Button></Link>
-            <Link href="/admin/cricos/raw/locations"><Button variant="outline" size="sm">Locations</Button></Link>
-            <Link href="/admin/cricos/raw/course-locations"><Button variant="outline" size="sm">Course Locations</Button></Link>
+          <div className="h-[300px] w-full mt-4">
+            {stats ? (
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={[
+                  { name: 'Insts', count: stats.totalInstitutions },
+                  { name: 'Courses', count: stats.totalCourses },
+                  { name: 'Locs', count: stats.totalLocations },
+                  { name: 'C.Locs', count: stats.totalCourseLocations },
+                ]} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e5e7eb" />
+                  <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#6b7280' }} dy={10} />
+                  <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#6b7280' }} />
+                  <RechartsTooltip 
+                    cursor={{ fill: 'transparent' }}
+                    contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
+                  />
+                  <Bar dataKey="count" fill="#14b8a6" radius={[4, 4, 0, 0]} maxBarSize={60} />
+                </BarChart>
+              </ResponsiveContainer>
+            ) : (
+              <div className="h-full w-full flex items-center justify-center bg-slate-50 dark:bg-slate-800 rounded-lg animate-pulse">
+                <BarChartIcon className="w-8 h-8 text-slate-300 dark:text-slate-700" />
+              </div>
+            )}
           </div>
-        </Card>
-
-        <Card className="p-6 space-y-3">
-          <h2 className="text-lg font-bold flex items-center gap-2">
-            <Database className="h-5 w-5 text-primary" />
-            Bulk Ingestion
-          </h2>
-          <p className="text-sm text-muted-foreground">
-            Synchronize all 1,100+ CRICOS providers at once to detect new institutions or metadata changes.
-          </p>
-          <Button 
-            variant="outline" 
-            className="border-emerald-500/40 text-emerald-600 hover:bg-emerald-500/5 gap-2"
-            onClick={() => syncAllMutation.mutate()}
-            disabled={syncAllMutation.isPending}
-          >
-            {syncAllMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
-            Sync All Institutions
-          </Button>
-        </Card>
-
-        <Card className="p-6 space-y-3">
-          <h2 className="text-lg font-bold flex items-center gap-2">
-            <Database className="h-5 w-5 text-primary" />
-            Data Resources
-          </h2>
-          <p className="text-sm text-muted-foreground">
-            Four CRICOS resources from data.gov.au CKAN DataStore API.
-          </p>
-          {resources && (
-            <div className="space-y-1">
-              {Object.entries(resources).map(([key, res]: [string, any]) => (
-                <div key={key} className="flex items-center gap-2 text-xs">
-                  <span className="font-medium w-36 shrink-0">{res.name}</span>
-                  <span className="font-mono text-muted-foreground text-[10px]">{res.id}</span>
-                </div>
-              ))}
-            </div>
-          )}
         </Card>
       </div>
     </div>

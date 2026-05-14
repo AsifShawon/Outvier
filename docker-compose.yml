@@ -38,6 +38,7 @@ services:
     environment:
       MB_DB_TYPE: h2
       JAVA_TIMEZONE: Australia/Adelaide
+      MB_JETTY_MAX_HEADER_SIZE: 65536
     volumes:
       - outvier_metabase_data:/metabase-data
     healthcheck:

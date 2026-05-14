@@ -3,7 +3,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { authApi } from '@/lib/api/auth.api';
 import { profileApi } from '@/lib/api/profile.api';
-import { applicationTrackerApi } from '@/lib/api/applicationTracker.api';
 import { budgetPlanApi } from '@/lib/api/budgetPlan.api';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -34,14 +33,8 @@ export default function DashboardPage() {
     queryFn: () => profileApi.getProfile(),
   });
 
-  const { data: trackerRes } = useQuery({
-    queryKey: ['application-tracker'],
-    queryFn: () => applicationTrackerApi.getAll(),
-  });
-
   const user = userRes?.data?.data;
   const profile = profileRes?.data?.data;
-  const applications = trackerRes?.data?.data || [];
 
   // Calculate profile completion
   const completionFields = [
@@ -58,9 +51,7 @@ export default function DashboardPage() {
   );
 
   const stats = [
-    { label: 'Applications', value: applications.length, icon: ClipboardList, color: 'text-blue-600', bg: 'bg-blue-50' },
     { label: 'Shortlisted', value: profile?.savedPrograms?.length || 0, icon: Bookmark, color: 'text-amber-600', bg: 'bg-amber-50' },
-    { label: 'Tasks Pending', value: applications.reduce((acc: number, app: any) => acc + (app.tasks?.filter((t: any) => !t.completed).length || 0), 0), icon: Clock, color: 'text-purple-600', bg: 'bg-purple-50' },
   ];
 
   return (
@@ -111,54 +102,7 @@ export default function DashboardPage() {
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
         {/* Left Column: Tools & Trackers */}
         <div className="lg:col-span-8 space-y-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {/* Application Tracker Preview */}
-            <Card className="rounded-2xl border-slate-200 shadow-sm flex flex-col">
-              <CardHeader className="p-5 border-b border-slate-100 pb-4">
-                <div className="flex justify-between items-center">
-                  <div className="flex items-center gap-2.5">
-                    <div className="p-2 bg-blue-50 rounded-lg">
-                      <Rocket className="h-4 w-4 text-blue-600" />
-                    </div>
-                    <div>
-                      <CardTitle className="text-base font-bold text-slate-900">Active Tracker</CardTitle>
-                      <CardDescription className="text-xs">Your pipeline status</CardDescription>
-                    </div>
-                  </div>
-                </div>
-              </CardHeader>
-              <CardContent className="flex-1 p-5">
-                {applications.length > 0 ? (
-                  <div className="space-y-3">
-                    {applications.slice(0, 4).map((app: any) => (
-                      <div key={app._id} className="p-3 rounded-xl bg-slate-50/50 border border-slate-100 flex items-center justify-between group hover:border-slate-200 transition-colors">
-                        <div className="min-w-0 pr-3">
-                          <p className="text-sm font-semibold text-slate-900 truncate">{app.programName}</p>
-                          <p className="text-xs text-slate-500 truncate mt-0.5">{app.universityName}</p>
-                        </div>
-                        <Badge variant="secondary" className="text-[10px] uppercase font-bold tracking-wider shrink-0 bg-white shadow-sm">
-                          {app.status?.replace('_', ' ')}
-                        </Badge>
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <div className="py-8 text-center flex flex-col items-center justify-center h-full">
-                    <ClipboardList className="h-8 w-8 text-slate-200 mb-3" />
-                    <p className="text-sm text-slate-500 font-medium">No active applications</p>
-                    <p className="text-xs text-slate-400 mt-1">Move a saved program to start tracking.</p>
-                  </div>
-                )}
-              </CardContent>
-              <div className="p-3 bg-slate-50/80 border-t border-slate-100 mt-auto">
-                <Button variant="ghost" className="w-full text-sm font-semibold h-10 text-slate-600 hover:text-slate-900 hover:bg-slate-200/50 rounded-lg" asChild>
-                  <Link href="/dashboard/tracker">
-                    Open Kanban Board <ChevronRight className="h-4 w-4 ml-1.5" />
-                  </Link>
-                </Button>
-              </div>
-            </Card>
-
+          <div className="grid grid-cols-1 gap-6">
             {/* Quick Actions & Shortlist */}
             <div className="space-y-6">
               <Card className="rounded-2xl border-slate-200 shadow-sm flex flex-col h-full">

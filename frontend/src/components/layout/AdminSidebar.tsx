@@ -57,7 +57,7 @@ const navItems: NavItem[] = [
   
   // ── Insights ──────────────────────────────────────────────────────────
   { divider: true, label: 'Insights', icon: null as any },
-  { href: 'http://localhost:3001', label: 'Analytics', icon: BarChart3, external: true },
+  { href: 'http://127.0.0.1:3001', label: 'Analytics', icon: BarChart3, external: true },
 ];
 
 export function AdminSidebar({ onClose }: { onClose?: () => void }) {

@@ -10,6 +10,8 @@ import { Pagination } from '@/components/ui-custom/Pagination';
 import { SkeletonCard } from '@/components/ui-custom/SkeletonCard';
 import { EmptyState } from '@/components/ui-custom/EmptyState';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
+import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { BookOpen, MapPin, Layers, ArrowUpDown, Filter, GraduationCap, DollarSign, Calendar } from 'lucide-react';
 import { programsApi } from '@/lib/api/programs.api';
@@ -31,10 +33,12 @@ const CAMPUS_MODES = [
 ];
 
 const BUDGET_OPTIONS = [
-  { label: "Under $20k", value: "under-20k" },
+  { label: "Under $10k", value: "under-10k" },
+  { label: "$10k - $20k", value: "10k-20k" },
   { label: "$20k - $30k", value: "20k-30k" },
   { label: "$30k - $40k", value: "30k-40k" },
-  { label: "Over $40k", value: "over-40k" }
+  { label: "$40k - $50k", value: "40k-50k" },
+  { label: "Over $50k", value: "over-50k" }
 ];
 
 const INTAKE_OPTIONS = ["February", "July", "November"];
@@ -65,13 +69,15 @@ function ProgramsContent() {
     queryKey: ['program-cities'],
     queryFn: () => programsApi.getCities().then(r => r.data),
   });
-  const cities = citiesRes?.data || [];
+  const citiesRaw = citiesRes?.data;
+  const cities = Array.isArray(citiesRaw) ? citiesRaw : [];
 
   const { data: fieldsRes } = useQuery({
     queryKey: ['program-fields'],
     queryFn: () => programsApi.getFields().then(r => r.data),
   });
-  const fields = fieldsRes?.data || [];
+  const fieldsRaw = fieldsRes?.data;
+  const fields = Array.isArray(fieldsRaw) ? fieldsRaw : [];
 
   const selectedSort = SORT_OPTIONS.find(s => s.value === sort) || SORT_OPTIONS[0];
 
@@ -124,71 +130,218 @@ function ProgramsContent() {
 
         <div className="container mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-8">
           {/* Filters */}
-          <div className="flex flex-col lg:flex-row gap-3 mb-8">
-            <SearchBar
-              value={search}
-              onChange={(v) => { setSearch(v); setPage(1); }}
-              placeholder="Search programs..."
-              className="flex-1"
-            />
-            <div className="flex flex-wrap gap-3">
+          <div className="mb-8 space-y-4">
+            <div className="flex gap-3">
+              <SearchBar
+                value={search}
+                onChange={(v) => { setSearch(v); setPage(1); }}
+                placeholder="Search programs..."
+                className="flex-1"
+              />
+              <div className="lg:hidden">
+                <Sheet>
+                  <SheetTrigger asChild>
+                    <Button variant="outline" className="px-3 h-10">
+                      <Filter className="h-4 w-4" />
+                    </Button>
+                  </SheetTrigger>
+                  <SheetContent side="right" className="w-[300px] sm:w-[400px]">
+                    <SheetHeader>
+                      <SheetTitle>Filters</SheetTitle>
+                    </SheetHeader>
+                    <div className="flex flex-col gap-4 mt-6">
+                      <Select value={level || 'all'} onValueChange={(v) => handleFilter('level', v as string)}>
+                        <SelectTrigger className="w-full" id="filter-level-mobile">
+                          <div className="flex items-center gap-1.5 truncate">
+                            <BookOpen className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+                            <span className="text-muted-foreground font-medium">Level:</span>
+                            <SelectValue placeholder="All" />
+                          </div>
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="all">All</SelectItem>
+                          {LEVELS.map((l) => (
+                            <SelectItem key={l.value} value={l.value}>{l.label}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+
+                      <Select value={field || 'all'} onValueChange={(v) => handleFilter('field', v as string)}>
+                        <SelectTrigger className="w-full" id="filter-field-mobile">
+                          <div className="flex items-center gap-1.5 truncate">
+                            <GraduationCap className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+                            <span className="text-muted-foreground font-medium">Subject:</span>
+                            <SelectValue placeholder="All" />
+                          </div>
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="all">All</SelectItem>
+                          {fields.map((f: string) => (
+                            <SelectItem key={f} value={f}>{f}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+
+                      <Select value={campusMode || 'all'} onValueChange={(v) => handleFilter('campusMode', v as string)}>
+                        <SelectTrigger className="w-full" id="filter-campus-mobile">
+                          <div className="flex items-center gap-1.5 truncate">
+                            <Layers className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+                            <span className="text-muted-foreground font-medium">Mode:</span>
+                            <SelectValue placeholder="All" />
+                          </div>
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="all">All</SelectItem>
+                          {CAMPUS_MODES.map((m) => (
+                            <SelectItem key={m.value} value={m.value}>{m.label}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+
+                      <Select value={city || 'all'} onValueChange={(v) => handleFilter('city', v as string)}>
+                        <SelectTrigger className="w-full" id="filter-city-mobile">
+                          <div className="flex items-center gap-1.5 truncate">
+                            <MapPin className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+                            <span className="text-muted-foreground font-medium">City:</span>
+                            <SelectValue placeholder="All" />
+                          </div>
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="all">All</SelectItem>
+                          {cities.map((c: string) => (
+                            <SelectItem key={c} value={c}>{c}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+
+                      <Select value={budget || 'all'} onValueChange={(v) => handleFilter('budget', v as string)}>
+                        <SelectTrigger className="w-full" id="filter-budget-mobile">
+                          <div className="flex items-center gap-1.5 truncate">
+                            <DollarSign className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+                            <span className="text-muted-foreground font-medium">Budget:</span>
+                            <SelectValue placeholder="All" />
+                          </div>
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="all">All</SelectItem>
+                          {BUDGET_OPTIONS.map((b) => (
+                            <SelectItem key={b.value} value={b.value}>{b.label}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+
+                      <Select value={intake || 'all'} onValueChange={(v) => handleFilter('intake', v as string)}>
+                        <SelectTrigger className="w-full" id="filter-intake-mobile">
+                          <div className="flex items-center gap-1.5 truncate">
+                            <Calendar className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+                            <span className="text-muted-foreground font-medium">Intake:</span>
+                            <SelectValue placeholder="All" />
+                          </div>
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="all">All</SelectItem>
+                          {INTAKE_OPTIONS.map((i) => (
+                            <SelectItem key={i} value={i}>{i}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+
+                      <Select value={sort} onValueChange={(v) => handleFilter('sort', v as string)}>
+                        <SelectTrigger className="w-full" id="filter-sort-mobile">
+                          <div className="flex items-center gap-1.5 truncate">
+                            <ArrowUpDown className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+                            <span className="text-muted-foreground font-medium">Sort:</span>
+                            <SelectValue placeholder="A-Z" />
+                          </div>
+                        </SelectTrigger>
+                        <SelectContent>
+                          {SORT_OPTIONS.map((o) => (
+                            <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </SheetContent>
+                </Sheet>
+              </div>
+            </div>
+
+            {/* Desktop Filters (Rows 2 & 3) */}
+            <div className="hidden lg:grid grid-cols-4 gap-3">
               <Select value={level || 'all'} onValueChange={(v) => handleFilter('level', v as string)}>
-                <SelectTrigger className="w-[140px]" id="filter-level">
-                  <BookOpen className="h-3.5 w-3.5 text-muted-foreground mr-1" />
-                  <SelectValue placeholder="All Levels" />
+                <SelectTrigger className="w-full" id="filter-level">
+                  <div className="flex items-center gap-1.5 truncate">
+                    <BookOpen className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+                    <span className="text-muted-foreground font-medium">Level:</span>
+                    <SelectValue placeholder="All" />
+                  </div>
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">All Levels</SelectItem>
+                  <SelectItem value="all">All</SelectItem>
                   {LEVELS.map((l) => (
                     <SelectItem key={l.value} value={l.value}>{l.label}</SelectItem>
                   ))}
                 </SelectContent>
               </Select>
-              <Select value={city || 'all'} onValueChange={(v) => handleFilter('city', v as string)}>
-                <SelectTrigger className="w-[140px]" id="filter-city">
-                  <MapPin className="h-3.5 w-3.5 text-muted-foreground mr-1" />
-                  <SelectValue placeholder="All Cities" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Cities</SelectItem>
-                  {cities.map((c: string) => (
-                    <SelectItem key={c} value={c}>{c}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <Select value={campusMode || 'all'} onValueChange={(v) => handleFilter('campusMode', v as string)}>
-                <SelectTrigger className="w-[130px]" id="filter-campus">
-                  <Layers className="h-3.5 w-3.5 text-muted-foreground mr-1" />
-                  <SelectValue placeholder="All Modes" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Modes</SelectItem>
-                  {CAMPUS_MODES.map((m) => (
-                    <SelectItem key={m.value} value={m.value}>{m.label}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
 
               <Select value={field || 'all'} onValueChange={(v) => handleFilter('field', v as string)}>
-                <SelectTrigger className="w-[160px]" id="filter-field">
-                  <GraduationCap className="h-3.5 w-3.5 text-muted-foreground mr-1" />
-                  <SelectValue placeholder="All Subjects" />
+                <SelectTrigger className="w-full" id="filter-field">
+                  <div className="flex items-center gap-1.5 truncate">
+                    <GraduationCap className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+                    <span className="text-muted-foreground font-medium">Subject:</span>
+                    <SelectValue placeholder="All" />
+                  </div>
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">All Subjects</SelectItem>
+                  <SelectItem value="all">All</SelectItem>
                   {fields.map((f: string) => (
                     <SelectItem key={f} value={f}>{f}</SelectItem>
                   ))}
                 </SelectContent>
               </Select>
 
-              <Select value={budget || 'all'} onValueChange={(v) => handleFilter('budget', v as string)}>
-                <SelectTrigger className="w-[150px]" id="filter-budget">
-                  <DollarSign className="h-3.5 w-3.5 text-muted-foreground mr-1" />
-                  <SelectValue placeholder="All Budgets" />
+              <Select value={campusMode || 'all'} onValueChange={(v) => handleFilter('campusMode', v as string)}>
+                <SelectTrigger className="w-full" id="filter-campus">
+                  <div className="flex items-center gap-1.5 truncate">
+                    <Layers className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+                    <span className="text-muted-foreground font-medium">Mode:</span>
+                    <SelectValue placeholder="All" />
+                  </div>
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">All Budgets</SelectItem>
+                  <SelectItem value="all">All</SelectItem>
+                  {CAMPUS_MODES.map((m) => (
+                    <SelectItem key={m.value} value={m.value}>{m.label}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+
+              <Select value={city || 'all'} onValueChange={(v) => handleFilter('city', v as string)}>
+                <SelectTrigger className="w-full" id="filter-city">
+                  <div className="flex items-center gap-1.5 truncate">
+                    <MapPin className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+                    <span className="text-muted-foreground font-medium">City:</span>
+                    <SelectValue placeholder="All" />
+                  </div>
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All</SelectItem>
+                  {cities.map((c: string) => (
+                    <SelectItem key={c} value={c}>{c}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+
+              <Select value={budget || 'all'} onValueChange={(v) => handleFilter('budget', v as string)}>
+                <SelectTrigger className="w-full" id="filter-budget">
+                  <div className="flex items-center gap-1.5 truncate">
+                    <DollarSign className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+                    <span className="text-muted-foreground font-medium">Budget:</span>
+                    <SelectValue placeholder="All" />
+                  </div>
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All</SelectItem>
                   {BUDGET_OPTIONS.map((b) => (
                     <SelectItem key={b.value} value={b.value}>{b.label}</SelectItem>
                   ))}
@@ -196,21 +349,28 @@ function ProgramsContent() {
               </Select>
 
               <Select value={intake || 'all'} onValueChange={(v) => handleFilter('intake', v as string)}>
-                <SelectTrigger className="w-[140px]" id="filter-intake">
-                  <Calendar className="h-3.5 w-3.5 text-muted-foreground mr-1" />
-                  <SelectValue placeholder="All Intakes" />
+                <SelectTrigger className="w-full" id="filter-intake">
+                  <div className="flex items-center gap-1.5 truncate">
+                    <Calendar className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+                    <span className="text-muted-foreground font-medium">Intake:</span>
+                    <SelectValue placeholder="All" />
+                  </div>
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">All Intakes</SelectItem>
+                  <SelectItem value="all">All</SelectItem>
                   {INTAKE_OPTIONS.map((i) => (
                     <SelectItem key={i} value={i}>{i}</SelectItem>
                   ))}
                 </SelectContent>
               </Select>
+
               <Select value={sort} onValueChange={(v) => handleFilter('sort', v as string)}>
-                <SelectTrigger className="w-[160px]" id="filter-sort">
-                  <ArrowUpDown className="h-3.5 w-3.5 text-muted-foreground mr-1" />
-                  <SelectValue placeholder="Sort By" />
+                <SelectTrigger className="w-full" id="filter-sort">
+                  <div className="flex items-center gap-1.5 truncate">
+                    <ArrowUpDown className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+                    <span className="text-muted-foreground font-medium">Sort:</span>
+                    <SelectValue placeholder="A-Z" />
+                  </div>
                 </SelectTrigger>
                 <SelectContent>
                   {SORT_OPTIONS.map((o) => (

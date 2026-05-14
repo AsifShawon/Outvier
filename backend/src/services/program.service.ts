@@ -5,6 +5,8 @@ import { University } from '../models/University.model';
 import { CreateProgramDTO, UpdateProgramDTO } from '../validators/program.validator';
 import { ProgramLocation } from '../models/ProgramLocation.model';
 
+const escapeRegex = (text: string) => text.replace(/[-[\]{}()*+?.,\\^$|#\s]/g, '\\$&');
+
 export interface ProgramQuery {
   page?: number;
   limit?: number;
@@ -37,13 +39,26 @@ export const programService = {
       sortOrder = 'asc'
     } = query;
 
-    const filter: Record<string, unknown> = {};
+    const filter: Record<string, any> = {};
+    const andConditions: any[] = [];
 
-    if (search) filter.$text = { $search: search };
+    if (search) {
+      const searchRegex = new RegExp(escapeRegex(search), 'i');
+      andConditions.push({
+        $or: [
+          { name: searchRegex },
+          { universityName: searchRegex },
+          { field: searchRegex },
+          { fieldOfStudy: searchRegex }
+        ]
+      });
+    }
     if (level && level !== 'all') filter.level = level;
     if (field && field !== 'all') filter.field = { $regex: field, $options: 'i' };
     if (campusMode && campusMode !== 'all') filter.campusMode = campusMode;
-    
+    if (universitySlug) filter.universitySlug = universitySlug;
+    if (intake && intake !== 'all') filter.intakeMonths = { $in: [new RegExp(intake, 'i')] };
+
     if (city && city !== 'all') {
       // Find programs that either have the city directly OR have a location in that city
       // We'll use a subquery or find program IDs first for better performance if needed, 
@@ -57,23 +72,37 @@ export const programService = {
       
       const programIdsFromLocations = locations.map(l => l.program).filter(Boolean);
       
-      filter.$or = [
-        { city: { $regex: city, $options: 'i' } },
-        { _id: { $in: programIdsFromLocations } }
-      ];
+      andConditions.push({
+        $or: [
+          { city: { $regex: city, $options: 'i' } },
+          { _id: { $in: programIdsFromLocations } }
+        ]
+      });
     }
-
-    if (universitySlug) filter.universitySlug = universitySlug;
 
     if (budget && budget !== 'all') {
-      if (budget === 'under-20k') filter.tuitionFeeInternational = { $lt: 20000 };
-      else if (budget === '20k-30k') filter.tuitionFeeInternational = { $gte: 20000, $lte: 30000 };
-      else if (budget === '30k-40k') filter.tuitionFeeInternational = { $gte: 30000, $lte: 40000 };
-      else if (budget === 'over-40k') filter.tuitionFeeInternational = { $gt: 40000 };
+      let feeCondition: any = null;
+      if (budget === 'under-10k') feeCondition = { $lt: 10000 };
+      else if (budget === '10k-20k') feeCondition = { $gte: 10000, $lte: 20000 };
+      else if (budget === '20k-30k') feeCondition = { $gte: 20000, $lte: 30000 };
+      else if (budget === '30k-40k') feeCondition = { $gte: 30000, $lte: 40000 };
+      else if (budget === '40k-50k') feeCondition = { $gte: 40000, $lte: 50000 };
+      else if (budget === 'over-50k') feeCondition = { $gt: 50000 };
+
+      if (feeCondition) {
+        andConditions.push({
+          $or: [
+            { tuitionFeeInternational: feeCondition },
+            { tuitionFeeLocal: feeCondition },
+            { tuitionFeeAud: feeCondition },
+            { annualTuition: feeCondition }
+          ]
+        });
+      }
     }
 
-    if (intake && intake !== 'all') {
-      filter.intakeMonths = { $in: [new RegExp(intake, 'i')] };
+    if (andConditions.length > 0) {
+      filter.$and = andConditions;
     }
 
     const sort: Record<string, any> = {};

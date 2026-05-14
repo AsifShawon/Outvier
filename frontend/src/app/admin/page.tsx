@@ -40,11 +40,13 @@ import {
   PieChart,
   Pie,
   LineChart,
-  Line
+  Line,
+  AreaChart,
+  Area
 } from 'recharts';
 import Link from 'next/link';
 
-const COLORS = ['#90AB8B', '#5A7863', '#3B4953', '#B8C9A3', '#DDE6D1', '#7A9181'];
+const COLORS = ['#14b8a6', '#3b82f6', '#8b5cf6', '#ec4899', '#f59e0b', '#10b981', '#6366f1', '#f43f5e'];
 
 export default function AdminDashboardPage() {
   const { data: statsData, isLoading: isLoadingStats } = useQuery({
@@ -71,7 +73,6 @@ export default function AdminDashboardPage() {
     { title: 'Programs', value: stats?.totalPrograms || 0, icon: BookOpen, colorClass: 'bg-slate-50 text-slate-700 border-slate-100' },
     { title: 'Students', value: stats?.totalUsers || 0, icon: Users, colorClass: 'bg-cream-100 text-deep-green border-cream-200' },
     { title: 'Scholarships', value: stats?.totalScholarships || 0, icon: Award, colorClass: 'bg-green-50 text-green-700 border-green-100' },
-    { title: 'Applications', value: stats?.totalApplications || 0, icon: FileText, colorClass: 'bg-slate-50 text-slate-700 border-slate-100' },
     {
       title: 'Pending Changes',
       value: stats?.pendingStagedChanges || 0,
@@ -122,7 +123,7 @@ export default function AdminDashboardPage() {
       </div>
 
       {/* KPI Cards */}
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
         {isLoadingStats
           ? Array.from({ length: 6 }).map((_, i) => (
             <Skeleton key={i} className="h-32 rounded-2xl" />
@@ -166,22 +167,30 @@ export default function AdminDashboardPage() {
                   <Skeleton className="h-full w-full rounded-xl" />
                 ) : stats?.userSignups?.length > 0 ? (
                   <ResponsiveContainer width="100%" height="100%">
-                    <BarChart data={stats?.userSignups}>
+                    <AreaChart data={stats?.userSignups} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                      <defs>
+                        <linearGradient id="colorCount" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="5%" stopColor="#10b981" stopOpacity={0.3}/>
+                          <stop offset="95%" stopColor="#10b981" stopOpacity={0}/>
+                        </linearGradient>
+                      </defs>
                       <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
                       <XAxis
                         dataKey="_id"
-                        fontSize={10}
+                        fontSize={12}
                         tickFormatter={(val) => format(new Date(val), 'MMM dd')}
                         axisLine={false}
                         tickLine={false}
                         tick={{ fill: '#64748b' }}
+                        dy={10}
                       />
-                      <YAxis axisLine={false} tickLine={false} fontSize={10} tick={{ fill: '#64748b' }} />
+                      <YAxis axisLine={false} tickLine={false} fontSize={12} tick={{ fill: '#64748b' }} />
                       <RechartsTooltip
                         contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}
+                        cursor={{ stroke: '#10b981', strokeWidth: 1, strokeDasharray: '4 4' }}
                       />
-                      <Bar dataKey="count" fill="#5A7863" radius={[4, 4, 0, 0]} />
-                    </BarChart>
+                      <Area type="monotone" dataKey="count" stroke="#10b981" strokeWidth={3} fillOpacity={1} fill="url(#colorCount)" />
+                    </AreaChart>
                   </ResponsiveContainer>
                 ) : (
                   <div className="text-center space-y-2">
@@ -256,12 +265,12 @@ export default function AdminDashboardPage() {
                     <Skeleton className="h-full w-full rounded-xl" />
                   ) : (
                     <ResponsiveContainer width="100%" height="100%">
-                      <BarChart data={stats?.universitiesByState} layout="vertical">
+                      <BarChart data={stats?.universitiesByState} layout="vertical" margin={{ top: 0, right: 20, left: 0, bottom: 0 }}>
                         <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#f1f5f9" />
                         <XAxis type="number" hide />
-                        <YAxis dataKey="_id" type="category" axisLine={false} tickLine={false} fontSize={10} width={40} />
-                        <RechartsTooltip />
-                        <Bar dataKey="count" fill="#5A7863" radius={[0, 4, 4, 0]} barSize={20} />
+                        <YAxis dataKey="_id" type="category" axisLine={false} tickLine={false} fontSize={12} width={50} tick={{ fill: '#64748b' }} />
+                        <RechartsTooltip cursor={{ fill: 'transparent' }} contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }} />
+                        <Bar dataKey="count" fill="#3b82f6" radius={[0, 4, 4, 0]} barSize={24} />
                       </BarChart>
                     </ResponsiveContainer>
                   )}
@@ -292,7 +301,13 @@ export default function AdminDashboardPage() {
                     </div>
                   ))
                 ) : activities.length === 0 ? (
-                  <div className="p-8 text-center text-slate-500">No recent activities found.</div>
+                  <div className="p-12 flex flex-col items-center justify-center text-center">
+                    <div className="h-12 w-12 rounded-full bg-slate-50 border border-slate-100 flex items-center justify-center mb-3">
+                      <Clock className="h-5 w-5 text-slate-300" />
+                    </div>
+                    <p className="text-sm font-semibold text-slate-700">No Recent Activity</p>
+                    <p className="text-xs text-slate-500 mt-1 max-w-[200px]">System events, syncs, and updates will appear here.</p>
+                  </div>
                 ) : (
                   activities.map((activity: any) => (
                     <div key={activity._id} className="p-4 flex gap-4 hover:bg-slate-50 transition-colors">

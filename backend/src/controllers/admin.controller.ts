@@ -36,7 +36,7 @@ export const adminController = {
         University.countDocuments(),
         Program.countDocuments(),
         ProgramLocation.countDocuments(),
-        User.countDocuments({ role: 'student' }),
+        User.countDocuments({ role: 'user' }),
         Scholarship.countDocuments(),
         ApplicationTracker.countDocuments(),
         StagedChange.countDocuments({ status: 'pending' }),
@@ -66,7 +66,7 @@ export const adminController = {
       const thirtyDaysAgo = new Date();
       thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
       const userSignups = await User.aggregate([
-        { $match: { createdAt: { $gte: thirtyDaysAgo }, role: 'student' } },
+        { $match: { createdAt: { $gte: thirtyDaysAgo }, role: 'user' } },
         {
           $group: {
             _id: { $dateToString: { format: '%Y-%m-%d', date: '$createdAt' } },
@@ -115,7 +115,7 @@ export const adminController = {
       const [universities, programs, users, stagedChanges, scholarships] = await Promise.all([
         University.find().sort({ createdAt: -1 }).limit(5).select('name state status createdAt').lean(),
         Program.find().sort({ createdAt: -1 }).limit(5).select('name level status createdAt').lean(),
-        User.find({ role: 'student' }).sort({ createdAt: -1 }).limit(5).select('username email createdAt').lean(),
+        User.find({ role: 'user' }).sort({ createdAt: -1 }).limit(5).select('username email createdAt').lean(),
         StagedChange.find().sort({ createdAt: -1 }).limit(5).select('entityType entityName status createdAt').lean(),
         Scholarship.find().sort({ createdAt: -1 }).limit(5).select('title universityName status createdAt').lean(),
       ]);

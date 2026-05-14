@@ -25,10 +25,12 @@ import {
 
 // Budgets are still constant as they are defined by the UI ranges
 const budgets = [
-  { label: "Under $20k", value: "under-20k" },
+  { label: "Under $10k", value: "under-10k" },
+  { label: "$10k - $20k", value: "10k-20k" },
   { label: "$20k - $30k", value: "20k-30k" },
   { label: "$30k - $40k", value: "30k-40k" },
-  { label: "Over $40k", value: "over-40k" }
+  { label: "$40k - $50k", value: "40k-50k" },
+  { label: "Over $50k", value: "over-50k" }
 ];
 
 const intakes = ["February", "July", "November"];
@@ -223,7 +225,7 @@ function FilterSelect({ label, icon: Icon, options, value, onSelect }: FilterSel
           >
             No {label}
           </button>
-          {options.map((opt) => (
+          {(Array.isArray(options) ? options : []).map((opt) => (
             <button
               key={opt}
               onClick={() => { onSelect(opt); setOpen(false); }}
@@ -278,7 +280,7 @@ function FilterCombobox({ label, icon: Icon, options, value, onSelect, searchPla
               >
                 No {label}
               </CommandItem>
-              {options.map((opt) => (
+              {(Array.isArray(options) ? options : []).map((opt) => (
                 <CommandItem
                   key={opt}
                   value={opt}

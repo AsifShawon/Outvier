@@ -7,8 +7,6 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { profileApi } from '@/lib/api/profile.api';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
-import { applicationTrackerApi } from '@/lib/api/applicationTracker.api';
-import { Layout } from 'lucide-react';
 
 interface UniversityCardProps {
   university: University;
@@ -149,29 +147,6 @@ export function UniversityCard({ university }: UniversityCardProps) {
              <div className="flex items-center gap-1 text-sm font-semibold text-primary-600 dark:text-primary-400 group-hover:underline">
                Explore Programs <span className="ml-1 transition-transform group-hover:translate-x-1">→</span>
              </div>
-             <Button
-                size="sm"
-                variant="ghost"
-                className="h-9 w-9 p-0 rounded-xl hover:bg-primary/5 text-slate-400 hover:text-primary transition-all"
-                onClick={async (e) => {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  try {
-                    await applicationTrackerApi.createItem({
-                      itemType: 'university',
-                      universityId: university._id,
-                      title: university.name,
-                      subtitle: 'General Application'
-                    });
-                    toast.success('Added to application tracker');
-                  } catch (err) {
-                    toast.error('Failed to add to tracker');
-                  }
-                }}
-                title="Add to Application Tracker"
-              >
-                <Layout className="w-4 h-4" />
-              </Button>
           </div>
         </CardContent>
       </Card>
