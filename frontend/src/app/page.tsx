@@ -152,9 +152,11 @@ export default function HomePage() {
             <p className="text-lg text-slate-500 dark:text-slate-400">From confusion to clarity. We&apos;ve mapped out exactly how you should plan your global education.</p>
           </div>
           
-          <div className="grid md:grid-cols-2 gap-6">
+          <div className="flex flex-wrap justify-center gap-6">
             {journeySteps.map((step, idx) => (
-              <JourneyStepCard key={idx} index={idx} {...step} />
+              <div key={idx} className="w-full md:w-[calc(50%-0.75rem)] lg:w-[calc(33.333%-1rem)]">
+                <JourneyStepCard index={idx} {...step} />
+              </div>
             ))}
           </div>
         </div>
@@ -274,7 +276,7 @@ export default function HomePage() {
             <p className="text-lg text-slate-500 dark:text-slate-400">We give you the data and tools to make your own confident decisions.</p>
           </div>
 
-          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
+          <div className="grid md:grid-cols-3 gap-8">
             {valueProps.map((vp, i) => (
               <div key={i} className="text-center">
                 <div className="w-16 h-16 mx-auto bg-primary-50 dark:bg-primary-900/20 text-primary-600 dark:text-primary-400 rounded-2xl flex items-center justify-center mb-6 shadow-sm">

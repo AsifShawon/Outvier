@@ -499,7 +499,7 @@ export const adminController = {
   },
 
   // Scholarships CRUD
-  async getScholarships(req: Request, res: Response, next: NextFunction): Promise<void> {
+  async getScholarshipsLegacy(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       const { page = '1', limit = '50' } = req.query as Record<string, string>;
       const filter: Record<string, any> = {};
@@ -526,13 +526,13 @@ export const adminController = {
       });
     } catch (error) { next(error); }
   },
-  async createScholarship(req: Request, res: Response, next: NextFunction): Promise<void> {
+  async createScholarshipLegacy(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       const scholarship = await Scholarship.create(req.body);
       res.status(201).json({ success: true, data: scholarship });
     } catch (error) { next(error); }
   },
-  async deleteScholarship(req: Request, res: Response, next: NextFunction): Promise<void> {
+  async deleteScholarshipLegacy(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       await Scholarship.findByIdAndDelete(req.params.id);
       res.json({ success: true, message: 'Scholarship deleted' });

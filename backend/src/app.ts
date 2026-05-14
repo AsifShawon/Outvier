@@ -19,6 +19,8 @@ import trackerRoutes from './routes/applicationTracker.routes';
 import ingestionRoutes from './routes/ingestion.routes';
 import cricosRoutes from './routes/cricos.routes';
 import budgetPlanRoutes from './routes/budgetPlan.routes';
+import scholarshipRoutes from './routes/scholarship.routes';
+import adminScholarshipRoutes from './routes/admin.scholarship.routes';
 import { errorHandler, notFound } from './middleware/error.middleware';
 
 dotenv.config();
@@ -49,6 +51,7 @@ app.use('/api/v1/recommendations', recommendationsRoutes);
 app.use('/api/v1/analytics', publicAnalyticsRoutes);
 app.use('/api/v1/tracker', trackerRoutes);
 app.use('/api/v1/budget', budgetPlanRoutes);
+app.use('/api/v1/scholarships', scholarshipRoutes);
 
 // Admin routes (all require auth + admin role)
 app.use('/api/v1/admin', adminRoutes);
@@ -58,6 +61,7 @@ app.use('/api/v1/admin/sync', syncRoutes);
 app.use('/api/v1/admin/analytics', analyticsRoutes);
 app.use('/api/v1/admin/settings/ai', aiSettingsRoutes);
 app.use('/api/v1/admin/cricos', cricosRoutes);
+app.use('/api/v1/admin/scholarships', adminScholarshipRoutes);
 app.use('/api/v1/admin', ingestionRoutes);
 
 // Error handling

@@ -48,10 +48,10 @@ router.post('/rankings/:id/recheck', adminController.recheckRanking);
 router.delete('/rankings/:id', adminController.deleteRanking);
 
 // Scholarships
-router.get('/scholarships', adminController.getScholarships);
-router.post('/scholarships', adminController.createScholarship);
+router.get('/scholarships', adminController.getScholarshipsLegacy);
+router.post('/scholarships', adminController.createScholarshipLegacy);
 router.post('/scholarships/ai-find', adminController.aiFindScholarships);
-router.delete('/scholarships/:id', adminController.deleteScholarship);
+router.delete('/scholarships/:id', adminController.deleteScholarshipLegacy);
 
 // Outcomes
 router.get('/outcomes', adminController.getOutcomes);
