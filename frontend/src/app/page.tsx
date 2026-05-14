@@ -9,6 +9,7 @@ import { Footer } from '@/components/layout/Footer';
 import { useQuery } from '@tanstack/react-query';
 import { universitiesApi } from '@/lib/api/universities.api';
 import { programsApi } from '@/lib/api/programs.api';
+import { scholarshipsApi } from '@/lib/api/scholarships.api';
 
 // Components
 import { CompactSmartSearch } from '@/components/ui-custom/CompactSmartSearch';
@@ -21,6 +22,7 @@ import { TestimonialCard } from '@/components/ui-custom/TestimonialCard';
 import { UniversityCard } from '@/components/ui-custom/UniversityCard';
 import { ProgramCard } from '@/components/ui-custom/ProgramCard';
 import { SkeletonCard } from '@/components/ui-custom/SkeletonCard';
+import { ScholarshipCard } from '@/components/scholarships/ScholarshipCard';
 
 const valueProps = [
   { icon: Compass, title: 'Personalized Support', description: 'Tailored recommendations based on your unique academic background, budget, and career goals.' },
@@ -66,8 +68,14 @@ export default function HomePage() {
     queryFn: () => programsApi.getAll({ limit: 4 }),
   });
 
+  const { data: scholarshipData, isLoading: scholarshipLoading } = useQuery({
+    queryKey: ['home-scholarships'],
+    queryFn: () => scholarshipsApi.getScholarships({ limit: 4, featured: true }),
+  });
+
   const universities = uniData?.data?.universities || [];
   const programs = progData?.data?.programs || [];
+  const scholarships = scholarshipData?.data?.data || [];
 
   return (
     <div className="flex flex-col min-h-screen bg-white dark:bg-slate-950">
@@ -233,6 +241,42 @@ export default function HomePage() {
           </div>
         </div>
       </section>
+
+      {/* Featured Scholarships Section */}
+      {(scholarshipLoading || scholarships.length > 0) && (
+        <section className="py-24 bg-emerald-50/50 dark:bg-emerald-900/10 border-y border-emerald-100 dark:border-emerald-900/20">
+          <div className="container mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+            <div className="flex justify-between items-end mb-12">
+              <div>
+                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-100 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-500/20 text-xs font-bold uppercase tracking-wider mb-4">
+                  <Sparkles className="w-3.5 h-3.5" />
+                  Financial Support
+                </div>
+                <h2 className="text-3xl md:text-4xl font-bold font-display text-slate-900 dark:text-white mb-4">Scholarships & Opportunities</h2>
+                <p className="text-slate-500 dark:text-slate-400">Explore grants, scholarships, and resources to fund your education.</p>
+              </div>
+              <Link href="/scholarships" className="hidden md:flex items-center text-emerald-600 dark:text-emerald-400 font-semibold hover:underline">
+                View all opportunities <ArrowRight className="w-4 h-4 ml-2" />
+              </Link>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+              {scholarshipLoading ? (
+                Array.from({ length: 4 }).map((_, i) => <SkeletonCard key={i} />)
+              ) : (
+                scholarships.map((scholarship: any) => (
+                  <ScholarshipCard key={scholarship._id} scholarship={scholarship} />
+                ))
+              )}
+            </div>
+            <div className="mt-8 text-center md:hidden">
+              <Link href="/scholarships">
+                <Button variant="outline" className="w-full border-emerald-200 text-emerald-700 hover:bg-emerald-50">View all opportunities</Button>
+              </Link>
+            </div>
+          </div>
+        </section>
+      )}
 
       {/* Program Discovery Section */}
       <section className="py-24 bg-slate-50 dark:bg-slate-900/30 border-t border-slate-200 dark:border-slate-800">
