@@ -18,7 +18,7 @@ The platform is architected as a high-performance monorepo with a decoupled fron
 
 #### 2.2.1 Technical Feasibility
 The project utilizes a modern, production-grade stack:
-- **Frontend**: Next.js 16 (App Router), Vanilla CSS, Radix UI, TanStack Query.
+- **Frontend**: Next.js 16 (App Router), Vanilla CSS, Radix UI, TanStack Query, Framer Motion, @dnd-kit.
 - **Backend**: Node.js/Express (TypeScript), JWT/RBAC.
 - **Infrastructure**: BullMQ and Redis for managing long-running background jobs.
 - **Analytics**: Metabase (Self-hosted via Docker).
@@ -36,9 +36,10 @@ Outvier streamlines the research process for students and provides educational c
 - **Student Profile**: Capture academic preferences and priority weights (Affordability, Ranking, etc.).
 - **Fit Score Engine**: Algorithmic scoring of universities/programs based on profile match.
 - **Comparison Tool**: Multi-entity (Program or University) side-by-side comparison (max 4).
-- **Application Tracker**: Kanban board for managing "Researching" to "Enrolled" states.
+- **Application Tracker**: Kanban board with customizable columns and document checklist.
+- **Scholarship Module**: Search and manage university-specific financial aid.
 - **Budget Calculator**: State-specific living cost estimations.
-- **AI Copilot**: Context-aware chat assistant for personalized advice.
+- **Sudokkho AI**: Redesigned, context-aware chat assistant for personalized advice.
 - **Admin Dashboard**: Bulk data management, sync job triggers, and staged change review.
 
 #### 2.3.2 Non-functional Requirements

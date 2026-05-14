@@ -80,12 +80,11 @@ Administrators manage data via the **CRICOS Sync** menu:
 2. **Staged Changes**: Review and approve differences before they hit the production database.
 3. **Raw Explorer**: Inspect original DataStore records.
 
-### AI Enrichment
-AI is used as a contextual enrichment tool integrated into:
-- **Rankings**: Automated discovery of global/national ranks.
-- **Scholarships**: Discovery of university-specific financial aid.
-- **Outcomes**: Enrichment of graduate employment metrics.
-- **Summaries**: Generation of student-friendly descriptions.
+### AI & Enrichment
+AI is integrated into the platform to provide a premium experience:
+- **Sudokkho AI**: A full-viewport chat assistant for students, providing context-aware guidance.
+- **Data Enrichment**: Automated discovery of rankings, scholarships, and career outcomes.
+- **Summary Generation**: AI-generated student-friendly descriptions for universities and programs.
 
 For more details, see [CRICOS Admin Workflow](docs/CRICOS_ADMIN_WORKFLOW.md).
 
@@ -94,16 +93,20 @@ For more details, see [CRICOS Admin Workflow](docs/CRICOS_ADMIN_WORKFLOW.md).
 ## 🗺️ Key Features
 
 ### 🎓 For Students
-- ✅ **Personalized Fit Score:** An advanced comparison engine that calculates a 0-100% match based on academic profile and budget.
-- ✅ **Comparison Table:** Side-by-side analysis featuring real-time ranking data and outcomes.
-- ✅ **Application Tracker:** A Kanban board to manage your journey from "Researching" to "Enrolled."
-- ✅ **Budget Calculator:** Estimate total yearly costs including tuition and accommodation.
+- ✅ **Personalized Fit Score:** Advanced engine calculating a 0-100% match based on academic profile and budget.
+- ✅ **Comparison Table:** Side-by-side analysis of programs with real-time ranking and outcomes.
+- ✅ **Sudokkho AI Copilot:** A premium chat interface for personalized education advice.
+- ✅ **Application Tracker:** A customizable Kanban board (built with `@dnd-kit`) to manage the journey from "Researching" to "Enrolled."
+- ✅ **Scholarship Browser:** Dedicated module to find and save university-specific financial aid.
+- ✅ **Budget Calculator:** Estimate total yearly costs including tuition and state-specific accommodation.
 
 ### 🛡️ For Administrators
 - ✅ **Operational Dashboard:** Real-time health metrics of CRICOS syncs and staged changes.
-- ✅ **Metabase Dashboard:** Integrated BI dashboard for tracking student trends.
-- ✅ **Staged Changes System:** Review and approve automated data updates before they go live.
-- ✅ **Field Inspector:** Debugging tool for CRICOS DataStore schemas.
+- ✅ **CRICOS Sync Center:** Centralized tool for official data ingestion and auditing.
+- ✅ **Scholarship Management:** Full CRUD and AI-assisted discovery of scholarships.
+- ✅ **Metabase BI Integration:** Embedded analytics for tracking student trends and platform health.
+- ✅ **Staged Changes System:** Audit-ready review/approve workflow for automated data updates.
+
 
 ---
 
