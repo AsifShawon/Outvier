@@ -50,9 +50,7 @@ const navItems: NavItem[] = [
     children: [
       { href: '/admin/cricos', label: 'Overview', icon: LayoutDashboard, exact: true },
       { href: '/admin/cricos/provider-sync', label: 'Provider Sync', icon: RefreshCw },
-      { href: '/admin/cricos/runs', label: 'Sync Runs', icon: Database },
       { href: '/admin/cricos/raw', label: 'Raw Data', icon: Search },
-      { href: '/admin/cricos/inspect', label: 'Field Inspector', icon: Search },
     ]
   },
   { href: '/admin/staged-changes', label: 'Staged Changes', icon: GitCompare },

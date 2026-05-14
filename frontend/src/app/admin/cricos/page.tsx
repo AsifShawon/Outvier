@@ -89,7 +89,7 @@ export default function CricosDashboard() {
 
       {/* Status row */}
       {stats && (
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <Card className="p-5 flex items-center gap-4">
             <div className={`p-2 rounded-lg ${stats.pendingChanges > 0 ? 'bg-amber-100 dark:bg-amber-950' : 'bg-green-100 dark:bg-green-950'}`}>
               {stats.pendingChanges > 0
@@ -128,54 +128,11 @@ export default function CricosDashboard() {
             )}
           </Card>
 
-          <Card className="p-5 flex items-center gap-4">
-            <div className={`p-2 rounded-lg ${stats.failedRuns > 0 ? 'bg-red-100 dark:bg-red-950' : 'bg-green-100 dark:bg-green-950'}`}>
-              {stats.failedRuns > 0
-                ? <AlertCircle className="h-5 w-5 text-red-500" />
-                : <CheckCircle2 className="h-5 w-5 text-green-600" />}
-            </div>
-            <div>
-              <div className="text-2xl font-bold">{stats.failedRuns}</div>
-              <div className="text-xs text-muted-foreground">Failed sync runs (all time)</div>
-            </div>
-            <Link href="/admin/cricos/runs" className="ml-auto">
-              <Button size="sm" variant="outline">View Runs</Button>
-            </Link>
-          </Card>
         </div>
       )}
 
       {/* Quick actions */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <Card className="p-6 space-y-3">
-          <h2 className="text-lg font-bold flex items-center gap-2">
-            <RefreshCw className="h-5 w-5 text-primary" />
-            Sync Runs
-          </h2>
-          <p className="text-sm text-muted-foreground">
-            Monitor and review all CRICOS sync and recheck operations.
-          </p>
-          <Link href="/admin/cricos/runs">
-            <Button variant="outline">View All Runs</Button>
-          </Link>
-        </Card>
-
-        <Card className="p-6 space-y-3">
-          <h2 className="text-lg font-bold flex items-center gap-2">
-            <Search className="h-5 w-5 text-primary" />
-            Inspect Resource Fields
-          </h2>
-          <p className="text-sm text-muted-foreground">
-            Explore available fields and sample rows from each CRICOS resource.
-          </p>
-          <div className="flex flex-wrap gap-2">
-            {resources && Object.entries(resources).map(([key, res]: [string, any]) => (
-              <Link key={key} href={`/admin/cricos/inspect?resourceId=${res.id}`}>
-                <Button variant="outline" size="sm">{res.name}</Button>
-              </Link>
-            ))}
-          </div>
-        </Card>
 
         <Card className="p-6 space-y-3">
           <h2 className="text-lg font-bold flex items-center gap-2">
