@@ -7,7 +7,7 @@ export const studentProfileController = {
    */
   async getProfile(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
-      const userId = (req as any).user._id;
+      const userId = (req as any).user.id;
       let profile = await StudentProfile.findOne({ userId })
         .populate('savedUniversities')
         .populate({
@@ -29,7 +29,7 @@ export const studentProfileController = {
    */
   async updateProfile(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
-      const userId = (req as any).user._id;
+      const userId = (req as any).user.id;
       const updates = req.body;
 
       // Don't allow changing the userId
@@ -56,7 +56,7 @@ export const studentProfileController = {
     try {
       const { universityId } = req.body;
       const profile = await StudentProfile.findOneAndUpdate(
-        { userId: (req as any).user._id },
+        { userId: (req as any).user.id },
         { $addToSet: { savedUniversities: universityId } },
         { new: true, upsert: true }
       );
@@ -70,7 +70,7 @@ export const studentProfileController = {
     try {
       const { universityId } = req.body;
       const profile = await StudentProfile.findOneAndUpdate(
-        { userId: (req as any).user._id },
+        { userId: (req as any).user.id },
         { $pull: { savedUniversities: universityId } },
         { new: true }
       );
@@ -84,7 +84,7 @@ export const studentProfileController = {
     try {
       const { programId } = req.body;
       const profile = await StudentProfile.findOneAndUpdate(
-        { userId: (req as any).user._id },
+        { userId: (req as any).user.id },
         { $addToSet: { savedPrograms: programId } },
         { new: true, upsert: true }
       );
@@ -98,7 +98,7 @@ export const studentProfileController = {
     try {
       const { programId } = req.body;
       const profile = await StudentProfile.findOneAndUpdate(
-        { userId: (req as any).user._id },
+        { userId: (req as any).user.id },
         { $pull: { savedPrograms: programId } },
         { new: true }
       );

@@ -83,7 +83,7 @@ const DEFAULT_CHECKLISTS: Record<string, { name: string }[]> = {
 export const applicationTrackerController = {
   async getBoard(req: Request, res: Response, next: NextFunction) {
     try {
-      const userId = (req as any).user._id;
+      const userId = (req as any).user.id;
       let board = await TrackerBoard.findOne({ userId });
 
       if (!board) {
@@ -151,7 +151,7 @@ export const applicationTrackerController = {
 
   async updateBoard(req: Request, res: Response, next: NextFunction) {
     try {
-      const userId = (req as any).user._id;
+      const userId = (req as any).user.id;
       const { name, settings } = req.body;
       const board = await TrackerBoard.findOneAndUpdate(
         { userId },
@@ -166,7 +166,7 @@ export const applicationTrackerController = {
 
   async addColumn(req: Request, res: Response, next: NextFunction) {
     try {
-      const userId = (req as any).user._id;
+      const userId = (req as any).user.id;
       const { title, color, description, wipLimit } = req.body;
 
       const board = await TrackerBoard.findOne({ userId });
@@ -193,7 +193,7 @@ export const applicationTrackerController = {
 
   async updateColumn(req: Request, res: Response, next: NextFunction) {
     try {
-      const userId = (req as any).user._id;
+      const userId = (req as any).user.id;
       const { columnId } = req.params;
       const { title, color, isArchived, description, wipLimit } = req.body;
 
@@ -218,7 +218,7 @@ export const applicationTrackerController = {
 
   async reorderColumns(req: Request, res: Response, next: NextFunction) {
     try {
-      const userId = (req as any).user._id;
+      const userId = (req as any).user.id;
       const { columns } = req.body; // Array of { id, order }
 
       const board = await TrackerBoard.findOne({ userId });
@@ -242,7 +242,7 @@ export const applicationTrackerController = {
 
   async resetDefaultColumns(req: Request, res: Response, next: NextFunction) {
     try {
-      const userId = (req as any).user._id;
+      const userId = (req as any).user.id;
       const board = await TrackerBoard.findOne({ userId });
       if (!board) return res.status(404).json({ success: false, message: 'Board not found' });
 
@@ -264,7 +264,7 @@ export const applicationTrackerController = {
 
   async getItems(req: Request, res: Response, next: NextFunction) {
     try {
-      const userId = (req as any).user._id;
+      const userId = (req as any).user.id;
       const { archived, columnId, priority, itemType, search, country } = req.query;
 
       const query: any = { userId };
@@ -299,7 +299,7 @@ export const applicationTrackerController = {
   async getItem(req: Request, res: Response, next: NextFunction) {
     try {
       const { id } = req.params;
-      const item = await ApplicationTracker.findOne({ _id: id, userId: (req as any).user._id })
+      const item = await ApplicationTracker.findOne({ _id: id, userId: (req as any).user.id })
         .populate('programId')
         .populate('universityId');
 
@@ -312,7 +312,7 @@ export const applicationTrackerController = {
 
   async addItem(req: Request, res: Response, next: NextFunction) {
     try {
-      const userId = (req as any).user._id;
+      const userId = (req as any).user.id;
       const data = req.body;
 
       let board = await TrackerBoard.findOne({ userId });
@@ -381,7 +381,7 @@ export const applicationTrackerController = {
     try {
       const { id } = req.params;
       const updateData = req.body;
-      const userId = (req as any).user._id;
+      const userId = (req as any).user.id;
 
       const item = await ApplicationTracker.findOne({ _id: id, userId });
       if (!item) return res.status(404).json({ success: false, message: 'Item not found' });
@@ -419,7 +419,7 @@ export const applicationTrackerController = {
     try {
       const { id } = req.params;
       const { toColumnId, order } = req.body;
-      const userId = (req as any).user._id;
+      const userId = (req as any).user.id;
 
       const item = await ApplicationTracker.findOne({ _id: id, userId });
       if (!item) return res.status(404).json({ success: false, message: 'Item not found' });
@@ -445,7 +445,7 @@ export const applicationTrackerController = {
 
   async reorderItems(req: Request, res: Response, next: NextFunction) {
     try {
-      const userId = (req as any).user._id;
+      const userId = (req as any).user.id;
       const { columnId, items } = req.body; // Array of { id, order }
 
       const bulkOps = items.map((it: { id: string, order: number }) => ({
@@ -467,7 +467,7 @@ export const applicationTrackerController = {
       const { id } = req.params;
       const { checklist } = req.body;
       const item = await ApplicationTracker.findOneAndUpdate(
-        { _id: id, userId: (req as any).user._id },
+        { _id: id, userId: (req as any).user.id },
         {
           $set: { documentChecklist: checklist },
           $push: { history: { type: 'document_updated', updatedAt: new Date() } }
@@ -485,7 +485,7 @@ export const applicationTrackerController = {
       const { id } = req.params;
       const { tasks } = req.body;
       const item = await ApplicationTracker.findOneAndUpdate(
-        { _id: id, userId: (req as any).user._id },
+        { _id: id, userId: (req as any).user.id },
         {
           $set: { tasks },
           $push: { history: { type: 'task_updated', updatedAt: new Date() } }
@@ -503,7 +503,7 @@ export const applicationTrackerController = {
       const { id } = req.params;
       const { archived } = req.body;
       const item = await ApplicationTracker.findOneAndUpdate(
-        { _id: id, userId: (req as any).user._id },
+        { _id: id, userId: (req as any).user.id },
         {
           $set: {
             archived: archived ?? true,
@@ -530,7 +530,7 @@ export const applicationTrackerController = {
       const { id } = req.params;
       const item = await ApplicationTracker.findOneAndDelete({
         _id: id,
-        userId: (req as any).user._id,
+        userId: (req as any).user.id,
       });
 
       if (!item) return res.status(404).json({ success: false, message: 'Item not found' });

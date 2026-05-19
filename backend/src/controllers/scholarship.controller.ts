@@ -71,7 +71,7 @@ export const scholarshipController = {
   // Admin create
   async create(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
-      const adminId = (req as any).user?._id?.toString() || 'admin';
+      const adminId = (req as any).user?.id?.toString() || 'admin';
       const item = await scholarshipService.create(req.body, adminId);
       res.status(201).json({ success: true, data: item });
     } catch (error) {
@@ -82,7 +82,7 @@ export const scholarshipController = {
   // Admin update
   async update(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
-      const adminId = (req as any).user?._id?.toString() || 'admin';
+      const adminId = (req as any).user?.id?.toString() || 'admin';
       const item = await scholarshipService.update(req.params.id, req.body, adminId);
       res.status(200).json({ success: true, data: item });
     } catch (error) {
@@ -93,7 +93,7 @@ export const scholarshipController = {
   // Admin archive
   async archive(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
-      const adminId = (req as any).user?._id?.toString() || 'admin';
+      const adminId = (req as any).user?.id?.toString() || 'admin';
       const { reason } = req.body;
       const item = await scholarshipService.archive(req.params.id, adminId, reason);
       res.status(200).json({ success: true, data: item });
@@ -105,7 +105,7 @@ export const scholarshipController = {
   // Admin restore
   async restore(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
-      const adminId = (req as any).user?._id?.toString() || 'admin';
+      const adminId = (req as any).user?.id?.toString() || 'admin';
       const item = await scholarshipService.restore(req.params.id, adminId);
       res.status(200).json({ success: true, data: item });
     } catch (error) {
@@ -116,7 +116,7 @@ export const scholarshipController = {
   // Admin publish/unpublish
   async changeStatus(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
-      const adminId = (req as any).user?._id?.toString() || 'admin';
+      const adminId = (req as any).user?.id?.toString() || 'admin';
       const { status } = req.body;
       const item = await scholarshipService.changeStatus(req.params.id, status, adminId);
       res.status(200).json({ success: true, data: item });
@@ -128,7 +128,7 @@ export const scholarshipController = {
   // Admin feature
   async feature(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
-      const adminId = (req as any).user?._id?.toString() || 'admin';
+      const adminId = (req as any).user?.id?.toString() || 'admin';
       const { featured } = req.body;
       const item = await scholarshipService.feature(req.params.id, featured, adminId);
       res.status(200).json({ success: true, data: item });

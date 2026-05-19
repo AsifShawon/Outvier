@@ -4,7 +4,7 @@ import { BudgetPlan } from '../models/BudgetPlan.model';
 export const budgetPlanController = {
   async getMyPlans(req: Request, res: Response, next: NextFunction) {
     try {
-      const plans = await BudgetPlan.find({ userId: (req as any).user._id }).sort({ updatedAt: -1 });
+      const plans = await BudgetPlan.find({ userId: (req as any).user.id }).sort({ updatedAt: -1 });
       res.json({ success: true, data: plans });
     } catch (error) {
       next(error);
@@ -15,7 +15,7 @@ export const budgetPlanController = {
     try {
       const plan = await BudgetPlan.create({
         ...req.body,
-        userId: (req as any).user._id,
+        userId: (req as any).user.id,
       });
       res.status(201).json({ success: true, data: plan });
     } catch (error) {
@@ -27,7 +27,7 @@ export const budgetPlanController = {
     try {
       const { id } = req.params;
       const plan = await BudgetPlan.findOneAndUpdate(
-        { _id: id, userId: (req as any).user._id },
+        { _id: id, userId: (req as any).user.id },
         req.body,
         { new: true }
       );
@@ -44,7 +44,7 @@ export const budgetPlanController = {
   async deletePlan(req: Request, res: Response, next: NextFunction) {
     try {
       const { id } = req.params;
-      const plan = await BudgetPlan.findOneAndDelete({ _id: id, userId: (req as any).user._id });
+      const plan = await BudgetPlan.findOneAndDelete({ _id: id, userId: (req as any).user.id });
       if (!plan) {
         res.status(404).json({ success: false, message: 'Plan not found' });
         return;

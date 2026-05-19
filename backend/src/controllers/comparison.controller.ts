@@ -13,7 +13,7 @@ export const comparisonController = {
    */
   async createSession(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
-      const userId = (req as any).user?._id;
+      const userId = (req as any).user?.id;
       const crypto = await import('crypto');
       const hash = crypto.randomBytes(16).toString('hex');
       
@@ -241,7 +241,7 @@ export const comparisonController = {
 
       // Fetch or mock student profile
       let profile = {};
-      const userId = (req as any).user?._id;
+      const userId = (req as any).user?.id;
       if (userId) {
         const p = await StudentProfile.findOne({ userId }).lean();
         if (p) profile = p;
