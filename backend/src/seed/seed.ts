@@ -279,39 +279,39 @@ async function seed() {
     });
     console.log(`👤 Admin user created: ${adminUser.email}`);
 
-    // Create universities
-    const createdUniversities: Record<string, IUniversity> = {};
-    for (const uniData of universities) {
-      const slug = slugify(uniData.name, { lower: true, strict: true });
-      const university = await University.create({ ...uniData, slug });
-      createdUniversities[uniData.name] = university;
-      console.log(`🏫 University created: ${university.name}`);
-    }
+    // // Create universities
+    // const createdUniversities: Record<string, IUniversity> = {};
+    // for (const uniData of universities) {
+    //   const slug = slugify(uniData.name, { lower: true, strict: true });
+    //   const university = await University.create({ ...uniData, slug });
+    //   createdUniversities[uniData.name] = university;
+    //   console.log(`🏫 University created: ${university.name}`);
+    // }
 
-    // Create programs
-    let programCount = 0;
-    for (const template of programTemplates) {
-      const university = createdUniversities[template.universityName];
-      if (!university) continue;
+    // // Create programs
+    // let programCount = 0;
+    // for (const template of programTemplates) {
+    //   const university = createdUniversities[template.universityName];
+    //   if (!university) continue;
 
-      for (const programData of template.programs) {
-        const baseSlug = slugify(`${programData.name} ${university.name}`, { lower: true, strict: true });
-        await Program.create({
-          ...programData,
-          slug: baseSlug,
-          university: university._id,
-          universityName: university.name,
-          universitySlug: university.slug,
-        });
-        programCount++;
-        console.log(`📚 Program created: ${programData.name} @ ${university.name}`);
-      }
-    }
+    //   for (const programData of template.programs) {
+    //     const baseSlug = slugify(`${programData.name} ${university.name}`, { lower: true, strict: true });
+    //     await Program.create({
+    //       ...programData,
+    //       slug: baseSlug,
+    //       university: university._id,
+    //       universityName: university.name,
+    //       universitySlug: university.slug,
+    //     });
+    //     programCount++;
+    //     console.log(`📚 Program created: ${programData.name} @ ${university.name}`);
+    //   }
+    // }
 
     console.log(`\n✅ Seed complete!`);
     console.log(`   👤 Users: 1 (admin/admin)`);
-    console.log(`   🏫 Universities: ${Object.keys(createdUniversities).length}`);
-    console.log(`   📚 Programs: ${programCount}`);
+    // console.log(`   🏫 Universities: ${Object.keys(createdUniversities).length}`);
+    // console.log(`   📚 Programs: ${programCount}`);
 
     await mongoose.disconnect();
     process.exit(0);
