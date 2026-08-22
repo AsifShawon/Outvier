@@ -9,10 +9,12 @@ import dotenv from 'dotenv';
 dotenv.config();
 
 import { connectDB } from '../config/db';
+import { validateEnv } from '../config/env';
 import { closeWorkers } from './workers';
 import './workers'; // initialise all workers
 
 const startWorkers = async () => {
+  validateEnv();
   await connectDB();
   console.log('👷 Outvier worker process started');
   console.log('   Sync queues: university-sync, program-sync, tuition-sync, scholarship-sync, ranking-sync, outcome-sync');

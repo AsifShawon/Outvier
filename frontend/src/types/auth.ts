@@ -1,8 +1,11 @@
 export interface AuthUser {
   _id: string;
   name: string;
+  username?: string;
   email: string;
   role: 'user' | 'admin';
+  permissions?: string[];
+  status?: 'active' | 'inactive';
 }
 
 export interface LoginPayload {
@@ -17,6 +20,15 @@ export interface SignupPayload {
 }
 
 export interface AuthResponse {
-  token: string;
   user: AuthUser;
+  csrfToken?: string;
+}
+
+export interface ForgotPasswordPayload {
+  email: string;
+}
+
+export interface ResetPasswordPayload {
+  token: string;
+  password: string;
 }

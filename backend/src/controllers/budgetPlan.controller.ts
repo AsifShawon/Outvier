@@ -1,57 +1,64 @@
 import { Request, Response, NextFunction } from 'express';
 import { BudgetPlan } from '../models/BudgetPlan.model';
+import { sendSuccess, sendError } from '../utils/response.util';
+import { CreateBudgetPlanDTO, UpdateBudgetPlanDTO } from '../validators/budgetPlan.validator';
 
 export const budgetPlanController = {
-  async getMyPlans(req: Request, res: Response, next: NextFunction) {
+  async getMyPlans(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       const plans = await BudgetPlan.find({ userId: (req as any).user.id }).sort({ updatedAt: -1 });
-      res.json({ success: true, data: plans });
+      sendSuccess(res, plans);
     } catch (error) {
       next(error);
     }
   },
 
-  async createPlan(req: Request, res: Response, next: NextFunction) {
+  async createPlan(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
+      const data: CreateBudgetPlanDTO = req.body;
       const plan = await BudgetPlan.create({
-        ...req.body,
+        ...data,
         userId: (req as any).user.id,
       });
-      res.status(201).json({ success: true, data: plan });
+      sendSuccess(res, plan, undefined, undefined, 201);
     } catch (error) {
       next(error);
     }
   },
 
-  async updatePlan(req: Request, res: Response, next: NextFunction) {
+  async updatePlan(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       const { id } = req.params;
+      const data: UpdateBudgetPlanDTO = req.body;
+
       const plan = await BudgetPlan.findOneAndUpdate(
         { _id: id, userId: (req as any).user.id },
-        req.body,
-        { new: true }
+        { $set: data },
+        { new: true, runValidators: true }
       );
+
       if (!plan) {
-        res.status(404).json({ success: false, message: 'Plan not found' });
+        sendError(res, 404, 'NOT_FOUND', 'Budget plan not found');
         return;
       }
-      res.json({ success: true, data: plan });
+
+      sendSuccess(res, plan);
     } catch (error) {
       next(error);
     }
   },
 
-  async deletePlan(req: Request, res: Response, next: NextFunction) {
+  async deletePlan(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       const { id } = req.params;
       const plan = await BudgetPlan.findOneAndDelete({ _id: id, userId: (req as any).user.id });
       if (!plan) {
-        res.status(404).json({ success: false, message: 'Plan not found' });
+        sendError(res, 404, 'NOT_FOUND', 'Budget plan not found');
         return;
       }
-      res.json({ success: true, message: 'Plan deleted' });
+      sendSuccess(res, { id, message: 'Plan deleted successfully' });
     } catch (error) {
       next(error);
     }
-  }
+  },
 };

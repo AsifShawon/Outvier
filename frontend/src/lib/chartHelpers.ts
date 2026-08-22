@@ -1,8 +1,9 @@
 import { FitScoreResult } from '@/types/api';
+import { Program } from '@/types/program';
 
-export const CHART_PALETTE = ['#90AB8B', '#5A7863', '#3B4953', '#B8C9A3', '#DDE6D1', '#7A9181'];
+export const CHART_PALETTE = ['#8B5CF6', '#14B8A6', '#F59E0B', '#EF4444', '#6366F1', '#EC4899'];
 
-export function buildRadarData(programs: any[], scores: FitScoreResult[]) {
+export function buildRadarData(programs: (Program | { _id: string; name?: string })[], scores: FitScoreResult[]) {
   const dims: { subject: string; key: keyof FitScoreResult['breakdown'] }[] = [
     { subject: 'Affordability', key: 'affordability' },
     { subject: 'Ranking',       key: 'ranking' },

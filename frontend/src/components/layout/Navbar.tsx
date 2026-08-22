@@ -39,22 +39,22 @@ export function Navbar() {
     queryKey: ['me'],
     queryFn: () => authApi.getMe().then((r) => r.data.data),
     retry: false,
-    enabled: typeof window !== 'undefined' && !!localStorage.getItem('outvier_token'),
+    staleTime: 5 * 60 * 1000,
   });
 
   const user = userData;
 
   return (
-    <header className="sticky top-0 z-50 w-full border-b border-slate-200 dark:border-slate-800 bg-white/80 dark:bg-slate-950/80 backdrop-blur-xl">
+    <header className="sticky top-0 z-50 w-full border-b border-border/80 bg-background/80 backdrop-blur-xl">
       <div className="container mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-        <div className="flex h-20 items-center justify-between">
+        <div className="flex h-16 items-center justify-between">
           {/* Logo */}
           <Link href="/" className="flex items-center gap-3 group">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary-600 text-white shadow-lg shadow-primary-600/20 group-hover:shadow-primary-600/40 transition-all duration-300">
-              <Globe className="h-6 w-6" />
+            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary text-primary-foreground shadow-md shadow-primary/20 group-hover:shadow-primary/40 transition-all duration-300">
+              <Globe className="h-5 w-5" />
             </div>
-            <span className="text-2xl font-bold font-display tracking-tight text-slate-900 dark:text-white">
-              Out<span className="text-primary-600 dark:text-primary-400">vier</span>
+            <span className="text-xl font-bold font-display tracking-tight text-foreground">
+              Out<span className="text-primary">vier</span>
             </span>
           </Link>
 

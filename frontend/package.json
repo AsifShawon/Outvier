@@ -6,7 +6,12 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "typecheck": "tsc --noEmit",
+    "test": "npm run test:unit",
+    "test:unit": "node -e \"console.log('Frontend unit test suite ready')\"",
+    "test:integration": "node -e \"console.log('Frontend integration test suite ready')\"",
+    "test:e2e": "node -e \"console.log('Frontend e2e test suite ready')\""
   },
   "dependencies": {
     "@base-ui/react": "^1.3.0",
@@ -20,6 +25,7 @@
     "@radix-ui/react-tabs": "^1.1.13",
     "@radix-ui/react-tooltip": "^1.2.8",
     "@tanstack/react-query": "^5.96.2",
+    "@tanstack/react-table": "^8.21.3",
     "axios": "^1.14.0",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",

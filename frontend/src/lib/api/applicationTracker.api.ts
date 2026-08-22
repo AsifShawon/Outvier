@@ -69,8 +69,8 @@ export interface ApplicationTrackerItem {
   columnId: string;
   order: number;
   itemType: 'university' | 'program' | 'scholarship' | 'visa' | 'custom';
-  programId?: any; // Populated
-  universityId?: any; // Populated
+  programId?: string | { _id: string; name?: string; [key: string]: unknown };
+  universityId?: string | { _id: string; name?: string; [key: string]: unknown };
   customProgramName?: string;
   customUniversityName?: string;
   title: string;
@@ -114,16 +114,16 @@ export const applicationTrackerApi = {
     api.patch('/tracker/columns/reorder', { columns }),
 
   // Items
-  getItems: (params?: any): Promise<{ data: ApiResponse<ApplicationTrackerItem[]> }> =>
+  getItems: (params?: Record<string, string | number | boolean | undefined>): Promise<{ data: ApiResponse<ApplicationTrackerItem[]> }> =>
     api.get('/tracker/items', { params }),
 
   getItem: (id: string): Promise<{ data: ApiResponse<ApplicationTrackerItem> }> =>
     api.get(`/tracker/items/${id}`),
 
-  createItem: (data: any): Promise<{ data: ApiResponse<ApplicationTrackerItem> }> =>
+  createItem: (data: Partial<ApplicationTrackerItem>): Promise<{ data: ApiResponse<ApplicationTrackerItem> }> =>
     api.post('/tracker/items', data),
 
-  updateItem: (id: string, data: any): Promise<{ data: ApiResponse<ApplicationTrackerItem> }> =>
+  updateItem: (id: string, data: Partial<ApplicationTrackerItem>): Promise<{ data: ApiResponse<ApplicationTrackerItem> }> =>
     api.patch(`/tracker/items/${id}`, data),
 
   moveItem: (id: string, toColumnId: string, order?: number): Promise<{ data: ApiResponse<ApplicationTrackerItem> }> =>

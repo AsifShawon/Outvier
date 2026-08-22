@@ -216,8 +216,8 @@ export default function ScholarshipDetailPage({ params }: { params: Promise<{ sl
               <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-200">
                 <h3 className="font-semibold text-slate-900 mb-4">Offered By</h3>
                 <div className="flex items-center gap-4 mb-4">
-                  {university.logoUrl ? (
-                    <img src={university.logoUrl} alt={university.name} className="w-12 h-12 rounded object-contain bg-slate-50 border p-1" />
+                  {university.logo ? (
+                    <img src={university.logo} alt={university.name} className="w-12 h-12 rounded object-contain bg-slate-50 border p-1" />
                   ) : (
                     <div className="w-12 h-12 rounded bg-slate-100 flex items-center justify-center text-slate-400">
                       <Building className="w-6 h-6" />

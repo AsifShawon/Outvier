@@ -9,22 +9,35 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { toast } from 'sonner';
 
 export default function AiProvidersPage() {
-  const [provider, setProvider] = useState('groq');
-  const [apiKey, setApiKey] = useState('');
-  const [model, setModel] = useState('llama3-70b-8192');
-
-  useEffect(() => {
-    // Load from localStorage for MVP
-    const saved = localStorage.getItem('outvier_ai_settings');
-    if (saved) {
+  const [provider, setProvider] = useState(() => {
+    if (typeof window !== 'undefined') {
       try {
-        const parsed = JSON.parse(saved);
-        if (parsed.provider) setProvider(parsed.provider);
-        if (parsed.apiKey) setApiKey(parsed.apiKey);
-        if (parsed.model) setModel(parsed.model);
-      } catch (e) {}
+        const saved = localStorage.getItem('outvier_ai_settings');
+        if (saved) return JSON.parse(saved).provider || 'groq';
+      } catch {}
     }
-  }, []);
+    return 'groq';
+  });
+
+  const [apiKey, setApiKey] = useState(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        const saved = localStorage.getItem('outvier_ai_settings');
+        if (saved) return JSON.parse(saved).apiKey || '';
+      } catch {}
+    }
+    return '';
+  });
+
+  const [model, setModel] = useState(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        const saved = localStorage.getItem('outvier_ai_settings');
+        if (saved) return JSON.parse(saved).model || 'llama3-70b-8192';
+      } catch {}
+    }
+    return 'llama3-70b-8192';
+  });
 
   const handleSave = () => {
     localStorage.setItem('outvier_ai_settings', JSON.stringify({ provider, apiKey, model }));

@@ -7,6 +7,7 @@ export interface UniversityQuery {
   limit?: number;
   search?: string;
   state?: string;
+  type?: string;
   rankingBand?: string;
   sortBy?: string;
   sortOrder?: 'asc' | 'desc';
@@ -30,18 +31,24 @@ export const universityService = {
       filter.$text = { $search: search };
     }
     if (state && state !== 'all') filter.state = state;
+    if (query.type && query.type !== 'all') {
+      filter.$or = [{ providerType: query.type }, { type: query.type }, { institutionType: query.type }];
+    }
     
     if (rankingBand && rankingBand !== 'all') {
       if (rankingBand === 'unranked') {
-        filter.ranking = { $exists: false };
+        filter.$and = [{ primaryRank: { $exists: false } }, { ranking: { $exists: false } }];
       } else {
         const maxRank = parseInt(rankingBand.replace('top', ''));
-        filter.ranking = { $lte: maxRank, $gt: 0 };
+        filter.$or = [
+          { primaryRank: { $lte: maxRank, $gt: 0 } },
+          { ranking: { $lte: maxRank, $gt: 0 } }
+        ];
       }
     }
 
     const sort: Record<string, any> = {};
-    const allowedSorts = ['name', 'ranking', 'programCount', 'averageEstimatedTotalCostAud', 'updatedAt'];
+    const allowedSorts = ['name', 'ranking', 'primaryRank', 'programCount', 'averageEstimatedTotalCostAud', 'updatedAt'];
     const sortField = allowedSorts.includes(sortBy) ? sortBy : 'name';
     sort[sortField] = sortOrder === 'desc' ? -1 : 1;
 

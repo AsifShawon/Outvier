@@ -7,11 +7,30 @@ export interface IUser extends Document {
   email: string;
   passwordHash: string;
   role: 'user' | 'admin';
+  permissions: string[];
   status: 'active' | 'inactive';
+  emailVerified: boolean;
+  emailVerificationTokenHash?: string;
+  passwordResetTokenHash?: string;
+  passwordResetExpiresAt?: Date;
+  lastLoginAt?: Date;
   createdAt: Date;
   updatedAt: Date;
   comparePassword(candidatePassword: string): Promise<boolean>;
 }
+
+const DEFAULT_USER_PERMISSIONS = ['read_catalog', 'manage_profile', 'manage_tracker'];
+const DEFAULT_ADMIN_PERMISSIONS = [
+  'read_catalog',
+  'manage_profile',
+  'manage_tracker',
+  'manage_catalog',
+  'manage_cricos',
+  'manage_sync',
+  'manage_users',
+  'manage_settings',
+  'view_analytics',
+];
 
 const UserSchema = new Schema<IUser>(
   {
@@ -20,7 +39,18 @@ const UserSchema = new Schema<IUser>(
     email: { type: String, required: true, unique: true, trim: true, lowercase: true },
     passwordHash: { type: String, required: true, minlength: 5 },
     role: { type: String, enum: ['user', 'admin'], default: 'user' },
+    permissions: {
+      type: [String],
+      default: function (this: IUser) {
+        return this.role === 'admin' ? DEFAULT_ADMIN_PERMISSIONS : DEFAULT_USER_PERMISSIONS;
+      },
+    },
     status: { type: String, enum: ['active', 'inactive'], default: 'active' },
+    emailVerified: { type: Boolean, default: false },
+    emailVerificationTokenHash: { type: String },
+    passwordResetTokenHash: { type: String },
+    passwordResetExpiresAt: { type: Date },
+    lastLoginAt: { type: Date },
   },
   { timestamps: true }
 );

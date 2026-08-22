@@ -2,98 +2,65 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { AdminSidebar } from '@/components/layout/AdminSidebar';
-import { Skeleton } from '@/components/ui/skeleton';
+import { AppShell, ADMIN_NAV_GROUPS, DashboardSkeleton, PermissionState } from '@/components/shell';
 import { authApi } from '@/lib/api/auth.api';
-import { Menu } from 'lucide-react';
-import { cn } from '@/lib/utils';
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
-  const [isAuthed, setIsAuthed] = useState<boolean | null>(null);
-  const [isMobileOpen, setIsMobileOpen] = useState(false);
+  const [authStatus, setAuthStatus] = useState<'loading' | 'authorized' | 'forbidden' | 'unauthenticated'>('loading');
 
   useEffect(() => {
-    const checkAuth = async () => {
-      const token = localStorage.getItem('outvier_token');
-      if (!token) {
-        setIsAuthed(false);
-        router.push('/login');
-        return;
-      }
-      try {
-        const res = await authApi.getMe();
-        if (res.data.data.role === 'admin') {
-          setIsAuthed(true);
+    authApi.getMe()
+      .then((res) => {
+        const user = res.data.data;
+        if (user && user.role === 'admin') {
+          setAuthStatus('authorized');
+        } else if (user) {
+          setAuthStatus('forbidden');
         } else {
-          setIsAuthed(false);
-          router.push('/dashboard');
+          setAuthStatus('unauthenticated');
+          router.push('/login?returnTo=/admin');
         }
-      } catch (err) {
-        setIsAuthed(false);
-        localStorage.removeItem('outvier_token');
-        router.push('/login');
-      }
-    };
-    checkAuth();
+      })
+      .catch(() => {
+        setAuthStatus('unauthenticated');
+        router.push('/login?returnTo=/admin');
+      });
   }, [router]);
 
-  if (isAuthed === null) {
+  if (authStatus === 'loading') {
     return (
-      <div className="flex h-screen">
-        <div className="w-64 bg-sidebar border-r border-sidebar-border" />
-        <main className="flex-1 p-8">
-          <div className="space-y-4">
-            <Skeleton className="h-8 w-60" />
-            <div className="grid grid-cols-4 gap-4">
-              {Array.from({ length: 4 }).map((_, i) => (
-                <Skeleton key={i} className="h-28 rounded-xl" />
-              ))}
-            </div>
-          </div>
-        </main>
+      <div className="min-h-screen bg-background p-6 lg:p-10">
+        <DashboardSkeleton metricsCount={4} showChart={true} tableRows={5} />
       </div>
     );
   }
 
-  if (!isAuthed) return null;
+  if (authStatus === 'forbidden') {
+    return (
+      <div className="min-h-screen flex items-center justify-center p-6 bg-background">
+        <PermissionState
+          title="Admin Access Required"
+          description="You do not have administrator permissions to access the Outvier Admin Console."
+          returnHref="/dashboard"
+          returnLabel="Return to Student Portal"
+        />
+      </div>
+    );
+  }
+
+  if (authStatus !== 'authorized') {
+    return null;
+  }
 
   return (
-    <div className="flex h-[100dvh] overflow-hidden bg-background">
-      {/* Mobile Backdrop */}
-      {isMobileOpen && (
-        <div 
-          className="fixed inset-0 bg-foreground/20 backdrop-blur-sm z-40 lg:hidden"
-          onClick={() => setIsMobileOpen(false)}
-        />
-      )}
-      
-      {/* Sidebar Container */}
-      <div className={cn(
-        "fixed inset-y-0 left-0 z-50 transition-transform duration-300 ease-in-out lg:static lg:translate-x-0",
-        isMobileOpen ? "translate-x-0" : "-translate-x-full"
-      )}>
-        <AdminSidebar onClose={() => setIsMobileOpen(false)} />
-      </div>
-
-      <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
-        {/* Mobile Topbar */}
-        <header className="lg:hidden flex h-16 items-center gap-4 px-4 border-b border-border bg-card shrink-0">
-          <button 
-            className="p-2 -ml-2 text-foreground/70 hover:text-primary"
-            onClick={() => setIsMobileOpen(true)}
-          >
-            <Menu className="h-6 w-6" />
-          </button>
-          <div className="font-display font-semibold text-lg text-foreground">Admin Panel</div>
-        </header>
-
-        <main className="flex-1 overflow-y-auto p-4 md:p-6 lg:p-8 bg-background">
-          <div className="mx-auto max-w-7xl">
-            {children}
-          </div>
-        </main>
-      </div>
-    </div>
+    <AppShell
+      navGroups={ADMIN_NAV_GROUPS}
+      userRole="admin"
+      brandTitle="Outvier Admin"
+      brandSubtitle="Catalog & Data Ops"
+    >
+      {children}
+    </AppShell>
   );
 }

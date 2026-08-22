@@ -5,6 +5,7 @@ import { User } from '../models/User.model';
 import { ComparisonSession } from '../models/ComparisonSession.model';
 import { StagedChange } from '../models/StagedChange.model';
 import { SyncJob } from '../models/SyncJob.model';
+import { FeeObservation } from '../models/FeeObservation.model';
 
 export const analyticsController = {
 
@@ -60,6 +61,7 @@ export const analyticsController = {
 
   /** GET /api/v1/analytics/public
    *  Public-facing aggregated data for charts (no auth required).
+   *  Uses canonical fieldOfStudy and primaryFeeAnnualAud directly.
    */
   async getPublicAnalytics(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
@@ -79,7 +81,7 @@ export const analyticsController = {
         ]),
         Program.aggregate([
           { $match: { status: 'active' } },
-          { $group: { _id: { $ifNull: ['$fieldOfStudy', '$field'] }, count: { $sum: 1 } } },
+          { $group: { _id: '$fieldOfStudy', count: { $sum: 1 } } },
           { $sort: { count: -1 } },
           { $limit: 15 },
         ]),
@@ -92,14 +94,14 @@ export const analyticsController = {
           {
             $match: {
               status: 'active',
-              $or: [{ annualTuition: { $gt: 0 } }, { tuitionFeeInternational: { $gt: 0 } }],
+              primaryFeeAnnualAud: { $gt: 0 },
             },
           },
           {
             $group: {
-              _id: { $ifNull: ['$fieldOfStudy', '$field'] },
+              _id: '$fieldOfStudy',
               avgTuition: {
-                $avg: { $ifNull: ['$annualTuition', '$tuitionFeeInternational'] },
+                $avg: '$primaryFeeAnnualAud',
               },
             },
           },
@@ -113,8 +115,8 @@ export const analyticsController = {
           const [programCount, avgTuition] = await Promise.all([
             Program.countDocuments({ state, status: 'active' }),
             Program.aggregate([
-              { $match: { state, status: 'active', tuitionFeeInternational: { $gt: 0 } } },
-              { $group: { _id: null, avg: { $avg: '$tuitionFeeInternational' } } }
+              { $match: { state, status: 'active', primaryFeeAnnualAud: { $gt: 0 } } },
+              { $group: { _id: null, avg: { $avg: '$primaryFeeAnnualAud' } } }
             ])
           ]);
           return {
@@ -157,6 +159,7 @@ export const analyticsController = {
 
   /** GET /api/v1/admin/analytics/native
    *  Built-in stats dashboard using raw MongoDB aggregations.
+   *  Queries canonical providerType and primaryFeeAnnualAud.
    */
   async getNativeStats(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
@@ -171,13 +174,13 @@ export const analyticsController = {
         topComparedPrograms,
       ] = await Promise.all([
         Program.aggregate([{ $group: { _id: '$level', count: { $sum: 1 } } }]),
-        Program.aggregate([{ $group: { _id: '$campusMode', count: { $sum: 1 } } }]),
+        Program.aggregate([{ $group: { _id: { $ifNull: ['$deliveryMode', '$campusMode'] }, count: { $sum: 1 } } }]),
         University.aggregate([{ $group: { _id: '$state', count: { $sum: 1 } } }]),
-        University.aggregate([{ $group: { _id: '$type', count: { $sum: 1 } } }]),
+        University.aggregate([{ $group: { _id: { $ifNull: ['$providerType', '$institutionType'] }, count: { $sum: 1 } } }]),
         Program.aggregate([
-          { $match: { tuitionFeeInternational: { $exists: true, $gt: 0 } } },
+          { $match: { primaryFeeAnnualAud: { $exists: true, $gt: 0 } } },
           { $bucket: { 
-            groupBy: '$tuitionFeeInternational',
+            groupBy: '$primaryFeeAnnualAud',
             boundaries: [0, 15000, 20000, 25000, 30000, 35000, 40000, 45000, 50000, 100000],
             default: 'other',
             output: { count: { $sum: 1 } }
@@ -208,3 +211,4 @@ export const analyticsController = {
     }
   },
 };
+

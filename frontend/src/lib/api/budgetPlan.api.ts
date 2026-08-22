@@ -20,10 +20,10 @@ export const budgetPlanApi = {
   getAll: (): Promise<{ data: ApiResponse<BudgetPlan[]> }> =>
     api.get('/budget'),
 
-  create: (data: any): Promise<{ data: ApiResponse<BudgetPlan> }> =>
+  create: (data: Partial<BudgetPlan>): Promise<{ data: ApiResponse<BudgetPlan> }> =>
     api.post('/budget', data),
 
-  update: (id: string, data: any): Promise<{ data: ApiResponse<BudgetPlan> }> =>
+  update: (id: string, data: Partial<BudgetPlan>): Promise<{ data: ApiResponse<BudgetPlan> }> =>
     api.patch(`/budget/${id}`, data),
 
   delete: (id: string): Promise<{ data: ApiResponse<void> }> =>

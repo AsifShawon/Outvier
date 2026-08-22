@@ -8,6 +8,7 @@ export interface Program {
   university: string;
   universityName: string;
   universitySlug: string;
+  logoUrl?: string;
   level: ProgramLevel;
   field: string;
   description?: string;

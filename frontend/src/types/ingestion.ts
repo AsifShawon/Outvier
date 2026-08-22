@@ -7,7 +7,7 @@ export interface IIngestionJobLog {
   status: 'info' | 'warning' | 'error' | 'success';
   message: string;
   error?: string;
-  details?: Record<string, any>;
+  details?: Record<string, unknown>;
 }
 
 export interface IIngestionJobProgress {
@@ -45,7 +45,7 @@ export interface IngestionJob {
 }
 
 export interface ProgramEvidence {
-  value: any;
+  value: unknown;
   sourceUrl: string;
   sourceType: string;
   confidence: number;

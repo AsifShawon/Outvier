@@ -413,7 +413,7 @@ export default function ProgramDetailPage() {
                       await applicationTrackerApi.createItem({
                         itemType: 'program',
                         programId: program._id,
-                        universityId: program.university?._id || program.university,
+                        universityId: (typeof program.university === 'object' && program.university !== null ? (program.university as any)._id : program.university) || '',
                         title: program.name,
                         subtitle: program.universityName
                       });

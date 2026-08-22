@@ -39,7 +39,7 @@ export function UniversityCard({ university }: UniversityCardProps) {
     queryKey: ['profile'], 
     queryFn: () => profileApi.getProfile(),
     staleTime: 60000,
-    enabled: typeof window !== 'undefined' && !!localStorage.getItem('outvier_token')
+    retry: false,
   });
   
   const isSaved = profileRes?.data?.data?.savedUniversities?.some((u: { _id: string } | string) => (typeof u === 'string' ? u : u._id) === university._id);

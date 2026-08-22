@@ -11,14 +11,17 @@ export type University = {
   website?: string;
   officialWebsite?: string;
   logo?: string;
+  logoUrl?: string;
   establishedYear?: number;
   ranking?: number;
   rankingBand?: string;
+  status?: string;
   type?: 'public' | 'private'; // @deprecated
   campuses?: string[];
   internationalStudents?: boolean;
   cricosProviderCode?: string;
   institutionType?: string;
+  providerType?: string;
   institutionCapacity?: number;
   cricosSyncStatus?: string;
   lastSyncError?: string;

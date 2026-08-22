@@ -13,11 +13,14 @@ export interface ProgramQuery {
   search?: string;
   level?: string;
   field?: string;
+  fieldOfStudy?: string;
   campusMode?: string;
+  studyMode?: string;
   city?: string;
   budget?: string;
   intake?: string;
   universitySlug?: string;
+  providerSlug?: string;
   sortBy?: string;
   sortOrder?: 'asc' | 'desc';
 }
@@ -30,16 +33,19 @@ export const programService = {
       search, 
       level, 
       field, 
+      fieldOfStudy,
       campusMode, 
+      studyMode,
       city,
       budget,
       intake,
       universitySlug,
+      providerSlug,
       sortBy = 'name',
       sortOrder = 'asc'
     } = query;
 
-    const filter: Record<string, any> = {};
+    const filter: Record<string, any> = { status: 'active' };
     const andConditions: any[] = [];
 
     if (search) {
@@ -47,22 +53,58 @@ export const programService = {
       andConditions.push({
         $or: [
           { name: searchRegex },
+          { providerName: searchRegex },
           { universityName: searchRegex },
+          { fieldOfStudy: searchRegex },
           { field: searchRegex },
-          { fieldOfStudy: searchRegex }
+          { discipline: searchRegex }
         ]
       });
     }
     if (level && level !== 'all') filter.level = level;
-    if (field && field !== 'all') filter.field = { $regex: field, $options: 'i' };
-    if (campusMode && campusMode !== 'all') filter.campusMode = campusMode;
-    if (universitySlug) filter.universitySlug = universitySlug;
-    if (intake && intake !== 'all') filter.intakeMonths = { $in: [new RegExp(intake, 'i')] };
+    
+    const targetField = fieldOfStudy || field;
+    if (targetField && targetField !== 'all') {
+      const fieldRegex = new RegExp(escapeRegex(targetField), 'i');
+      andConditions.push({
+        $or: [
+          { fieldOfStudy: fieldRegex },
+          { field: fieldRegex }
+        ]
+      });
+    }
+
+    const targetMode = studyMode || campusMode;
+    if (targetMode && targetMode !== 'all') {
+      andConditions.push({
+        $or: [
+          { availableStudyModes: targetMode },
+          { deliveryMode: targetMode },
+          { campusMode: targetMode }
+        ]
+      });
+    }
+
+    const targetSlug = providerSlug || universitySlug;
+    if (targetSlug) {
+      andConditions.push({
+        $or: [
+          { providerSlug: targetSlug },
+          { universitySlug: targetSlug }
+        ]
+      });
+    }
+
+    if (intake && intake !== 'all') {
+      andConditions.push({
+        $or: [
+          { intakeMonths: { $in: [new RegExp(intake, 'i')] } },
+          { 'intakeDetails.months': { $in: [new RegExp(intake, 'i')] } }
+        ]
+      });
+    }
 
     if (city && city !== 'all') {
-      // Find programs that either have the city directly OR have a location in that city
-      // We'll use a subquery or find program IDs first for better performance if needed, 
-      // but for now let's try to handle it via a list of program IDs from locations.
       const locations = await ProgramLocation.find({ 
         $or: [
           { locationCity: { $regex: city, $options: 'i' } },
@@ -75,6 +117,7 @@ export const programService = {
       andConditions.push({
         $or: [
           { city: { $regex: city, $options: 'i' } },
+          { availableCampusCities: { $regex: city, $options: 'i' } },
           { _id: { $in: programIdsFromLocations } }
         ]
       });
@@ -92,6 +135,7 @@ export const programService = {
       if (feeCondition) {
         andConditions.push({
           $or: [
+            { primaryFeeAnnualAud: feeCondition },
             { tuitionFeeInternational: feeCondition },
             { tuitionFeeLocal: feeCondition },
             { tuitionFeeAud: feeCondition },
@@ -106,7 +150,7 @@ export const programService = {
     }
 
     const sort: Record<string, any> = {};
-    const allowedSorts = ['name', 'level', 'universityName', 'updatedAt'];
+    const allowedSorts = ['name', 'level', 'providerName', 'universityName', 'primaryFeeAnnualAud', 'updatedAt'];
     const sortField = allowedSorts.includes(sortBy) ? sortBy : 'name';
     sort[sortField] = sortOrder === 'desc' ? -1 : 1;
 
@@ -162,17 +206,38 @@ export const programService = {
       slug = `${baseSlug}-${counter++}`;
     }
 
+    const canonicalFieldOfStudy = data.field;
+    const primaryFeeAnnualAud = data.tuitionFeeInternational || data.tuitionFeeLocal;
+
     const program = await Program.create({
       ...data,
       slug,
+      provider: university._id,
+      university: university._id,
+      providerName: university.name,
+      providerSlug: university.slug,
       universityName: university.name,
       universitySlug: university.slug,
+      fieldOfStudy: canonicalFieldOfStudy,
+      primaryFeeAnnualAud,
+      status: 'active',
     });
+
+    // Increment university programCount
+    await University.findByIdAndUpdate(university._id, { $inc: { programCount: 1 } });
+
     return program;
   },
 
   async update(id: string, data: UpdateProgramDTO): Promise<IProgram> {
-    const program = await Program.findByIdAndUpdate(id, data, { new: true, runValidators: true });
+    const updateData: any = { ...data };
+    if (data.field) {
+      updateData.fieldOfStudy = data.field;
+    }
+    if (data.tuitionFeeInternational !== undefined) {
+      updateData.primaryFeeAnnualAud = data.tuitionFeeInternational;
+    }
+    const program = await Program.findByIdAndUpdate(id, updateData, { new: true, runValidators: true });
     if (!program) {
       throw Object.assign(new Error('Program not found'), { statusCode: 404 });
     }
@@ -184,10 +249,17 @@ export const programService = {
     if (!program) {
       throw Object.assign(new Error('Program not found'), { statusCode: 404 });
     }
+    if (program.university || program.provider) {
+      await University.findByIdAndUpdate(program.provider || program.university, { $inc: { programCount: -1 } });
+    }
   },
 
   async getFields(): Promise<string[]> {
-    return Program.distinct('field');
+    const fields = await Program.distinct('fieldOfStudy');
+    if (fields.length === 0) {
+      return Program.distinct('field');
+    }
+    return fields.filter(Boolean).sort();
   },
 
   async getCities(): Promise<string[]> {
@@ -206,3 +278,4 @@ export const programService = {
     return Array.from(allCities).filter(Boolean).sort();
   },
 };
+

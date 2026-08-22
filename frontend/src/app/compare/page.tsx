@@ -404,7 +404,7 @@ export default function ComparisonWorkspacePage() {
             onValueChange={setSearchQuery}
           />
           <CommandList className="max-h-[400px]">
-            <CommandEmpty>No {activeTab} found for "{searchQuery}"</CommandEmpty>
+            <CommandEmpty>No {activeTab} found for &quot;{searchQuery}&quot;</CommandEmpty>
             <CommandGroup heading="Results">
               {searchResults?.data?.data?.map((item: any) => (
                 <CommandItem 

@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
+import { authApi } from '@/lib/api/auth.api';
 import {
   LayoutDashboard,
   University,
@@ -12,7 +13,6 @@ import {
   ChevronRight,
   ChevronDown,
   GitCompare,
-  Database,
   BarChart3,
   RefreshCw,
   ExternalLink,
@@ -26,7 +26,7 @@ import { toast } from 'sonner';
 interface NavItem {
   href?: string;
   label: string;
-  icon: any;
+  icon?: React.ComponentType<{ className?: string }>;
   exact?: boolean;
   external?: boolean;
   divider?: boolean;
@@ -43,7 +43,7 @@ const navItems: NavItem[] = [
   { href: '/admin/outcomes', label: 'Outcomes', icon: BarChart3 },
   
   // ── Data Pipeline ──────────────────────────────────────────────────────
-  { divider: true, label: 'Data Pipeline', icon: null as any },
+  { divider: true, label: 'Data Pipeline' },
   { 
     label: 'CRICOS Sync', 
     icon: RefreshCw,
@@ -56,7 +56,7 @@ const navItems: NavItem[] = [
   { href: '/admin/staged-changes', label: 'Staged Changes', icon: GitCompare },
   
   // ── Insights ──────────────────────────────────────────────────────────
-  { divider: true, label: 'Insights', icon: null as any },
+  { divider: true, label: 'Insights' },
   { href: 'http://127.0.0.1:3001', label: 'Analytics', icon: BarChart3, external: true },
 ];
 
@@ -73,8 +73,10 @@ export function AdminSidebar({ onClose }: { onClose?: () => void }) {
     );
   };
 
-  const handleLogout = () => {
-    localStorage.removeItem('outvier_token');
+  const handleLogout = async () => {
+    try {
+      await authApi.logout();
+    } catch {}
     toast.success('Logged out successfully');
     router.push('/login');
   };

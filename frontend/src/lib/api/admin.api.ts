@@ -1,19 +1,25 @@
 import api from '../api';
 import { DashboardStats, UploadJob } from '@/types/api';
 import { ApiResponse } from '@/types/api';
+import { DashboardOverviewData, DashboardQueryParams } from '@/types/adminDashboard';
 
 export const adminApi = {
+  // ── Decision-Oriented Operations Dashboard ────────────────────────────────
+  getDashboardOverview: (params?: DashboardQueryParams): Promise<{ data: ApiResponse<DashboardOverviewData> }> =>
+    api.get('/admin/dashboard/overview', { params }),
+
   // ── Existing ──────────────────────────────────────────────────────────────
   getStats: (): Promise<{ data: ApiResponse<DashboardStats> }> =>
     api.get('/admin/dashboard/stats'),
 
-  getActivities: (): Promise<{ data: ApiResponse<any[]> }> =>
+  getActivities: (): Promise<{ data: ApiResponse<Record<string, unknown>[]> }> =>
     api.get('/admin/dashboard/activities'),
 
-  getRecentAdditions: (): Promise<{ data: ApiResponse<any> }> =>
+  getRecentAdditions: (): Promise<{ data: ApiResponse<Record<string, unknown>> }> =>
     api.get('/admin/dashboard/recent-additions'),
 
-  getUsers: () => api.get('/admin/users'),
+  getUsers: (params?: Record<string, any>) => api.get('/admin/users', { params }),
+  getApplications: (params?: Record<string, any>) => api.get('/admin/applications', { params }),
 
   getUploadHistory: (): Promise<{ data: ApiResponse<UploadJob[]> }> =>
     api.get('/admin/uploads'),

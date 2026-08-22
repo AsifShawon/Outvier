@@ -56,7 +56,7 @@ export const stagedChangesController = {
    */
   async approve(req: Request, res: Response, next: NextFunction): Promise<void> {
     let session: mongoose.mongo.ClientSession | null = null;
-    const isStandalone = mongoose.connection.getClient().topology?.description?.type === 'Single';
+    const isStandalone = (mongoose.connection.getClient() as any).topology?.description?.type === 'Single';
 
     if (!isStandalone) {
       try {
@@ -129,7 +129,7 @@ export const stagedChangesController = {
    */
   async editAndApprove(req: Request, res: Response, next: NextFunction): Promise<void> {
     let session: mongoose.mongo.ClientSession | null = null;
-    const isStandalone = mongoose.connection.getClient().topology?.description?.type === 'Single';
+    const isStandalone = (mongoose.connection.getClient() as any).topology?.description?.type === 'Single';
 
     if (!isStandalone) {
       try {
@@ -178,7 +178,7 @@ export const stagedChangesController = {
    */
   async bulkApprove(req: Request, res: Response, next: NextFunction): Promise<void> {
     let session: mongoose.mongo.ClientSession | null = null;
-    const isStandalone = mongoose.connection.getClient().topology?.description?.type === 'Single';
+    const isStandalone = (mongoose.connection.getClient() as any).topology?.description?.type === 'Single';
 
     if (!isStandalone) {
       try {

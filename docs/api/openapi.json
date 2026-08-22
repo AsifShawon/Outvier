@@ -1,0 +1,190 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "Outvier API Contracts",
+    "version": "1.0.0",
+    "description": "Standardized REST API contract for Australian university discovery, comparison, student profile, and application readiness platform."
+  },
+  "servers": [
+    {
+      "url": "http://localhost:5000/api/v1",
+      "description": "Development Server"
+    },
+    {
+      "url": "https://api.outvier.com/api/v1",
+      "description": "Production Server"
+    }
+  ],
+  "components": {
+    "securitySchemes": {
+      "cookieAuth": {
+        "type": "apiKey",
+        "in": "cookie",
+        "name": "access_token"
+      },
+      "bearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "JWT"
+      }
+    },
+    "schemas": {
+      "StandardMeta": {
+        "type": "object",
+        "properties": {
+          "requestId": { "type": "string" },
+          "timestamp": { "type": "string", "format": "date-time" }
+        },
+        "required": ["requestId", "timestamp"]
+      },
+      "PaginationMeta": {
+        "type": "object",
+        "properties": {
+          "page": { "type": "integer" },
+          "limit": { "type": "integer" },
+          "total": { "type": "integer" },
+          "totalPages": { "type": "integer" },
+          "nextCursor": { "type": "string", "nullable": true },
+          "hasNext": { "type": "boolean" }
+        },
+        "required": ["limit", "hasNext"]
+      },
+      "FieldError": {
+        "type": "object",
+        "properties": {
+          "field": { "type": "string" },
+          "message": { "type": "string" }
+        },
+        "required": ["field", "message"]
+      },
+      "StandardErrorResponse": {
+        "type": "object",
+        "properties": {
+          "success": { "type": "boolean", "example": false },
+          "error": {
+            "type": "object",
+            "properties": {
+              "code": { "type": "string", "example": "VALIDATION_ERROR" },
+              "message": { "type": "string", "example": "Request validation failed" },
+              "fieldErrors": {
+                "type": "array",
+                "items": { "$ref": "#/components/schemas/FieldError" }
+              },
+              "requestId": { "type": "string" },
+              "timestamp": { "type": "string", "format": "date-time" }
+            },
+            "required": ["code", "message", "requestId", "timestamp"]
+          }
+        },
+        "required": ["success", "error"]
+      },
+      "User": {
+        "type": "object",
+        "properties": {
+          "_id": { "type": "string" },
+          "name": { "type": "string" },
+          "username": { "type": "string" },
+          "email": { "type": "string", "format": "email" },
+          "role": { "type": "string", "enum": ["user", "admin"] },
+          "permissions": { "type": "array", "items": { "type": "string" } },
+          "status": { "type": "string", "enum": ["active", "inactive"] }
+        }
+      },
+      "TrackerItem": {
+        "type": "object",
+        "properties": {
+          "_id": { "type": "string" },
+          "userId": { "type": "string" },
+          "boardId": { "type": "string" },
+          "columnId": { "type": "string" },
+          "itemType": { "type": "string", "enum": ["program", "university", "scholarship", "visa", "custom"] },
+          "title": { "type": "string" },
+          "subtitle": { "type": "string" },
+          "priority": { "type": "string", "enum": ["low", "medium", "high", "urgent"] },
+          "deadline": { "type": "string", "format": "date-time" },
+          "intake": { "type": "string" },
+          "tuitionFee": { "type": "number" },
+          "notes": { "type": "string" },
+          "tags": { "type": "array", "items": { "type": "string" } },
+          "archived": { "type": "boolean" },
+          "documentChecklist": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": { "type": "string" },
+                "name": { "type": "string" },
+                "status": { "type": "string", "enum": ["pending", "in_progress", "ready", "submitted"] }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "paths": {
+    "/auth/login": {
+      "post": {
+        "summary": "Authenticate user and issue rotating session cookies",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "email": { "type": "string", "format": "email" },
+                  "password": { "type": "string" }
+                },
+                "required": ["email", "password"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "Authenticated successfully" },
+          "401": { "$ref": "#/components/schemas/StandardErrorResponse" }
+        }
+      }
+    },
+    "/tracker/items": {
+      "get": {
+        "summary": "List tracker application items",
+        "security": [{ "cookieAuth": [] }, { "bearerAuth": [] }],
+        "parameters": [
+          { "name": "columnId", "in": "query", "schema": { "type": "string" } },
+          { "name": "priority", "in": "query", "schema": { "type": "string" } },
+          { "name": "search", "in": "query", "schema": { "type": "string" } },
+          { "name": "page", "in": "query", "schema": { "type": "integer", "default": 1 } },
+          { "name": "limit", "in": "query", "schema": { "type": "integer", "default": 50 } }
+        ],
+        "responses": {
+          "200": { "description": "Tracker items list with pagination" }
+        }
+      },
+      "post": {
+        "summary": "Create new tracker application item",
+        "security": [{ "cookieAuth": [] }, { "bearerAuth": [] }],
+        "responses": {
+          "201": { "description": "Created tracker item" },
+          "400": { "$ref": "#/components/schemas/StandardErrorResponse" }
+        }
+      }
+    },
+    "/profile": {
+      "get": {
+        "summary": "Get authenticated student profile",
+        "security": [{ "cookieAuth": [] }, { "bearerAuth": [] }],
+        "responses": { "200": { "description": "Student profile data" } }
+      },
+      "put": {
+        "summary": "Update student profile with strict field whitelist",
+        "security": [{ "cookieAuth": [] }, { "bearerAuth": [] }],
+        "responses": {
+          "200": { "description": "Updated profile" },
+          "400": { "$ref": "#/components/schemas/StandardErrorResponse" }
+        }
+      }
+    }
+  }
+}

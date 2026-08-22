@@ -1,301 +1,370 @@
 'use client';
 
-import { useState } from 'react';
+import * as React from 'react';
 import Link from 'next/link';
+import { ColumnDef } from '@tanstack/react-table';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
-import { Plus, Pencil, Trash2, ExternalLink } from 'lucide-react';
+import {
+  BookOpen,
+  Pencil,
+  Trash2,
+  Calendar,
+  DollarSign,
+  GraduationCap,
+  ShieldCheck,
+  Building2,
+  Plus,
+} from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Progress } from '@/components/ui/progress';
+import { Checkbox } from '@/components/ui/checkbox';
 import { DeleteDialog } from '@/components/ui-custom/DeleteDialog';
-import { Pagination } from '@/components/ui-custom/Pagination';
-import { Skeleton } from '@/components/ui/skeleton';
-import { Card, CardContent } from '@/components/ui/card';
+import { AdminDataTable, PresetView } from '@/components/admin/table/AdminDataTable';
+import { DataTableColumnHeader } from '@/components/admin/table/DataTableColumnHeader';
+import { DataTableFacetedFilter } from '@/components/admin/table/DataTableFacetedFilter';
+import { useDataTableState } from '@/components/admin/table/useDataTableState';
 import { programsApi } from '@/lib/api/programs.api';
 import { Program } from '@/types/program';
-import { useDebounce } from '@/hooks/useDebounce';
-import { cn } from '@/lib/utils';
 
-const levelLabels: Record<string, string> = {
-  bachelor: 'Bachelor',
-  master: 'Master',
-  phd: 'PhD',
-  diploma: 'Diploma',
-  certificate: 'Certificate',
-  graduate_certificate: 'Grad. Cert.',
-};
+const LEVELS = [
+  { label: 'All Levels', value: 'all' },
+  { label: 'Bachelor', value: 'bachelor' },
+  { label: 'Master', value: 'master' },
+  { label: 'PhD / Doctorate', value: 'phd' },
+  { label: 'Diploma', value: 'diploma' },
+  { label: 'Graduate Certificate', value: 'graduate_certificate' },
+];
 
 export function ProgramTable() {
   const qc = useQueryClient();
-  const [deleteId, setDeleteId] = useState<string | null>(null);
-  const [deleteName, setDeleteName] = useState('');
-  
-  // Filters & Pagination
-  const [search, setSearch] = useState('');
-  const [level, setLevel] = useState('all');
-  const [page, setPage] = useState(1);
-  const [limit, setLimit] = useState(20);
-  const debouncedSearch = useDebounce(search, 350);
+  const [deleteId, setDeleteId] = React.useState<string | null>(null);
+  const [deleteName, setDeleteName] = React.useState('');
 
-  const { data, isLoading } = useQuery({
-    queryKey: ['admin-programs', { search: debouncedSearch, level, page, limit }],
-    queryFn: () => programsApi.getAll({ 
-      search: debouncedSearch, 
-      level: level !== 'all' ? level : undefined,
-      page, 
-      limit 
-    }),
+  const {
+    page,
+    limit,
+    sortBy,
+    sortOrder,
+    search,
+    debouncedSearch,
+    searchParams,
+    setPage,
+    setLimit,
+    setSorting,
+    setSearch,
+    setFilter,
+    resetFilters,
+  } = useDataTableState({
+    defaultSortBy: 'name',
+    defaultSortOrder: 'asc',
   });
+
+  const levelFilter = searchParams.get('level') || 'all';
+
+  const { data: response, isLoading, isError, error, refetch } = useQuery({
+    queryKey: ['admin-programs', { debouncedSearch, levelFilter, page, limit, sortBy, sortOrder }],
+    queryFn: () =>
+      programsApi.getAll({
+        search: debouncedSearch || undefined,
+        level: levelFilter !== 'all' ? levelFilter : undefined,
+        page,
+        limit,
+        sortBy,
+        sortOrder,
+      }),
+  });
+
+  const programs: Program[] = response?.data?.programs || [];
+  const meta = response?.data?.pagination;
+  const total = meta?.total || 0;
 
   const deleteMutation = useMutation({
     mutationFn: (id: string) => programsApi.delete(id),
     onSuccess: () => {
-      toast.success('Program deleted');
+      toast.success('Program deleted successfully');
       qc.invalidateQueries({ queryKey: ['admin-programs'] });
-      qc.invalidateQueries({ queryKey: ['dashboard-stats'] });
       setDeleteId(null);
     },
     onError: () => toast.error('Failed to delete program'),
   });
 
-  const programs: Program[] = data?.data?.programs || [];
-  const meta = data?.data?.pagination;
+  const bulkDeleteMutation = useMutation({
+    mutationFn: (ids: string[]) => Promise.all(ids.map((id) => programsApi.delete(id))),
+    onSuccess: () => {
+      toast.success('Selected programs deleted');
+      qc.invalidateQueries({ queryKey: ['admin-programs'] });
+    },
+    onError: () => toast.error('Bulk deletion failed'),
+  });
 
-  const handleFilterChange = (key: string, value: string) => {
-    setPage(1);
-    if (key === 'search') setSearch(value);
-    if (key === 'level') setLevel(value);
-  };
+  const columns: ColumnDef<Program>[] = React.useMemo(
+    () => [
+      {
+        id: 'select',
+        header: ({ table }) => (
+          <Checkbox
+            checked={
+              table.getIsAllPageRowsSelected() ||
+              (table.getIsSomePageRowsSelected() ? 'indeterminate' : false)
+            }
+            onCheckedChange={(value) => table.toggleAllPageRowsSelected(!!value)}
+            aria-label="Select all"
+            className="translate-y-[2px]"
+          />
+        ),
+        cell: ({ row }) => (
+          <Checkbox
+            checked={row.getIsSelected()}
+            onCheckedChange={(value) => row.toggleSelected(!!value)}
+            aria-label="Select row"
+            className="translate-y-[2px]"
+          />
+        ),
+        enableSorting: false,
+        enableHiding: false,
+      },
+      {
+        accessorKey: 'name',
+        header: ({ column }) => (
+          <DataTableColumnHeader
+            column={column}
+            title="Program Name & Provider"
+            currentSortBy={sortBy}
+            currentSortOrder={sortOrder}
+            onSort={setSorting}
+          />
+        ),
+        cell: ({ row }) => {
+          const prog = row.original;
+          const uni: any = prog.university;
+          const uniName = typeof uni === 'object' && uni ? uni.name : (prog as any).universityName || 'University';
+          return (
+            <div className="flex items-center gap-3">
+              <div className="h-9 w-9 rounded-xl bg-card dark:bg-slate-800 border border-border/80 flex items-center justify-center shrink-0">
+                <BookOpen className="h-4 w-4 text-purple-400" />
+              </div>
+              <div className="min-w-0">
+                <Link
+                  href={`/admin/programs/${prog._id}/edit`}
+                  className="font-bold text-xs sm:text-sm text-foreground hover:text-primary transition-colors truncate block"
+                >
+                  {prog.name}
+                </Link>
+                <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground font-mono">
+                  <span>{uniName}</span>
+                  {prog.cricosCourseCode && (
+                    <Badge variant="outline" className="text-[9px] px-1 py-0 bg-teal-500/10 text-teal-300 border-teal-500/20 font-mono">
+                      CRICOS: {prog.cricosCourseCode}
+                    </Badge>
+                  )}
+                </div>
+              </div>
+            </div>
+          );
+        },
+      },
+      {
+        accessorKey: 'level',
+        header: ({ column }) => (
+          <DataTableColumnHeader
+            column={column}
+            title="Level"
+            currentSortBy={sortBy}
+            currentSortOrder={sortOrder}
+            onSort={setSorting}
+          />
+        ),
+        cell: ({ row }) => (
+          <Badge variant="outline" className="text-[10px] capitalize font-semibold bg-surface-elevated text-foreground">
+            {row.original.level || 'Master'}
+          </Badge>
+        ),
+      },
+      {
+        accessorKey: 'fieldOfStudy',
+        header: 'Field of Study',
+        cell: ({ row }) => (
+          <span className="text-xs text-foreground font-medium truncate max-w-[160px] block">
+            {(row.original as any).fieldOfStudy || (row.original as any).field || 'General Studies'}
+          </span>
+        ),
+      },
+      {
+        accessorKey: 'primaryFeeAnnualAud',
+        header: ({ column }) => (
+          <DataTableColumnHeader
+            column={column}
+            title="Annual Fee (AUD)"
+            currentSortBy={sortBy}
+            currentSortOrder={sortOrder}
+            onSort={setSorting}
+          />
+        ),
+        cell: ({ row }) => {
+          const fee = (row.original as any).primaryFeeAnnualAud || (row.original as any).tuitionFeeAud || (row.original as any).tuitionFeeInternational || 0;
+          return (
+            <div className="font-mono text-xs font-semibold text-foreground">
+              {fee ? `$${fee.toLocaleString()} AUD` : 'Contact provider'}
+            </div>
+          );
+        },
+      },
+      {
+        id: 'next_intake',
+        header: 'Next Intake',
+        cell: ({ row }) => {
+          const intake = (row.original as any).intakes?.[0] || (row.original as any).intakeMonths?.[0] || 'Feb 2027';
+          return (
+            <div className="text-[11px] text-muted-foreground flex items-center gap-1">
+              <Calendar className="h-3 w-3 text-purple-400 shrink-0" />
+              <span>{intake}</span>
+            </div>
+          );
+        },
+      },
+      {
+        accessorKey: 'status',
+        header: 'Status',
+        cell: ({ row }) => {
+          const status = row.original.status || 'active';
+          return (
+            <Badge
+              variant="outline"
+              className={`text-[10px] font-bold capitalize ${
+                status === 'active'
+                  ? 'bg-teal-500/15 text-teal-300 border-teal-500/30'
+                  : 'bg-muted text-muted-foreground border-border'
+              }`}
+            >
+              ● {status}
+            </Badge>
+          );
+        },
+      },
+      {
+        id: 'actions',
+        header: '',
+        cell: ({ row }) => {
+          const prog = row.original;
+          return (
+            <div className="flex items-center gap-1 justify-end">
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-7 w-7 rounded-lg text-muted-foreground hover:text-foreground"
+                asChild
+                title="Edit Program"
+              >
+                <Link href={`/admin/programs/${prog._id}/edit`}>
+                  <Pencil className="h-3.5 w-3.5" />
+                </Link>
+              </Button>
+
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-7 w-7 rounded-lg text-muted-foreground hover:text-rose-400"
+                onClick={() => {
+                  setDeleteId(prog._id);
+                  setDeleteName(prog.name);
+                }}
+                title="Delete Program"
+              >
+                <Trash2 className="h-3.5 w-3.5" />
+              </Button>
+            </div>
+          );
+        },
+      },
+    ],
+    [sortBy, sortOrder, setSorting]
+  );
+
+  const presetViews: PresetView[] = [
+    {
+      label: 'All Programs',
+      key: 'all',
+      active: levelFilter === 'all',
+      onClick: () => setFilter('level', 'all'),
+    },
+    {
+      label: 'Master Degrees',
+      key: 'master',
+      active: levelFilter === 'master',
+      onClick: () => setFilter('level', 'master'),
+    },
+    {
+      label: 'Bachelor Degrees',
+      key: 'bachelor',
+      active: levelFilter === 'bachelor',
+      onClick: () => setFilter('level', 'bachelor'),
+    },
+  ];
 
   return (
-    <div className="space-y-4">
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div className="flex flex-wrap items-center gap-2">
-          <input
-            type="text"
-            placeholder="Search programs..."
-            className="h-9 w-64 rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
-            value={search}
-            onChange={(e) => handleFilterChange('search', e.target.value)}
+    <>
+      <AdminDataTable
+        columns={columns}
+        data={programs}
+        page={page}
+        limit={limit}
+        total={total}
+        isLoading={isLoading}
+        isError={isError}
+        errorMessage={(error as any)?.message}
+        onRetry={() => refetch()}
+        search={search}
+        onSearchChange={setSearch}
+        searchPlaceholder="Search by program name, provider, or CRICOS..."
+        presetViews={presetViews}
+        filters={
+          <DataTableFacetedFilter
+            title="Level"
+            options={LEVELS}
+            value={levelFilter}
+            onSelect={(v) => setFilter('level', v || 'all')}
           />
-          <Select value={level} onValueChange={(v) => handleFilterChange('level', v)}>
-            <SelectTrigger className="w-[140px] h-9">
-              <SelectValue placeholder="All Levels" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Levels</SelectItem>
-              {Object.entries(levelLabels).map(([val, label]) => (
-                <SelectItem key={val} value={val}>{label}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-        <Link href="/admin/programs/new">
-          <Button size="sm" className="gap-2 h-9">
-            <Plus className="h-3.5 w-3.5" />
-            Add Program
+        }
+        activeFilterCount={levelFilter !== 'all' ? 1 : 0}
+        onResetFilters={resetFilters}
+        sortBy={sortBy}
+        sortOrder={sortOrder}
+        onSort={setSorting}
+        onPageChange={setPage}
+        onLimitChange={setLimit}
+        toolbarActions={
+          <Button size="sm" asChild className="h-8 text-xs rounded-xl font-semibold gap-1.5 bg-primary text-primary-foreground">
+            <Link href="/admin/programs/new">
+              <Plus className="h-3.5 w-3.5" />
+              <span>Add Program</span>
+            </Link>
           </Button>
-        </Link>
-      </div>
-
-      {/* Desktop Table View */}
-      <div className="hidden lg:block rounded-2xl border border-slate-200 overflow-hidden bg-white shadow-sm">
-        <Table>
-          <TableHeader>
-            <TableRow className="bg-slate-50/50 text-[11px] uppercase tracking-wider font-bold text-slate-500">
-              <TableHead className="w-[300px] pl-6">Program</TableHead>
-              <TableHead>University</TableHead>
-              <TableHead>Academic Details</TableHead>
-              <TableHead>Tuition & Duration</TableHead>
-              <TableHead>Status</TableHead>
-              <TableHead className="text-right pr-6">Actions</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {isLoading
-              ? Array.from({ length: 5 }).map((_, i) => (
-                  <TableRow key={i}>
-                    <TableCell className="pl-6"><Skeleton className="h-4 w-full" /></TableCell>
-                    {Array.from({ length: 5 }).map((_, j) => (
-                      <TableCell key={j}><Skeleton className="h-4 w-full" /></TableCell>
-                    ))}
-                  </TableRow>
-                ))
-              : programs.map((program) => (
-                  <TableRow key={program._id} className="hover:bg-slate-50/50 group transition-colors">
-                    <TableCell className="pl-6">
-                      <div className="flex flex-col min-w-0">
-                        <span className="font-bold text-sm text-slate-900 line-clamp-1 group-hover:text-deep-green transition-colors">{program.name}</span>
-                        <span className="text-[10px] text-slate-400 font-medium truncate italic">{program.field || 'General'}</span>
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex items-center gap-2">
-                        {program.logoUrl && <img src={program.logoUrl} alt="" className="w-5 h-5 rounded-md object-contain" />}
-                        <span className="text-xs font-semibold text-slate-700 truncate max-w-[150px]">{program.universityName}</span>
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex flex-col gap-1">
-                        <Badge variant="secondary" className="w-fit text-[10px] bg-slate-100 text-slate-600 border-none font-bold py-0 h-4">
-                          {levelLabels[program.level] || program.level}
-                        </Badge>
-                        <span className="text-[10px] text-slate-400 capitalize">{program.campusMode || 'On Campus'}</span>
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex flex-col">
-                        <span className="text-xs font-bold text-slate-900">
-                          {program.tuitionFee ? `$${program.tuitionFee.toLocaleString()}` : '—'}
-                          <span className="text-[10px] font-normal text-slate-400 ml-1">/yr</span>
-                        </span>
-                        <span className="text-[10px] text-slate-500">{program.duration || '—'} years</span>
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <Badge 
-                        variant={program.status === 'active' ? 'default' : 'outline'} 
-                        className={cn(
-                          "text-[10px] px-2 py-0.5 rounded-full font-bold",
-                          program.status === 'active' ? "bg-green-100 text-green-700 border-none" : "text-slate-400 border-slate-200"
-                        )}
-                      >
-                        {program.status || 'Active'}
-                      </Badge>
-                    </TableCell>
-                    <TableCell className="text-right pr-6">
-                      <div className="flex items-center justify-end gap-1.5">
-                        <Link href={`/programs/${program.slug}`} target="_blank">
-                          <Button variant="ghost" size="sm" className="h-8 w-8 p-0 text-slate-400 hover:text-deep-green hover:bg-green-50">
-                            <ExternalLink className="h-4 w-4" />
-                          </Button>
-                        </Link>
-                        <Link href={`/admin/programs/${program._id}/edit`}>
-                          <Button variant="ghost" size="sm" className="h-8 w-8 p-0 text-slate-400 hover:text-blue-600 hover:bg-blue-50">
-                            <Pencil className="h-4 w-4" />
-                          </Button>
-                        </Link>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="h-8 w-8 p-0 text-slate-400 hover:text-red-600 hover:bg-red-50"
-                          onClick={() => { setDeleteId(program._id); setDeleteName(program.name); }}
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                ))}
-          </TableBody>
-        </Table>
-      </div>
-
-      {/* Mobile Card View */}
-      <div className="lg:hidden space-y-4">
-        {isLoading ? (
-          Array.from({ length: 3 }).map((_, i) => <Skeleton key={i} className="h-48 rounded-2xl w-full" />)
-        ) : (
-          programs.map((program) => (
-            <Card key={program._id} className="rounded-2xl border-slate-200 shadow-sm overflow-hidden">
-              <CardContent className="p-5">
-                <div className="flex justify-between items-start mb-4">
-                  <div className="flex-1 min-w-0">
-                    <h3 className="font-bold text-slate-900 leading-tight line-clamp-2">{program.name}</h3>
-                    <p className="text-[10px] text-slate-500 mt-1 font-medium">{program.universityName}</p>
-                  </div>
-                  <Badge 
-                    variant={program.status === 'active' ? 'default' : 'outline'} 
-                    className={cn(
-                      "text-[10px] rounded-full shrink-0 ml-2",
-                      program.status === 'active' ? "bg-green-100 text-green-700 border-none" : ""
-                    )}
-                  >
-                    {program.status || 'Active'}
-                  </Badge>
-                </div>
-                
-                <div className="grid grid-cols-2 gap-4 mb-4">
-                  <div className="space-y-1">
-                    <p className="text-[10px] text-slate-400 uppercase font-semibold">Level</p>
-                    <p className="text-xs font-bold text-slate-700">{levelLabels[program.level] || program.level}</p>
-                  </div>
-                  <div className="space-y-1">
-                    <p className="text-[10px] text-slate-400 uppercase font-semibold">Tuition/yr</p>
-                    <p className="text-xs font-bold text-slate-700">
-                      {program.tuitionFee ? `$${program.tuitionFee.toLocaleString()}` : '—'}
-                    </p>
-                  </div>
-                  <div className="space-y-1">
-                    <p className="text-[10px] text-slate-400 uppercase font-semibold">Duration</p>
-                    <p className="text-xs font-bold text-slate-700">{program.duration || '—'} years</p>
-                  </div>
-                  <div className="space-y-1">
-                    <p className="text-[10px] text-slate-400 uppercase font-semibold">Study Mode</p>
-                    <p className="text-xs font-bold text-slate-700 capitalize">{program.campusMode || 'On Campus'}</p>
-                  </div>
-                </div>
-
-                <div className="flex items-center gap-2 pt-4 border-t">
-                  <Button variant="outline" size="sm" className="flex-1 rounded-xl h-9 text-xs" asChild>
-                    <Link href={`/admin/programs/${program._id}/edit`}>Edit Program</Link>
-                  </Button>
-                  <Button variant="ghost" size="sm" className="h-9 w-9 p-0 rounded-xl" asChild>
-                    <Link href={`/programs/${program.slug}`} target="_blank">
-                      <ExternalLink className="h-4 w-4" />
-                    </Link>
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="h-9 w-9 p-0 rounded-xl text-red-500 hover:bg-red-50 hover:text-red-600"
-                    onClick={() => { setDeleteId(program._id); setDeleteName(program.name); }}
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-          ))
-        )}
-      </div>
-
-      {meta && meta.pages > 1 && (
-        <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-4 border-t">
-          <p className="text-xs text-slate-400 font-medium">
-            Showing <span className="text-slate-900 font-bold">{programs.length}</span> of <span className="text-slate-900 font-bold">{meta.total}</span> programs
-          </p>
-          <div className="flex items-center gap-4">
-            <Select value={limit.toString()} onValueChange={(v) => { setLimit(parseInt(v)); setPage(1); }}>
-              <SelectTrigger className="w-[80px] h-9 text-xs rounded-xl border-slate-200">
-                <SelectValue placeholder={limit.toString()} />
-              </SelectTrigger>
-              <SelectContent className="rounded-xl">
-                <SelectItem value="10">10 / pg</SelectItem>
-                <SelectItem value="20">20 / pg</SelectItem>
-                <SelectItem value="50">50 / pg</SelectItem>
-                <SelectItem value="100">100 / pg</SelectItem>
-              </SelectContent>
-            </Select>
-            <Pagination
-              page={page}
-              totalPages={meta.pages}
-              onPageChange={setPage}
-            />
-          </div>
-        </div>
-      )}
+        }
+        bulkActions={[
+          {
+            label: 'Delete Selected',
+            icon: Trash2,
+            isDestructive: true,
+            confirmTitle: 'Delete Selected Programs',
+            confirmDescription:
+              'Are you sure you want to permanently delete the selected programs? This action cannot be undone.',
+            onExecute: async (ids) => {
+              await bulkDeleteMutation.mutateAsync(ids);
+            },
+          },
+        ]}
+      />
 
       <DeleteDialog
         open={!!deleteId}
         onOpenChange={(open) => !open && setDeleteId(null)}
         onConfirm={() => deleteId && deleteMutation.mutate(deleteId)}
+        title="Delete Program"
+        description={`Are you sure you want to delete "${deleteName}"?`}
         loading={deleteMutation.isPending}
-        title={`Delete "${deleteName}"?`}
-        description="This will permanently delete the program and cannot be undone."
       />
-    </div>
+    </>
   );
 }

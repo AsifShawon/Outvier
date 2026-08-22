@@ -15,10 +15,12 @@ const router = Router();
 router.use(protect, adminOnly);
 
 // Dashboard
+router.get('/dashboard/overview', adminController.getDashboardOverview);
 router.get('/dashboard/stats', adminController.getStats);
 router.get('/dashboard/activities', adminController.getActivities);
 router.get('/dashboard/recent-additions', adminController.getRecentAdditions);
 router.get('/users', adminController.getUsers);
+router.get('/applications', adminController.getApplications);
 
 // University CRUD
 router.get('/universities', adminController.listUniversities);

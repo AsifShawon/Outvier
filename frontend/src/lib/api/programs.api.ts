@@ -3,7 +3,7 @@ import { Program, CreateProgramPayload } from '@/types/program';
 import { ApiResponse } from '@/types/api';
 
 export const programsApi = {
-  getAll: (params?: Record<string, string | number>) =>
+  getAll: (params?: Record<string, string | number | boolean | undefined>) =>
     api.get('/programs', { params }),
 
   getBySlug: (slug: string): Promise<{ data: ApiResponse<Program> }> =>
@@ -25,7 +25,7 @@ export const programsApi = {
   delete: (id: string): Promise<{ data: ApiResponse<null> }> =>
     api.delete(`/admin/programs/${id}`),
 
-  bulkUpload: (file: File): Promise<{ data: any }> => {
+  bulkUpload: (file: File): Promise<{ data: ApiResponse<Record<string, unknown>> }> => {
     const formData = new FormData();
     formData.append('file', file);
     return api.post('/admin/programs/bulk-upload', formData, {

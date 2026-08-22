@@ -1,40 +1,52 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useEffect } from 'react';
+import { useForm, FormProvider } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
+import { GraduationCap, Target } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { useState } from 'react';
+
+import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import { Button } from '@/components/ui/button';
+import { Label } from '@/components/ui/label';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import {
+  FormField,
+  FormSummary,
+  Stepper,
+  DraftStatus,
+  StickyFormActions,
+  UnsavedChangesDialog,
+} from '@/components/forms';
+
 import { profileApi } from '@/lib/api/profile.api';
 import { programsApi } from '@/lib/api/programs.api';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { 
-  CheckCircle2, 
-  ChevronRight, 
-  ChevronLeft,
-  GraduationCap,
-  Target
-} from 'lucide-react';
-import { motion, AnimatePresence } from 'framer-motion';
+import {
+  profileFormSchema,
+  profileFormDefaults,
+  PROFILE_STEPS,
+  type ProfileFormInput,
+  type ProfileFormOutput,
+} from '@/lib/schemas/profile.schema';
+import { useFormDraft } from '@/hooks/useFormDraft';
+import { useAutosave } from '@/hooks/useAutosave';
+import { useServerErrors } from '@/hooks/useServerErrors';
+import {
+  useUnsavedChanges,
+  type UseUnsavedChangesReturnExtended,
+} from '@/hooks/useUnsavedChanges';
 import { cn } from '@/lib/utils';
-
-interface ProfileFormData {
-  preferredField: string;
-  preferredLevel: string;
-  budgetMaxAud: number;
-  preferredStates: string[];
-  ieltsScore: number;
-  pteScore: number;
-  academicBackground: string;
-  careerGoals: {
-    targetRole: string;
-    migrationInterest: boolean;
-    fundingSource: 'self' | 'loan' | 'scholarship' | 'family';
-  };
-}
 
 const LEVELS = [
   { value: 'bachelor', label: 'Bachelor Degree' },
@@ -45,29 +57,40 @@ const LEVELS = [
   { value: 'graduate_certificate', label: 'Graduate Certificate' },
 ];
 
-const STEPS = [
-  { id: 'academic', title: 'Academic Profile', description: 'Education & Language', icon: GraduationCap },
-  { id: 'goals', title: 'Future Goals', description: 'Career & Finance', icon: Target },
-];
+const STEP_ICONS = [GraduationCap, Target];
+
+const steps = PROFILE_STEPS.map((s, i) => ({
+  ...s,
+  icon: STEP_ICONS[i],
+}));
 
 export default function ProfilePage() {
   const qc = useQueryClient();
   const [currentStep, setCurrentStep] = useState(0);
-  const [formData, setFormData] = useState<ProfileFormData>({
-    preferredField: '',
-    preferredLevel: 'master',
-    budgetMaxAud: 40000,
-    preferredStates: [],
-    ieltsScore: 6.5,
-    pteScore: 65,
-    academicBackground: '',
-    careerGoals: {
-      targetRole: '',
-      migrationInterest: false,
-      fundingSource: 'family'
-    }
+
+  // -------------------------------------------------------------------------
+  // RHF setup
+  // -------------------------------------------------------------------------
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const methods = useForm<ProfileFormInput, any, ProfileFormOutput>({
+    resolver: zodResolver(profileFormSchema) as any,
+    defaultValues: profileFormDefaults,
+    mode: 'onTouched',
   });
 
+  const {
+    register,
+    handleSubmit,
+    setValue,
+    watch,
+    reset,
+    trigger,
+    formState: { isSubmitting },
+  } = methods;
+
+  // -------------------------------------------------------------------------
+  // Data fetching
+  // -------------------------------------------------------------------------
   const { data: profileRes, isLoading: isLoadingProfile } = useQuery({
     queryKey: ['profile'],
     queryFn: () => profileApi.getProfile(),
@@ -78,258 +101,423 @@ export default function ProfilePage() {
     queryFn: () => programsApi.getFields(),
   });
 
-  useEffect(() => {
-    if (profileRes?.data?.data) {
-      const p = profileRes.data.data;
-      setFormData(prev => ({
-        ...prev,
-        ...p,
-        careerGoals: p.careerGoals || prev.careerGoals,
-      }));
-    }
-  }, [profileRes]);
+  const fields: string[] = fieldsRes?.data?.data ?? [];
 
-  const mutation = useMutation({
-    mutationFn: (data: ProfileFormData) => profileApi.updateProfile(data),
-    onSuccess: () => {
-      toast.success('Profile updated successfully!');
-      qc.invalidateQueries({ queryKey: ['profile'] });
-    },
-    onError: () => toast.error('Failed to update profile'),
+  // Populate from server
+  useEffect(() => {
+    const profileData = profileRes?.data?.data;
+    if (profileData) {
+      reset({
+        preferredField: profileData.preferredField ?? '',
+        preferredLevel: profileData.preferredLevel ?? 'master',
+        budgetMaxAud: profileData.budgetMaxAud ?? 40000,
+        preferredStates: profileData.preferredStates ?? [],
+        ieltsScore: profileData.ieltsScore,
+        pteScore: profileData.pteScore,
+        academicBackground: profileData.academicBackground ?? '',
+        careerGoals: {
+          targetRole: profileData.careerGoals?.targetRole ?? '',
+          migrationInterest: profileData.careerGoals?.migrationInterest ?? false,
+          fundingSource: profileData.careerGoals?.fundingSource ?? 'family',
+        },
+      });
+    }
+  }, [profileRes, reset]);
+
+  // -------------------------------------------------------------------------
+  // Draft + autosave
+  // -------------------------------------------------------------------------
+  // Cast away the transform type param (TFieldValues) for hook compatibility
+  const methodsForHooks = methods as unknown as import('react-hook-form').UseFormReturn<ProfileFormInput>;
+  const draft = useFormDraft('profile', methodsForHooks);
+  const autosave = useAutosave(methodsForHooks, {
+    key: 'profile',
+    delay: 1500,
+    enabled: true,
+    saveDraft: draft.saveDraft,
   });
 
-  const handleNext = () => {
-    if (currentStep < STEPS.length - 1) setCurrentStep(currentStep + 1);
-    else mutation.mutate(formData);
+  // -------------------------------------------------------------------------
+  // Mutations
+  // -------------------------------------------------------------------------
+  const mapServerErrors = useServerErrors(methodsForHooks);
+  const unsaved = useUnsavedChanges(methodsForHooks) as UseUnsavedChangesReturnExtended;
+
+  const mutation = useMutation({
+    mutationFn: (output: ProfileFormOutput) =>
+      profileApi.updateProfile(output as Record<string, unknown>),
+    onSuccess: () => {
+      toast.success('Profile updated successfully!');
+      draft.clearDraft();
+      qc.invalidateQueries({ queryKey: ['profile'] });
+    },
+    onError: (err) => {
+      mapServerErrors(err);
+      toast.error('Failed to update profile');
+    },
+  });
+
+  const isPending = mutation.isPending || isSubmitting;
+
+  // handleSubmit types with the input type; we cast to bridge input→output
+  const onSubmit = (output: ProfileFormOutput) => {
+    mutation.mutate(output);
+  };
+
+  // Validate step 0 before advancing
+  const handleNext = async () => {
+    if (currentStep < steps.length - 1) {
+      const stepFields: (keyof ProfileFormInput)[] =
+        currentStep === 0
+          ? ['preferredField', 'preferredLevel', 'ieltsScore', 'pteScore', 'academicBackground']
+          : ['careerGoals'];
+      const valid = await trigger(stepFields);
+      if (valid) setCurrentStep((s) => s + 1);
+    } else {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      handleSubmit(onSubmit as any)();
+    }
   };
 
   const handlePrev = () => {
-    if (currentStep > 0) setCurrentStep(currentStep - 1);
+    if (currentStep > 0) setCurrentStep((s) => s - 1);
   };
 
-  if (isLoadingProfile) return <div className="p-12 text-center text-sm font-medium text-slate-500">Loading your profile...</div>;
+  // -------------------------------------------------------------------------
+  // Watched values
+  // -------------------------------------------------------------------------
+  const preferredField = watch('preferredField');
+  const preferredLevel = watch('preferredLevel');
+  const budgetMaxAud = watch('budgetMaxAud');
+  const ieltsScore = watch('ieltsScore');
+  const pteScore = watch('pteScore');
+  const migrationInterest = watch('careerGoals.migrationInterest');
+  const fundingSource = watch('careerGoals.fundingSource');
+
+  if (isLoadingProfile) {
+    return (
+      <div className="p-12 text-center text-sm font-medium text-muted-foreground">
+        Loading your profile…
+      </div>
+    );
+  }
 
   return (
-    <div className="max-w-3xl mx-auto py-6 px-4 pb-24">
-      {/* Header & Stepper */}
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold font-display text-slate-900 tracking-tight">Profile Builder</h1>
-        <p className="text-sm text-slate-500 mt-1">Keep your profile updated for better recommendations.</p>
-        
-        <div className="mt-8 flex items-center justify-center gap-12 relative">
-           <div className="absolute top-1/2 left-[20%] right-[20%] h-0.5 bg-slate-100 -translate-y-1/2 z-0" />
-           {STEPS.map((step, i) => (
-             <div key={step.id} className="relative z-10 flex flex-col items-center gap-2 group cursor-pointer" onClick={() => setCurrentStep(i)}>
-                <div className={cn(
-                  "w-10 h-10 rounded-xl flex items-center justify-center transition-all duration-300",
-                  currentStep === i ? "bg-deep-green text-white shadow-md shadow-deep-green/20" : 
-                  currentStep > i ? "bg-green-100 text-green-600" : "bg-white border border-slate-200 text-slate-300"
-                )}>
-                  {currentStep > i ? <CheckCircle2 className="h-5 w-5" /> : <step.icon className="h-5 w-5" />}
-                </div>
-                <div className="text-center bg-background px-2">
-                  <p className={cn("text-[11px] font-bold uppercase tracking-wider", currentStep === i ? "text-deep-green" : "text-slate-400")}>{step.title}</p>
-                </div>
-             </div>
-           ))}
-        </div>
-      </div>
+    <FormProvider {...methods}>
+      <div className="max-w-3xl mx-auto py-6 px-4 pb-28">
+        {/* Header */}
+        <div className="mb-8">
+          <h1 className="text-3xl font-bold font-display tracking-tight">
+            Profile Builder
+          </h1>
+          <p className="text-sm text-muted-foreground mt-1">
+            Keep your profile updated for better recommendations.
+          </p>
 
-      <AnimatePresence mode="wait">
-        <motion.div
-          key={currentStep}
-          initial={{ opacity: 0, x: 10 }}
-          animate={{ opacity: 1, x: 0 }}
-          exit={{ opacity: 0, x: -10 }}
-          transition={{ duration: 0.2 }}
+          {/* Draft status */}
+          <DraftStatus
+            hasDraft={draft.hasDraft}
+            draftSavedAt={draft.draftSavedAt}
+            isSaving={autosave.isSaving}
+            onRestore={draft.restoreDraft}
+            onClear={draft.clearDraft}
+            className="mt-4"
+          />
+
+          {/* Stepper */}
+          <Stepper
+            steps={steps}
+            current={currentStep}
+            onStepClick={setCurrentStep}
+            className="mt-8"
+          />
+        </div>
+
+        {/* Error summary */}
+        <FormSummary className="mb-4" />
+
+        <form
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          onSubmit={handleSubmit(onSubmit as any)}
+          noValidate
         >
-          {currentStep === 0 && (
-            <Card className="rounded-2xl border-slate-200 shadow-sm overflow-hidden bg-white">
-               <CardHeader className="p-6 border-b border-slate-100 bg-slate-50/50">
-                 <CardTitle className="text-xl font-bold text-slate-900">Academic Background</CardTitle>
-                 <CardDescription className="text-sm">Your previous education and language skills.</CardDescription>
-               </CardHeader>
-               <CardContent className="p-6 space-y-6">
-                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-                    <div className="space-y-2">
-                      <Label className="text-[11px] font-bold text-slate-500 uppercase tracking-widest">Preferred Field</Label>
-                      <Select 
-                        value={formData.preferredField} 
-                        onValueChange={(v) => setFormData(prev => ({ ...prev, preferredField: v }))}
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={currentStep}
+              initial={{ opacity: 0, x: 10 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: -10 }}
+              transition={{ duration: 0.2 }}
+            >
+              {/* ── Step 0: Academic Profile ──────────────────────────── */}
+              {currentStep === 0 && (
+                <Card className="rounded-2xl border-border shadow-sm overflow-hidden">
+                  <CardHeader className="p-6 border-b border-border bg-muted/30">
+                    <CardTitle className="text-xl font-bold">
+                      Academic Background
+                    </CardTitle>
+                    <CardDescription>
+                      Your previous education and language skills.
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="p-6 space-y-6">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                      <FormField
+                        name="preferredField"
+                        label="Preferred Field"
                       >
-                        <SelectTrigger className="h-11 rounded-lg border-slate-200 font-medium">
-                          <SelectValue placeholder="Select Field" />
-                        </SelectTrigger>
-                        <SelectContent className="rounded-lg">
-                          {fieldsRes?.data?.data?.map((f: string) => (
-                            <SelectItem key={f} value={f}>{f}</SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
+                        <Select
+                          value={preferredField ?? ''}
+                          onValueChange={(v) =>
+                            setValue('preferredField', v, { shouldDirty: true })
+                          }
+                        >
+                          <SelectTrigger className="h-11">
+                            <SelectValue placeholder="Select field…" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {fields.map((f: string) => (
+                              <SelectItem key={f} value={f}>
+                                {f}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </FormField>
+
+                      <FormField
+                        name="preferredLevel"
+                        label="Study Level"
+                      >
+                        <Select
+                          value={preferredLevel}
+                          onValueChange={(v) =>
+                            setValue(
+                              'preferredLevel',
+                              v as ProfileFormInput['preferredLevel'],
+                              { shouldDirty: true }
+                            )
+                          }
+                        >
+                          <SelectTrigger className="h-11">
+                            <SelectValue placeholder="Select level…" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {LEVELS.map((l) => (
+                              <SelectItem key={l.value} value={l.value}>
+                                {l.label}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </FormField>
                     </div>
 
-                    <div className="space-y-2">
-                      <Label className="text-[11px] font-bold text-slate-500 uppercase tracking-widest">Study Level</Label>
-                      <Select 
-                        value={formData.preferredLevel} 
-                        onValueChange={(v) => setFormData(prev => ({ ...prev, preferredLevel: v }))}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                      <FormField
+                        name="ieltsScore"
+                        label="IELTS Score"
+                        hint="Overall band score (0–9)"
                       >
-                        <SelectTrigger className="h-11 rounded-lg border-slate-200 font-medium">
-                          <SelectValue placeholder="Select Level" />
-                        </SelectTrigger>
-                        <SelectContent className="rounded-lg">
-                          {LEVELS.map((l) => (
-                            <SelectItem key={l.value} value={l.value}>{l.label}</SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                 </div>
+                        <Input
+                          type="number"
+                          step="0.5"
+                          min={0}
+                          max={9}
+                          value={ieltsScore ?? ''}
+                          onChange={(e) =>
+                            setValue(
+                              'ieltsScore',
+                              e.target.value === '' ? undefined : parseFloat(e.target.value),
+                              { shouldDirty: true }
+                            )
+                          }
+                          className="h-11"
+                          placeholder="7.0"
+                        />
+                      </FormField>
 
-                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-                    <div className="space-y-2">
-                      <Label className="text-[11px] font-bold text-slate-500 uppercase tracking-widest">IELTS Score</Label>
-                      <Input 
-                        type="number" step="0.5" 
-                        value={formData.ieltsScore} 
-                        onChange={(e) => setFormData(prev => ({ ...prev, ieltsScore: parseFloat(e.target.value) }))}
-                        className="h-11 rounded-lg border-slate-200 font-medium"
+                      <FormField
+                        name="pteScore"
+                        label="PTE Score"
+                        hint="PTE Academic score (0–90)"
+                      >
+                        <Input
+                          type="number"
+                          min={0}
+                          max={90}
+                          value={pteScore ?? ''}
+                          onChange={(e) =>
+                            setValue(
+                              'pteScore',
+                              e.target.value === '' ? undefined : parseInt(e.target.value),
+                              { shouldDirty: true }
+                            )
+                          }
+                          className="h-11"
+                          placeholder="65"
+                        />
+                      </FormField>
+                    </div>
+
+                    <FormField
+                      name="academicBackground"
+                      label="Education History"
+                      hint="GPA, degree, and institution"
+                    >
+                      <Textarea
+                        rows={3}
+                        {...register('academicBackground')}
+                        placeholder="e.g. Bachelor of IT from University of Dhaka, GPA 3.8/4.0"
+                        className="resize-none"
+                      />
+                    </FormField>
+                  </CardContent>
+                </Card>
+              )}
+
+              {/* ── Step 1: Goals & Preferences ──────────────────────── */}
+              {currentStep === 1 && (
+                <Card className="rounded-2xl border-border shadow-sm overflow-hidden">
+                  <CardHeader className="p-6 border-b border-border bg-muted/30">
+                    <CardTitle className="text-xl font-bold">
+                      Goals & Preferences
+                    </CardTitle>
+                    <CardDescription>
+                      Your career aspirations and financial constraints.
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="p-6 space-y-7">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                      <FormField
+                        name="careerGoals.targetRole"
+                        label="Target Career Role"
+                      >
+                        <Input
+                          {...register('careerGoals.targetRole')}
+                          placeholder="e.g. Software Engineer, Data Scientist"
+                          className="h-11"
+                        />
+                      </FormField>
+
+                      <FormField
+                        name="careerGoals.fundingSource"
+                        label="Funding Source"
+                      >
+                        <Select
+                          value={fundingSource}
+                          onValueChange={(v) =>
+                            setValue(
+                              'careerGoals.fundingSource',
+                              v as 'self' | 'loan' | 'scholarship' | 'family',
+                              { shouldDirty: true }
+                            )
+                          }
+                        >
+                          <SelectTrigger className="h-11">
+                            <SelectValue placeholder="Select funding…" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="self">Self Funded</SelectItem>
+                            <SelectItem value="family">Family Support</SelectItem>
+                            <SelectItem value="loan">Bank Loan</SelectItem>
+                            <SelectItem value="scholarship">
+                              Full Scholarship
+                            </SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </FormField>
+                    </div>
+
+                    {/* Budget slider */}
+                    <div className="space-y-4 bg-muted/30 p-5 rounded-xl border border-border">
+                      <div className="flex justify-between items-center">
+                        <Label className="text-[11px] font-bold uppercase tracking-widest">
+                          Max Annual Budget (AUD)
+                        </Label>
+                        <span className="text-lg font-black">
+                          ${(budgetMaxAud ?? 40000).toLocaleString()}
+                        </span>
+                      </div>
+                      <input
+                        type="range"
+                        min={15000}
+                        max={80000}
+                        step={1000}
+                        value={budgetMaxAud ?? 40000}
+                        onChange={(e) =>
+                          setValue('budgetMaxAud', parseInt(e.target.value), {
+                            shouldDirty: true,
+                          })
+                        }
+                        aria-label="Maximum annual budget in AUD"
+                        className="w-full h-1.5 bg-muted rounded-full appearance-none cursor-pointer accent-primary"
                       />
                     </div>
-                    <div className="space-y-2">
-                      <Label className="text-[11px] font-bold text-slate-500 uppercase tracking-widest">PTE Score</Label>
-                      <Input 
-                        type="number" 
-                        value={formData.pteScore} 
-                        onChange={(e) => setFormData(prev => ({ ...prev, pteScore: parseInt(e.target.value) }))}
-                        className="h-11 rounded-lg border-slate-200 font-medium"
-                      />
-                    </div>
-                 </div>
 
-                 <div className="space-y-2">
-                    <Label className="text-[11px] font-bold text-slate-500 uppercase tracking-widest">Education History (GPA, Degree, Institution)</Label>
-                    <Textarea 
-                      rows={3} 
-                      value={formData.academicBackground}
-                      onChange={(e) => setFormData(prev => ({ ...prev, academicBackground: e.target.value }))}
-                      placeholder="e.g. Bachelor of IT from University of Dhaka, GPA 3.8/4.0"
-                      className="rounded-lg border-slate-200 p-3 font-medium resize-none"
-                    />
-                 </div>
-               </CardContent>
-            </Card>
-          )}
-
-          {currentStep === 1 && (
-            <Card className="rounded-2xl border-slate-200 shadow-sm overflow-hidden bg-white">
-               <CardHeader className="p-6 border-b border-slate-100 bg-slate-50/50">
-                 <CardTitle className="text-xl font-bold text-slate-900">Goals & Preferences</CardTitle>
-                 <CardDescription className="text-sm">Your career aspirations and financial constraints.</CardDescription>
-               </CardHeader>
-               <CardContent className="p-6 space-y-7">
-                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-                    <div className="space-y-2">
-                      <Label className="text-[11px] font-bold text-slate-500 uppercase tracking-widest">Target Career Role</Label>
-                      <Input 
-                        placeholder="e.g. Software Engineer, Data Scientist"
-                        value={formData.careerGoals.targetRole}
-                        onChange={(e) => setFormData(prev => ({ 
-                          ...prev, 
-                          careerGoals: { ...prev.careerGoals, targetRole: e.target.value } 
-                        }))}
-                        className="h-11 rounded-lg border-slate-200 font-medium"
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label className="text-[11px] font-bold text-slate-500 uppercase tracking-widest">Funding Source</Label>
-                      <Select 
-                        value={formData.careerGoals.fundingSource} 
-                        onValueChange={(v) => setFormData(prev => ({ 
-                          ...prev, 
-                          careerGoals: { ...prev.careerGoals, fundingSource: v as any } 
-                        }))}
+                    {/* Migration interest toggle */}
+                    <div className="space-y-3">
+                      <Label className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground">
+                        Interested in Permanent Residency (PR)?
+                      </Label>
+                      <div
+                        role="group"
+                        aria-label="Migration interest"
+                        className="flex gap-3"
                       >
-                        <SelectTrigger className="h-11 rounded-lg border-slate-200 font-medium">
-                          <SelectValue placeholder="Select Funding" />
-                        </SelectTrigger>
-                        <SelectContent className="rounded-lg">
-                          <SelectItem value="self">Self Funded</SelectItem>
-                          <SelectItem value="family">Family Support</SelectItem>
-                          <SelectItem value="loan">Bank Loan</SelectItem>
-                          <SelectItem value="scholarship">Full Scholarship</SelectItem>
-                        </SelectContent>
-                      </Select>
+                        <Button
+                          type="button"
+                          variant={migrationInterest ? 'default' : 'outline'}
+                          className="flex-1 h-11 font-semibold"
+                          onClick={() =>
+                            setValue('careerGoals.migrationInterest', true, {
+                              shouldDirty: true,
+                            })
+                          }
+                          aria-pressed={migrationInterest ? true : false}
+                        >
+                          Yes, interested
+                        </Button>
+                        <Button
+                          type="button"
+                          variant={!migrationInterest ? 'default' : 'outline'}
+                          className="flex-1 h-11 font-semibold"
+                          onClick={() =>
+                            setValue('careerGoals.migrationInterest', false, {
+                              shouldDirty: true,
+                            })
+                          }
+                          aria-pressed={!migrationInterest ? true : false}
+                        >
+                          No, just studying
+                        </Button>
+                      </div>
                     </div>
-                 </div>
+                  </CardContent>
+                </Card>
+              )}
+            </motion.div>
+          </AnimatePresence>
+        </form>
 
-                 <div className="space-y-4 bg-slate-50 p-5 rounded-xl border border-slate-100">
-                    <div className="flex justify-between items-center">
-                      <Label className="text-[11px] font-bold text-slate-700 uppercase tracking-widest">Max Annual Budget (AUD)</Label>
-                      <span className="text-lg font-black text-deep-green">${formData.budgetMaxAud.toLocaleString()}</span>
-                    </div>
-                    <input 
-                      type="range" min="15000" max="80000" step="1000"
-                      value={formData.budgetMaxAud}
-                      onChange={(e) => setFormData(prev => ({ ...prev, budgetMaxAud: parseInt(e.target.value) }))}
-                      className="w-full h-1.5 bg-slate-200 rounded-full appearance-none cursor-pointer accent-deep-green"
-                    />
-                 </div>
+        {/* Sticky actions */}
+        <StickyFormActions
+          primaryLabel={currentStep === steps.length - 1 ? 'Save Profile' : 'Continue'}
+          secondaryLabel={currentStep === 0 ? undefined : 'Back'}
+          onSecondary={currentStep === 0 ? undefined : handlePrev}
+          isLoading={isPending}
+          showSaveDraft
+          onSaveDraft={draft.saveDraft}
+          primaryType="button"
+          onPrimary={handleNext}
+        />
 
-                 <div className="space-y-3">
-                    <Label className="text-[11px] font-bold text-slate-500 uppercase tracking-widest">Interested in Permanent Residency (PR)?</Label>
-                    <div className="flex gap-3">
-                       <Button 
-                         variant={formData.careerGoals.migrationInterest ? 'default' : 'outline'} 
-                         className={cn("flex-1 rounded-lg h-11 font-semibold", formData.careerGoals.migrationInterest && "bg-deep-green")}
-                         onClick={() => setFormData(prev => ({ ...prev, careerGoals: { ...prev.careerGoals, migrationInterest: true } }))}
-                       >Yes, interested</Button>
-                       <Button 
-                         variant={!formData.careerGoals.migrationInterest ? 'default' : 'outline'} 
-                         className={cn("flex-1 rounded-lg h-11 font-semibold", !formData.careerGoals.migrationInterest && "bg-deep-green")}
-                         onClick={() => setFormData(prev => ({ ...prev, careerGoals: { ...prev.careerGoals, migrationInterest: false } }))}
-                       >No, just studying</Button>
-                    </div>
-                 </div>
-               </CardContent>
-            </Card>
-          )}
-        </motion.div>
-      </AnimatePresence>
-
-      {/* Footer Actions */}
-      <div className="fixed bottom-0 left-0 right-0 p-4 bg-white/80 backdrop-blur-md border-t border-slate-100 z-50">
-        <div className="max-w-3xl mx-auto flex justify-between items-center px-2">
-           <Button 
-            variant="ghost" 
-            disabled={currentStep === 0}
-            onClick={handlePrev}
-            className="rounded-lg h-10 px-4 font-semibold text-slate-600"
-           >
-             <ChevronLeft className="h-4 w-4 mr-1.5" />
-             Back
-           </Button>
-
-           <div className="flex gap-3">
-              <Button 
-                variant="outline" 
-                className="rounded-lg h-10 px-5 font-semibold border-slate-200 hidden sm:flex"
-                onClick={() => mutation.mutate(formData)}
-                disabled={mutation.isPending}
-              >
-                Save Draft
-              </Button>
-              <Button 
-                onClick={handleNext}
-                disabled={mutation.isPending}
-                className="rounded-lg h-10 px-6 font-bold bg-deep-green hover:bg-deep-green/90 shadow-sm"
-              >
-                {currentStep === STEPS.length - 1 ? 'Save Profile' : 'Continue'}
-                {currentStep < STEPS.length - 1 && <ChevronRight className="h-4 w-4 ml-1.5" />}
-              </Button>
-           </div>
-        </div>
+        <UnsavedChangesDialog
+          open={unsaved.showDialog}
+          onConfirm={unsaved.confirmLeave}
+          onCancel={unsaved.cancelLeave}
+        />
       </div>
-    </div>
+    </FormProvider>
   );
 }

@@ -13,9 +13,13 @@ import { toast } from 'sonner';
 interface MobileTrackerViewProps {
   columns: TrackerColumn[];
   items: ApplicationTrackerItem[];
-  onAddItem: (columnId: string) => void;
+  onAddItem: (columnId?: string) => void;
   onEditItem: (item: ApplicationTrackerItem) => void;
   onMoveItem: (id: string, toColumnId: string) => Promise<void>;
+  onArchiveItem?: (item: ApplicationTrackerItem) => void | Promise<void>;
+  showArchived?: boolean;
+  onToggleArchived?: () => void;
+  archivedCount?: number;
 }
 
 const TYPE_ICONS: Record<string, any> = {

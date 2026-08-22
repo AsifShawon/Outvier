@@ -41,12 +41,16 @@ export function TrackerColumnDialog({
   const [title, setTitle] = useState(column?.title || '');
   const [color, setColor] = useState(column?.color || PRESET_COLORS[0]);
 
-  useEffect(() => {
-    if (isOpen) {
-      setTitle(column?.title || '');
-      setColor(column?.color || PRESET_COLORS[0]);
-    }
-  }, [isOpen, column]);
+  const [prevColumn, setPrevColumn] = useState(column);
+  const [prevOpen, setPrevOpen] = useState(isOpen);
+  if (isOpen && (column !== prevColumn || !prevOpen)) {
+    setPrevColumn(column);
+    setPrevOpen(isOpen);
+    setTitle(column?.title || '');
+    setColor(column?.color || PRESET_COLORS[0]);
+  } else if (!isOpen && prevOpen) {
+    setPrevOpen(false);
+  }
 
   const handleSave = async () => {
     if (!title) return;

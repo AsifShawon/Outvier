@@ -1,13 +1,16 @@
 import app from './app';
 import { connectDB } from './config/db';
-
+import { validateEnv, env } from './config/env';
 import { closeWorkers } from './jobs/workers';
+import { autoSeedDefaultUsers } from './seed/autoSeedDefaultUsers';
 import './jobs/workers'; // Initialize workers
 
-const PORT = process.env.PORT || 5000;
+const PORT = env.PORT || 5000;
 
 const startServer = async () => {
+  validateEnv();
   await connectDB();
+  await autoSeedDefaultUsers();
   app.listen(PORT, () => {
     console.log(`🚀 Server running on http://localhost:${PORT}`);
     console.log(`📡 API available at http://localhost:${PORT}/api/v1`);

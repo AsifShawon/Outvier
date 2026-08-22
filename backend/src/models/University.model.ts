@@ -1,20 +1,23 @@
 /**
- * University.model.ts — extended with ingestion tracking fields.
- * All legacy fields preserved for backward compatibility.
+ * University.model.ts — Canonical Provider / University Model.
+ * Implements canonical fields, field-level provenance, and derived counters
+ * while preserving legacy fields for backward compatibility (expand-migrate-contract).
  */
-import mongoose, { Document, Schema } from 'mongoose';
+import mongoose, { Document, Schema, Types } from 'mongoose';
+import { FieldEvidenceSchema, IFieldEvidence } from './FieldEvidence.model';
 
-// Campus sub-document
-export interface ICampus {
+// Campus sub-document (for embedded campus representations)
+export interface ICampusSubdoc {
   name: string;
   city?: string;
   state?: string;
   address?: string;
   latitude?: number;
   longitude?: number;
+  campusCode?: string;
 }
 
-// Source metadata sub-document
+// Source metadata sub-document (for batch import / legacy connectors)
 export interface ISourceMetadata {
   createdBy?: string;
   createdVia: 'csv' | 'manual' | 'connector' | 'ai_ingestion' | 'cricos_api';
@@ -30,6 +33,7 @@ export interface ISourceMetadata {
 
 export type IngestionStatus = 'not_started' | 'queued' | 'running' | 'completed' | 'failed' | 'partial';
 export type CricosSyncStatus = 'not_synced' | 'synced' | 'changes_pending' | 'failed';
+export type ProviderStatus = 'active' | 'inactive' | 'draft' | 'archived';
 
 export interface IPostalAddress {
   line1?: string;
@@ -42,48 +46,60 @@ export interface IPostalAddress {
 }
 
 export interface IUniversity extends Document {
-  // --- Legacy fields kept for backward compat ---
+  // --- Canonical Provider Identity ---
   name: string;
   slug: string;
-  description?: string;
-  location?: string;           // legacy alias for city
-  website?: string;            // legacy alias for officialWebsite
-  logo?: string;               // legacy alias for logoUrl
-  establishedYear?: number;
-  ranking?: number;            // legacy; prefer RankingRecord
-  rankingBand?: string;        // 'top50', 'top100', 'top200', 'top500', 'unranked'
-  type?: 'public' | 'private'; // @deprecated: use providerType or institutionType instead
-  campuses?: string[];         // legacy string array; new: campusDetails
-  internationalStudents?: boolean;
-  // --- Existing new fields ---
   shortName?: string;
   country: string;
   state: string;
   city?: string;
-  campusDetails?: ICampus[];
   officialWebsite?: string;
-  cricosProviderCode?: string;
   logoUrl?: string;
-  providerType?: string;
-  status: 'active' | 'inactive' | 'draft';
-  sourceMetadata?: ISourceMetadata;
-  // --- Ingestion tracking fields ---
+  providerType?: string; // 'university' | 'higher_education' | 'tafe' | 'vocational' | 'pathway' | 'english_language' | 'public' | 'private'
+  cricosProviderCode?: string;
   teqsaProviderId?: string;
+  establishedYear?: number;
+  description?: string;
+  status: ProviderStatus;
+  postalAddress?: IPostalAddress;
+  campusDetails?: ICampusSubdoc[];
+
+  // --- Provenance & Source Evidence ---
+  sourceEvidence?: Map<string, IFieldEvidence> | Record<string, IFieldEvidence>;
+  provenance?: IFieldEvidence;
+  sourceMetadata?: ISourceMetadata;
   sourceUrls?: string[];
+
+  // --- Denormalized / Derived Fields (maintained by triggers & reconcilers) ---
+  programCount: number;
+  offeringCount?: number;
+  campusCount?: number;
+  primaryRank?: number;
+  averageEstimatedTotalCostAud?: number;
+  averageTuitionAud?: number;
+
+  // --- Ingestion / Sync Status ---
   ingestionStatus?: IngestionStatus;
   lastSyncedAt?: Date;
   autoDiscoverPrograms?: boolean;
-  // --- CRICOS-specific fields ---
   institutionType?: string;
   institutionCapacity?: number;
-  postalAddress?: IPostalAddress;
   lastCricosSyncedAt?: Date;
   cricosSyncStatus?: CricosSyncStatus;
   lastSyncError?: string;
-  lastSyncRunId?: string;
+  lastSyncRunId?: Types.ObjectId;
   cricosDataHash?: string;
-  programCount?: number;
-  averageEstimatedTotalCostAud?: number;
+
+  // --- Legacy fields kept for backward compatibility ---
+  location?: string;           // @deprecated: alias for city/state
+  website?: string;            // @deprecated: alias for officialWebsite
+  logo?: string;               // @deprecated: alias for logoUrl
+  ranking?: number;            // @deprecated: prefer RankingObservation
+  rankingBand?: string;        // @deprecated: 'top50', 'top100', 'top200', 'top500', 'unranked'
+  type?: 'public' | 'private'; // @deprecated: use providerType or institutionType
+  campuses?: string[];         // @deprecated: string array; prefer Campus collection / campusDetails
+  internationalStudents?: boolean;
+
   createdAt: Date;
   updatedAt: Date;
 }
@@ -101,7 +117,7 @@ const PostalAddressSchema = new Schema<IPostalAddress>(
   { _id: false }
 );
 
-const CampusSchema = new Schema<ICampus>(
+const CampusSubSchema = new Schema<ICampusSubdoc>(
   {
     name: { type: String, required: true },
     city: String,
@@ -109,6 +125,7 @@ const CampusSchema = new Schema<ICampus>(
     address: String,
     latitude: Number,
     longitude: Number,
+    campusCode: String,
   },
   { _id: false }
 );
@@ -131,45 +148,54 @@ const SourceMetadataSchema = new Schema<ISourceMetadata>(
 
 const UniversitySchema = new Schema<IUniversity>(
   {
-    // Legacy
+    // Canonical Identity
     name: { type: String, required: true, unique: true, trim: true },
-    slug: { type: String, required: true, unique: true, lowercase: true, trim: true },
-    description: String,
-    location: String,
-    website: String,
-    logo: String,
-    establishedYear: Number,
-    ranking: Number,
-    rankingBand: { type: String, enum: ['top50', 'top100', 'top200', 'top500', 'unranked'] },
-    type: { type: String, enum: ['public', 'private'] }, // Deprecated
-    campuses: [{ type: String }],
-    internationalStudents: { type: Boolean, default: true },
-    // New
+    slug: { type: String, required: true, unique: true, lowercase: true, trim: true, index: true },
     shortName: { type: String, trim: true },
     country: { type: String, default: 'Australia', trim: true },
-    state: { type: String, trim: true },
-    city: { type: String, trim: true },
-    campusDetails: [CampusSchema],
+    state: { type: String, trim: true, index: true },
+    city: { type: String, trim: true, index: true },
     officialWebsite: { type: String, trim: true, index: true },
+    logoUrl: { type: String },
+    providerType: { type: String, trim: true, index: true },
     cricosProviderCode: { type: String, trim: true, sparse: true, index: true },
-    logoUrl: String,
-    providerType: String,
-    status: { type: String, enum: ['active', 'inactive', 'draft'], default: 'active' },
-    sourceMetadata: SourceMetadataSchema,
-    // Ingestion tracking
     teqsaProviderId: { type: String, trim: true, sparse: true, index: true },
+    establishedYear: { type: Number },
+    description: { type: String },
+    status: {
+      type: String,
+      enum: ['active', 'inactive', 'draft', 'archived'],
+      default: 'active',
+      index: true,
+    },
+    postalAddress: PostalAddressSchema,
+    campusDetails: [CampusSubSchema],
+
+    // Provenance & Source Evidence
+    sourceEvidence: { type: Map, of: FieldEvidenceSchema },
+    provenance: FieldEvidenceSchema,
+    sourceMetadata: SourceMetadataSchema,
     sourceUrls: [{ type: String }],
+
+    // Denormalized / Derived Metrics
+    programCount: { type: Number, default: 0, index: true },
+    offeringCount: { type: Number, default: 0 },
+    campusCount: { type: Number, default: 0 },
+    primaryRank: { type: Number, index: true },
+    averageEstimatedTotalCostAud: { type: Number },
+    averageTuitionAud: { type: Number },
+
+    // Ingestion / Sync Status
     ingestionStatus: {
       type: String,
       enum: ['not_started', 'queued', 'running', 'completed', 'failed', 'partial'],
       default: 'not_started',
+      index: true,
     },
     lastSyncedAt: Date,
     autoDiscoverPrograms: { type: Boolean, default: false },
-    // CRICOS-specific
     institutionType: { type: String, trim: true },
     institutionCapacity: { type: Number },
-    postalAddress: PostalAddressSchema,
     lastCricosSyncedAt: { type: Date, index: true },
     cricosSyncStatus: {
       type: String,
@@ -180,18 +206,23 @@ const UniversitySchema = new Schema<IUniversity>(
     lastSyncError: String,
     lastSyncRunId: { type: Schema.Types.ObjectId, ref: 'CricosSyncRun' },
     cricosDataHash: { type: String },
-    programCount: { type: Number, default: 0 },
-    averageEstimatedTotalCostAud: { type: Number },
+
+    // Legacy fields preserved for backward compatibility
+    location: String,
+    website: String,
+    logo: String,
+    ranking: Number,
+    rankingBand: { type: String, enum: ['top50', 'top100', 'top200', 'top500', 'unranked'] },
+    type: { type: String, enum: ['public', 'private'] },
+    campuses: [{ type: String }],
+    internationalStudents: { type: Boolean, default: true },
   },
   { timestamps: true }
 );
 
-// Full-text index
+// Indexes
 UniversitySchema.index({ name: 'text', shortName: 'text', description: 'text', city: 'text', state: 'text' });
-UniversitySchema.index({ status: 1 });
-UniversitySchema.index({ ingestionStatus: 1 });
-UniversitySchema.index({ ranking: 1 });
-UniversitySchema.index({ rankingBand: 1 });
+UniversitySchema.index({ status: 1, state: 1 });
+UniversitySchema.index({ cricosProviderCode: 1, status: 1 });
 
 export const University = mongoose.model<IUniversity>('University', UniversitySchema);
-

@@ -3,8 +3,8 @@ import { Scholarship, CreateScholarshipPayload, UpdateScholarshipPayload } from 
 
 // Public endpoints
 export const scholarshipsApi = {
-  getScholarships: async (params?: Record<string, any>) => {
-    return api.get<{ success: boolean; data: Scholarship[]; meta: any }>('/scholarships', { params });
+  getScholarships: async (params?: Record<string, string | number | boolean | undefined>) => {
+    return api.get<{ success: boolean; data: Scholarship[]; meta: { total: number; page: number; limit: number; pages?: number } }>('/scholarships', { params });
   },
 
   getScholarshipBySlug: async (slug: string) => {
@@ -14,8 +14,8 @@ export const scholarshipsApi = {
 
 // Admin endpoints
 export const adminScholarshipsApi = {
-  getScholarships: async (params?: Record<string, any>) => {
-    return api.get<{ success: boolean; data: Scholarship[]; meta: any }>('/admin/scholarships', { params });
+  getScholarships: async (params?: Record<string, string | number | boolean | undefined>) => {
+    return api.get<{ success: boolean; data: Scholarship[]; meta: { total: number; page: number; limit: number; pages?: number } }>('/admin/scholarships', { params });
   },
 
   getScholarship: async (id: string) => {

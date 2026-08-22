@@ -269,15 +269,24 @@ async function seed() {
     ]);
     console.log('🗑️  Cleared existing data');
 
-    // Create admin user
-    const adminUser = await User.create({
-      name: 'Admin User',
-      username: 'admin',
-      email: process.env.ADMIN_EMAIL || 'admin@outvier.com',
-      passwordHash: process.env.ADMIN_PASSWORD || 'admin',
-      role: 'admin',
-    });
-    console.log(`👤 Admin user created: ${adminUser.email}`);
+    if (process.env.ENABLE_ADMIN_SEEDER !== 'true') {
+      console.log('ℹ️  ENABLE_ADMIN_SEEDER is false. Skipping admin creation.');
+    } else {
+      const adminPassword = process.env.ADMIN_SEED_PASSWORD;
+      if (!adminPassword || adminPassword.length < 8 || adminPassword === 'admin' || adminPassword === 'admin123') {
+        throw new Error('ADMIN_SEED_PASSWORD must be explicitly provided (>= 8 chars and not a default) when ENABLE_ADMIN_SEEDER=true');
+      }
+
+      const adminUser = await User.create({
+        name: 'Admin User',
+        username: 'admin',
+        email: process.env.ADMIN_EMAIL || 'admin@outvier.com',
+        passwordHash: adminPassword,
+        role: 'admin',
+        status: 'active',
+      });
+      console.log(`👤 Admin user created: ${adminUser.email}`);
+    }
 
     // // Create universities
     // const createdUniversities: Record<string, IUniversity> = {};

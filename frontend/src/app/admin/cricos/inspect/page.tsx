@@ -1,7 +1,8 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
+import { useQuery } from '@tanstack/react-query';
 import { Card } from '@/components/ui/card';
 import { cricosApi } from '@/lib/api/cricos.api';
 import { Loader2, Table as TableIcon, Search, AlertCircle } from 'lucide-react';
@@ -11,30 +12,19 @@ export default function CricosInspectPage() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const resourceId = searchParams.get('resourceId');
-  
-  const [resources, setResources] = useState<any>(null);
-  const [data, setData] = useState<any>(null);
-  const [loadingResources, setLoadingResources] = useState(true);
-  const [loadingData, setLoadingData] = useState(false);
 
-  useEffect(() => {
-    cricosApi.getResources().then(res => {
-      setResources(res.data.data);
-      setLoadingResources(false);
-    }).catch(() => setLoadingResources(false));
-  }, []);
+  const { data: resourcesRes, isLoading: loadingResources } = useQuery({
+    queryKey: ['cricos-resources'],
+    queryFn: () => cricosApi.getResources(),
+  });
+  const resources = resourcesRes?.data?.data || null;
 
-  useEffect(() => {
-    if (resourceId) {
-      setLoadingData(true);
-      cricosApi.inspectFields(resourceId).then(res => {
-        setData(res.data.data);
-        setLoadingData(false);
-      }).catch(() => setLoadingData(false));
-    } else {
-      setData(null);
-    }
-  }, [resourceId]);
+  const { data: inspectRes, isLoading: loadingData } = useQuery({
+    queryKey: ['cricos-inspect', resourceId],
+    queryFn: () => cricosApi.inspectFields(resourceId!),
+    enabled: !!resourceId,
+  });
+  const data = resourceId ? inspectRes?.data?.data || null : null;
 
   const handleResourceChange = (val: string) => {
     router.push(`/admin/cricos/inspect?resourceId=${val}`);

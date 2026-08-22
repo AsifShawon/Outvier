@@ -41,7 +41,7 @@ export const ingestionApi = {
 
   // Refresh a specific field using AI
   refreshProgramField: async (programId: string, field: string) => {
-    const { data } = await api.patch<{ success: boolean; message: string; data: any }>(`/admin/programs/${programId}/refresh-field`, { field });
+    const { data } = await api.patch<{ success: boolean; message: string; data: Record<string, unknown> }>(`/admin/programs/${programId}/refresh-field`, { field });
     return data;
   },
 };

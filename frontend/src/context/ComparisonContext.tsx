@@ -38,13 +38,13 @@ export function ComparisonProvider({ children }: { children: React.ReactNode }) 
         const sessionRes = await comparisonApi.getSession(currentHash!);
         const session = sessionRes.data.data;
         
-        const programIds = session.selectedProgramIds.map((p: any) => 
-          typeof p === 'object' ? p._id : p
+        const programIds = session.selectedProgramIds.map((p: string | { _id: string }) => 
+          typeof p === 'object' && p !== null ? p._id : p
         );
         setSelectedIds(programIds);
 
-        const uniIds = session.selectedUniversityIds?.map((u: any) => 
-          typeof u === 'object' ? u._id : u
+        const uniIds = session.selectedUniversityIds?.map((u: string | { _id: string }) => 
+          typeof u === 'object' && u !== null ? u._id : u
         ) || [];
         setSelectedUniIds(uniIds);
       } catch (err) {
@@ -72,7 +72,7 @@ export function ComparisonProvider({ children }: { children: React.ReactNode }) 
       await comparisonApi.addProgram(hash, programId);
       setSelectedIds(prev => [...prev, programId]);
       toast.success('Program added to comparison');
-    } catch (err) {
+    } catch {
       toast.error('Failed to add program to comparison');
     }
   };
@@ -83,7 +83,7 @@ export function ComparisonProvider({ children }: { children: React.ReactNode }) 
       await comparisonApi.removeProgram(hash, programId);
       setSelectedIds(prev => prev.filter(id => id !== programId));
       toast.success('Program removed from comparison');
-    } catch (err) {
+    } catch {
       toast.error('Failed to remove program');
     }
   };
@@ -100,11 +100,10 @@ export function ComparisonProvider({ children }: { children: React.ReactNode }) 
     }
 
     try {
-      // We'll need to add this to comparisonApi
-      await (comparisonApi as any).addUniversity(hash, universityId);
+      await comparisonApi.addUniversity(hash, universityId);
       setSelectedUniIds(prev => [...prev, universityId]);
       toast.success('University added to comparison');
-    } catch (err) {
+    } catch {
       toast.error('Failed to add university to comparison');
     }
   };
@@ -112,10 +111,10 @@ export function ComparisonProvider({ children }: { children: React.ReactNode }) 
   const removeUniversityFromCompare = async (universityId: string) => {
     if (!hash) return;
     try {
-      await (comparisonApi as any).removeUniversity(hash, universityId);
+      await comparisonApi.removeUniversity(hash, universityId);
       setSelectedUniIds(prev => prev.filter(id => id !== universityId));
       toast.success('University removed from comparison');
-    } catch (err) {
+    } catch {
       toast.error('Failed to remove university');
     }
   };

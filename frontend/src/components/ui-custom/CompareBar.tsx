@@ -9,12 +9,12 @@ import { Button } from '@/components/ui/button';
 
 export function CompareBar() {
   const { selectedIds, hash } = useComparison();
-  const [isHidden, setIsHidden] = useState(false);
-
-  useEffect(() => {
-    const hidden = localStorage.getItem('outvier_hide_compare_bar') === 'true';
-    setIsHidden(hidden);
-  }, []);
+  const [isHidden, setIsHidden] = useState(() => {
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem('outvier_hide_compare_bar') === 'true';
+    }
+    return false;
+  });
 
   if (selectedIds.length === 0 || isHidden) return null;
 

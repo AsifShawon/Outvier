@@ -1,9 +1,10 @@
 /**
- * Program.model.ts — significantly extended with AI ingestion fields.
- * All legacy fields preserved for backward compatibility.
- * New status values: 'draft' (AI-extracted, pending review), 'published' (admin approved), 'archived'.
+ * Program.model.ts — Canonical Program Model.
+ * Represents the abstract academic credential and curriculum definition.
+ * All legacy fields preserved for backward compatibility during expand-migrate-contract.
  */
 import mongoose, { Document, Schema, Types } from 'mongoose';
+import { FieldEvidenceSchema, IFieldEvidence } from './FieldEvidence.model';
 
 export interface IDataQuality {
   confidence?: number;
@@ -12,17 +13,23 @@ export interface IDataQuality {
   sourceUrl?: string;
   sourceName?: string;
   sourceResourceId?: string;
-  importMethod?: 'cricos_api' | 'ai_ingestion' | 'manual' | 'csv';
+  importMethod?: 'cricos_api' | 'ai_ingestion' | 'manual' | 'csv' | 'connector';
 }
 
-// Per-field source evidence
-export interface IFieldEvidence {
-  value: string | number | boolean | null;
-  sourceUrl: string;
-  sourceType: 'CRICOS' | 'TEQSA' | 'UNIVERSITY_OFFICIAL' | 'FEE_PAGE' | 'REQUIREMENT_PAGE' | 'SCHOLARSHIP_PAGE' | 'GOVERNMENT' | 'SECONDARY';
-  confidence: number;
-  rawTextSnippet?: string;
-  extractedAt?: Date;
+export interface IStructuredDuration {
+  durationYears?: number;
+  durationSemesters?: number;
+  durationWeeks?: number;
+  durationText?: string;
+}
+
+export interface IFieldOfEducation {
+  broadField?: string;
+  narrowField?: string;
+  detailedField?: string;
+  broadCode?: string;
+  narrowCode?: string;
+  detailedCode?: string;
 }
 
 // English requirement details
@@ -87,47 +94,85 @@ export interface ICourseStructure {
   notes?: string;
 }
 
+export type ProgramLevel =
+  | 'bachelor'
+  | 'master'
+  | 'phd'
+  | 'diploma'
+  | 'certificate'
+  | 'graduate_certificate'
+  | 'secondary'
+  | 'elicos'
+  | 'non_award'
+  | 'other';
+
+export type ProgramStatus = 'active' | 'inactive' | 'draft' | 'published' | 'archived';
+
 export interface IProgram extends Document {
-  // --- Legacy fields kept for backward compat ---
+  // --- Canonical Program Identity ---
+  provider: Types.ObjectId; // Canonical ref to University
+  university: Types.ObjectId; // Legacy alias to University
+  providerName: string;
+  providerSlug: string;
   name: string;
   slug: string;
-  university: Types.ObjectId;
-  universityName: string;
-  universitySlug: string;
-  level: 'bachelor' | 'master' | 'phd' | 'diploma' | 'certificate' | 'graduate_certificate' | 'secondary' | 'elicos' | 'non_award' | 'other';
-  field: string;
+  level: ProgramLevel;
+  fieldOfStudy: string; // Canonical primary field of study (e.g. "Information Technology")
+  discipline?: string; // Sub-discipline (e.g. "Artificial Intelligence")
+  fieldOfEducation?: IFieldOfEducation;
+  programCode?: string; // Institution internal code (e.g. "3778")
   description: string;
-  duration: string;
-  tuitionFeeLocal?: number;
-  tuitionFeeInternational?: number;
-  intakeMonths?: string[];
-  englishRequirements?: string;
-  academicRequirements?: string;
+  faculty?: string;
+  durationStructure?: IStructuredDuration;
+  courseStructure?: ICourseStructure;
   careerPathways?: string[];
-  campusMode: 'on-campus' | 'online' | 'hybrid';
-  website?: string;
-  // --- Existing new fields ---
+  status: ProgramStatus;
+
+  // --- Provenance & Source Evidence ---
+  dataQuality?: IDataQuality;
+  sourceEvidence?: Map<string, IFieldEvidence> | Record<string, IFieldEvidence>;
+  provenance?: IFieldEvidence;
+  sourceUrls?: string[];
+  confidenceScore?: number;
+  missingFields?: string[];
+  needsAdminReview?: boolean;
+  dataSourceType?: string;
+  extractedAt?: Date;
+  lastCheckedAt?: Date;
+  rawExtractedText?: string;
+  aiSummary?: string;
+  ingestionJobId?: Types.ObjectId;
+
+  // --- Denormalized / Derived Summary Fields ---
+  primaryFeeAnnualAud?: number; // Canonical annual international fee in AUD for instant search/sort
+  primaryFeeTotalAud?: number; // Canonical total estimated course fee in AUD
+  availableStudyModes?: ('on-campus' | 'online' | 'hybrid' | 'external')[];
+  availableCampusCities?: string[];
+  activeIntakeCount?: number;
+
+  // --- Legacy fields preserved for backward compatibility ---
+  field?: string; // @deprecated: use fieldOfStudy
+  universityName?: string;
+  universitySlug?: string;
   universityId?: Types.ObjectId;
-  fieldOfStudy?: string;
-  studyMode?: string;
+  duration?: string; // @deprecated: string duration, prefer durationStructure
+  tuitionFeeLocal?: number; // @deprecated: prefer FeeObservation
+  tuitionFeeInternational?: number; // @deprecated: prefer FeeObservation / primaryFeeAnnualAud
+  annualTuition?: number; // @deprecated: prefer FeeObservation / primaryFeeAnnualAud
+  totalEstimatedCost?: number; // @deprecated: prefer FeeObservation / primaryFeeTotalAud
+  intakeMonths?: string[]; // @deprecated: prefer Intake collection / offerings
+  englishRequirements?: string; // @deprecated: prefer EnglishRequirement
+  academicRequirements?: string; // @deprecated: prefer EntryRequirement
+  academicRequirement?: string;
+  campusMode?: 'on-campus' | 'online' | 'hybrid'; // @deprecated: prefer ProgramOffering.studyMode
+  website?: string; // @deprecated: prefer officialProgramUrl
+  city?: string;
+  state?: string;
   campus?: string;
-  annualTuition?: number;
-  totalEstimatedCost?: number;
   currency?: string;
   ieltsRequirement?: number;
   pteRequirement?: number;
-  academicRequirement?: string;
   cricosCourseCode?: string;
-  officialProgramUrl?: string;
-  scholarshipAvailable?: boolean;
-  applicationDeadlines?: {
-    intake: string;
-    deadline: string;
-    notes?: string;
-  }[];
-  status: 'active' | 'inactive' | 'draft' | 'published' | 'archived';
-  dataQuality?: IDataQuality;
-  // --- CRICOS-specific fields ---
   cricosProviderCode?: string;
   institutionName?: string;
   courseLevel?: string;
@@ -143,24 +188,24 @@ export interface IProgram extends Document {
   expired?: boolean;
   lastCricosSyncedAt?: Date;
   cricosDataHash?: string;
-  // --- AI Ingestion fields ---
-  degreeLevel?: string;
-  faculty?: string;
-  discipline?: string;
-  programCode?: string;
-  city?: string;
-  state?: string;
-  deliveryMode?: 'on-campus' | 'online' | 'hybrid';
-  domesticAvailable?: boolean;
-  internationalAvailable?: boolean;
-  estimatedCompletionTime?: string;
   durationWeeks?: number;
   tuitionFeeAud?: number;
   nonTuitionFeeAud?: number;
   estimatedTotalCourseCostAud?: number;
   workComponent?: string;
   courseLanguage?: string;
-  courseStructure?: ICourseStructure;
+  officialProgramUrl?: string;
+  scholarshipAvailable?: boolean;
+  applicationDeadlines?: {
+    intake: string;
+    deadline: string;
+    notes?: string;
+  }[];
+  degreeLevel?: string;
+  deliveryMode?: 'on-campus' | 'online' | 'hybrid';
+  domesticAvailable?: boolean;
+  internationalAvailable?: boolean;
+  estimatedCompletionTime?: string;
   academicEntryRequirements?: string;
   minimumGPA?: string;
   prerequisiteSubjects?: string[];
@@ -172,17 +217,7 @@ export interface IProgram extends Document {
   scholarshipInfo?: IScholarshipInfo;
   intakeDetails?: IIntakeDetails;
   careerOutcomes?: ICareerOutcomes;
-  sourceUrls?: string[];
-  sourceEvidence?: Record<string, IFieldEvidence>;
-  confidenceScore?: number;
-  missingFields?: string[];
-  needsAdminReview?: boolean;
-  dataSourceType?: string;
-  extractedAt?: Date;
-  lastCheckedAt?: Date;
-  rawExtractedText?: string;
-  aiSummary?: string;
-  ingestionJobId?: Types.ObjectId;
+
   createdAt: Date;
   updatedAt: Date;
 }
@@ -193,21 +228,31 @@ const DataQualitySchema = new Schema<IDataQuality>(
     lastFetchedAt: Date,
     lastApprovedAt: Date,
     sourceUrl: String,
+    sourceName: String,
+    sourceResourceId: String,
+    importMethod: { type: String, enum: ['cricos_api', 'ai_ingestion', 'manual', 'csv', 'connector'] },
   },
   { _id: false }
 );
 
-const FieldEvidenceSchema = new Schema<IFieldEvidence>(
+const StructuredDurationSchema = new Schema<IStructuredDuration>(
   {
-    value: Schema.Types.Mixed,
-    sourceUrl: String,
-    sourceType: {
-      type: String,
-      enum: ['CRICOS', 'TEQSA', 'UNIVERSITY_OFFICIAL', 'FEE_PAGE', 'REQUIREMENT_PAGE', 'SCHOLARSHIP_PAGE', 'GOVERNMENT', 'SECONDARY'],
-    },
-    confidence: { type: Number, min: 0, max: 100 },
-    rawTextSnippet: String,
-    extractedAt: Date,
+    durationYears: Number,
+    durationSemesters: Number,
+    durationWeeks: Number,
+    durationText: String,
+  },
+  { _id: false }
+);
+
+const FieldOfEducationSchema = new Schema<IFieldOfEducation>(
+  {
+    broadField: String,
+    narrowField: String,
+    detailedField: String,
+    broadCode: String,
+    narrowCode: String,
+    detailedCode: String,
   },
   { _id: false }
 );
@@ -288,39 +333,101 @@ const CourseStructureSchema = new Schema<ICourseStructure>(
 
 const ProgramSchema = new Schema<IProgram>(
   {
-    // Legacy
+    // Canonical Properties
+    provider: { type: Schema.Types.ObjectId, ref: 'University', required: true, index: true },
+    university: { type: Schema.Types.ObjectId, ref: 'University', required: true, index: true },
+    providerName: { type: String, required: true },
+    providerSlug: { type: String, required: true },
     name: { type: String, required: true, trim: true },
-    slug: { type: String, required: true, unique: true, lowercase: true },
-    university: { type: Schema.Types.ObjectId, ref: 'University', required: true },
-    universityName: { type: String, required: true },
-    universitySlug: { type: String, required: true },
+    slug: { type: String, required: true, unique: true, lowercase: true, index: true },
     level: {
       type: String,
       enum: ['bachelor', 'master', 'phd', 'diploma', 'certificate', 'graduate_certificate', 'secondary', 'elicos', 'non_award', 'other'],
       required: true,
+      index: true,
     },
-    field: { type: String, required: true },
-    description: { type: String },
-    duration: { type: String },
+    fieldOfStudy: { type: String, required: true, index: true },
+    discipline: { type: String, index: true },
+    fieldOfEducation: FieldOfEducationSchema,
+    programCode: { type: String, trim: true },
+    description: { type: String, default: '' },
+    faculty: String,
+    durationStructure: StructuredDurationSchema,
+    courseStructure: CourseStructureSchema,
+    careerPathways: [String],
+    status: {
+      type: String,
+      enum: ['active', 'inactive', 'draft', 'published', 'archived'],
+      default: 'active',
+      index: true,
+    },
+
+    // Provenance & Source Evidence
+    dataQuality: DataQualitySchema,
+    sourceEvidence: { type: Map, of: FieldEvidenceSchema },
+    provenance: FieldEvidenceSchema,
+    sourceUrls: [String],
+    confidenceScore: { type: Number, min: 0, max: 100, index: true },
+    missingFields: [String],
+    needsAdminReview: { type: Boolean, default: false, index: true },
+    dataSourceType: String,
+    extractedAt: Date,
+    lastCheckedAt: Date,
+    rawExtractedText: String,
+    aiSummary: String,
+    ingestionJobId: { type: Schema.Types.ObjectId, ref: 'IngestionJob', index: true },
+
+    // Denormalized / Derived Summary Fields
+    primaryFeeAnnualAud: { type: Number, index: true },
+    primaryFeeTotalAud: { type: Number, index: true },
+    availableStudyModes: [{ type: String, enum: ['on-campus', 'online', 'hybrid', 'external'] }],
+    availableCampusCities: [String],
+    activeIntakeCount: { type: Number, default: 0 },
+
+    // Legacy fields preserved for backward compatibility
+    field: { type: String }, // @deprecated: alias for fieldOfStudy
+    universityName: { type: String },
+    universitySlug: { type: String },
+    universityId: { type: Schema.Types.ObjectId, ref: 'University' },
+    duration: String,
     tuitionFeeLocal: Number,
     tuitionFeeInternational: Number,
-    intakeMonths: [String],
-    englishRequirements: String,
-    academicRequirements: String,
-    careerPathways: [String],
-    campusMode: { type: String, enum: ['on-campus', 'online', 'hybrid'], default: 'on-campus' },
-    website: String,
-    // Existing new
-    fieldOfStudy: String,
-    studyMode: String,
-    campus: String,
     annualTuition: Number,
     totalEstimatedCost: Number,
     currency: { type: String, default: 'AUD' },
+    intakeMonths: [String],
+    englishRequirements: String,
+    academicRequirements: String,
+    academicRequirement: String,
+    campusMode: { type: String, enum: ['on-campus', 'online', 'hybrid'], default: 'on-campus' },
+    website: String,
+    city: String,
+    state: String,
+    campus: String,
     ieltsRequirement: Number,
     pteRequirement: Number,
-    academicRequirement: String,
     cricosCourseCode: { type: String, sparse: true, index: true },
+    cricosProviderCode: { type: String, trim: true, index: true },
+    institutionName: { type: String, trim: true },
+    courseLevel: { type: String, trim: true },
+    vetNationalCode: { type: String, trim: true },
+    dualQualification: { type: Boolean },
+    foundationStudies: { type: Boolean },
+    fieldOfEducation1BroadField: String,
+    fieldOfEducation1NarrowField: String,
+    fieldOfEducation1DetailedField: String,
+    fieldOfEducation2BroadField: String,
+    fieldOfEducation2NarrowField: String,
+    fieldOfEducation2DetailedField: String,
+    expired: { type: Boolean, default: false, index: true },
+    lastCricosSyncedAt: Date,
+    cricosDataHash: String,
+    durationWeeks: Number,
+    tuitionFeeAud: Number,
+    nonTuitionFeeAud: Number,
+    estimatedTotalCourseCostAud: { type: Number, index: true },
+    workComponent: String,
+    courseLanguage: String,
     officialProgramUrl: { type: String, index: true },
     scholarshipAvailable: { type: Boolean, default: false },
     applicationDeadlines: [{
@@ -328,47 +435,11 @@ const ProgramSchema = new Schema<IProgram>(
       deadline: String,
       notes: String,
     }],
-    status: {
-      type: String,
-      enum: ['active', 'inactive', 'draft', 'published', 'archived'],
-      default: 'active',
-      index: true,
-    },
-    dataQuality: DataQualitySchema,
-    // CRICOS-specific fields
-    cricosProviderCode: { type: String, trim: true, index: true },
-    institutionName: { type: String, trim: true },
-    courseLevel: { type: String, trim: true },
-    vetNationalCode: { type: String, trim: true },
-    dualQualification: { type: Boolean },
-    foundationStudies: { type: Boolean },
-    fieldOfEducation1BroadField: { type: String },
-    fieldOfEducation1NarrowField: { type: String },
-    fieldOfEducation1DetailedField: { type: String },
-    fieldOfEducation2BroadField: { type: String },
-    fieldOfEducation2NarrowField: { type: String },
-    fieldOfEducation2DetailedField: { type: String },
-    expired: { type: Boolean, default: false, index: true },
-    lastCricosSyncedAt: { type: Date },
-    cricosDataHash: { type: String },
-    durationWeeks: Number,
-    tuitionFeeAud: Number,
-    nonTuitionFeeAud: Number,
-    estimatedTotalCourseCostAud: { type: Number, index: true },
-    workComponent: String,
-    courseLanguage: String,
-    // AI Ingestion fields
     degreeLevel: String,
-    faculty: String,
-    discipline: String,
-    programCode: String,
-    city: String,
-    state: String,
     deliveryMode: { type: String, enum: ['on-campus', 'online', 'hybrid'] },
     domesticAvailable: Boolean,
     internationalAvailable: Boolean,
     estimatedCompletionTime: String,
-    courseStructure: CourseStructureSchema,
     academicEntryRequirements: String,
     minimumGPA: String,
     prerequisiteSubjects: [String],
@@ -380,25 +451,56 @@ const ProgramSchema = new Schema<IProgram>(
     scholarshipInfo: ScholarshipInfoSchema,
     intakeDetails: IntakeDetailsSchema,
     careerOutcomes: CareerOutcomesSchema,
-    sourceUrls: [String],
-    sourceEvidence: { type: Map, of: FieldEvidenceSchema },
-    confidenceScore: { type: Number, min: 0, max: 100, index: true },
-    missingFields: [String],
-    needsAdminReview: { type: Boolean, default: true, index: true },
-    dataSourceType: String,
-    extractedAt: Date,
-    lastCheckedAt: Date,
-    rawExtractedText: String,
-    aiSummary: String,
-    ingestionJobId: { type: Schema.Types.ObjectId, ref: 'IngestionJob', index: true },
   },
   { timestamps: true }
 );
 
-ProgramSchema.index({ name: 'text', description: 'text', field: 'text', fieldOfStudy: 'text', degreeLevel: 'text' });
-ProgramSchema.index({ university: 1 });
-ProgramSchema.index({ level: 1 });
-ProgramSchema.index({ annualTuition: 1 });
+// Pre-save synchronization hook
+ProgramSchema.pre('save', function (next) {
+  // Sync provider <-> university
+  if (this.provider && !this.university) {
+    this.university = this.provider;
+  } else if (this.university && !this.provider) {
+    this.provider = this.university;
+  }
+
+  // Sync field <-> fieldOfStudy
+  if (this.fieldOfStudy && !this.field) {
+    this.field = this.fieldOfStudy;
+  } else if (this.field && !this.fieldOfStudy) {
+    this.fieldOfStudy = this.field;
+  }
+
+  // Sync providerName <-> universityName
+  if (this.providerName && !this.universityName) {
+    this.universityName = this.providerName;
+  } else if (this.universityName && !this.providerName) {
+    this.providerName = this.universityName;
+  }
+
+  // Sync providerSlug <-> universitySlug
+  if (this.providerSlug && !this.universitySlug) {
+    this.universitySlug = this.providerSlug;
+  } else if (this.universitySlug && !this.providerSlug) {
+    this.providerSlug = this.universitySlug;
+  }
+
+  // Sync primary fees if not set
+  if (this.primaryFeeAnnualAud === undefined) {
+    this.primaryFeeAnnualAud = this.annualTuition || this.tuitionFeeAud || this.tuitionFeeInternational || this.tuitionDetails?.annualTuitionFee;
+  }
+  if (this.primaryFeeTotalAud === undefined) {
+    this.primaryFeeTotalAud = this.totalEstimatedCost || this.estimatedTotalCourseCostAud || this.tuitionDetails?.totalEstimatedTuitionFee;
+  }
+
+  next();
+});
+
+// Full-text index and compound search indexes
+ProgramSchema.index({ name: 'text', description: 'text', fieldOfStudy: 'text', discipline: 'text', degreeLevel: 'text' });
+ProgramSchema.index({ provider: 1, status: 1 });
+ProgramSchema.index({ level: 1, fieldOfStudy: 1, status: 1 });
+ProgramSchema.index({ primaryFeeAnnualAud: 1, status: 1 });
 ProgramSchema.index({ cricosProviderCode: 1, cricosCourseCode: 1 }, { unique: true, sparse: true });
 
 export const Program = mongoose.model<IProgram>('Program', ProgramSchema);

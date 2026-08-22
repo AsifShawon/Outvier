@@ -3,10 +3,10 @@ import { type University, type CreateUniversityPayload } from '@/types/universit
 import { ApiResponse } from '@/types/api';
 
 export const universitiesApi = {
-  getAll: (params?: Record<string, string | number>) =>
+  getAll: (params?: Record<string, string | number | boolean | undefined>) =>
     api.get('/universities', { params }),
 
-  adminGetAll: (params?: Record<string, string | number>) =>
+  adminGetAll: (params?: Record<string, string | number | boolean | undefined>) =>
     api.get('/admin/universities', { params }),
 
   getBySlug: (slug: string): Promise<{ data: ApiResponse<University> }> =>
@@ -28,7 +28,7 @@ export const universitiesApi = {
   delete: (id: string): Promise<{ data: ApiResponse<null> }> =>
     api.delete(`/admin/universities/${id}`),
 
-  bulkUpload: (file: File): Promise<{ data: any }> => {
+  bulkUpload: (file: File): Promise<{ data: ApiResponse<Record<string, unknown>> }> => {
     const formData = new FormData();
     formData.append('file', file);
     return api.post('/admin/universities/bulk-upload', formData, {

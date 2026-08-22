@@ -45,7 +45,7 @@ export function ProgramCard({ program }: ProgramCardProps) {
     queryKey: ['profile'], 
     queryFn: () => profileApi.getProfile(),
     staleTime: 60000,
-    enabled: typeof window !== 'undefined' && !!localStorage.getItem('outvier_token')
+    retry: false,
   });
   
   const isSaved = profileRes?.data?.data?.savedPrograms?.some((p: { _id: string } | string) => (typeof p === 'string' ? p : p._id) === program._id);

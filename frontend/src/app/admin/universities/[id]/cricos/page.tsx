@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { cricosApi } from '@/lib/api/cricos.api';
+import api from '@/lib/api';
 import {
   RefreshCw, RotateCcw, ArrowLeft, CheckCircle2, AlertCircle,
   Clock, Loader2, BookOpen, MapPin, Database,
@@ -23,19 +24,10 @@ export default function UniversityCricosPage() {
   const [rechecking, setRechecking] = useState(false);
   const [loading, setLoading] = useState(true);
 
-  const apiBase = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api/v1';
-
   useEffect(() => {
-    const token = localStorage.getItem('outvier_token') ?? '';
-    const headers: Record<string, string> = {
-      'Content-Type': 'application/json',
-      Authorization: `Bearer ${token}`,
-    };
-
     Promise.all([
-      fetch(`${apiBase}/admin/universities/${id}`, { headers }).then((r) => r.json()),
-      fetch(`${apiBase}/admin/staged-changes?universityId=${id}&status=pending&limit=50`, { headers })
-        .then((r) => r.json()).catch(() => ({ data: [] })),
+      api.get(`/admin/universities/${id}`).then((r) => r.data),
+      api.get(`/admin/staged-changes?universityId=${id}&status=pending&limit=50`).then((r) => r.data).catch(() => ({ data: [] })),
     ]).then(([uniRes, changesRes]) => {
       setUniversity(uniRes.data ?? uniRes);
       setStagedChanges(changesRes.data ?? []);

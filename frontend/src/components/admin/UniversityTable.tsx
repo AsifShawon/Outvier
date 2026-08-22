@@ -1,99 +1,117 @@
 'use client';
 
-import { useState } from 'react';
-import { useRouter } from 'next/navigation';
+import * as React from 'react';
+import Link from 'next/link';
+import { ColumnDef } from '@tanstack/react-table';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
-import { Plus, Pencil, Trash2, ExternalLink } from 'lucide-react';
-import Link from 'next/link';
-import { format } from 'date-fns';
+import {
+  Building2,
+  ExternalLink,
+  Pencil,
+  Trash2,
+  RefreshCw,
+  CheckCircle2,
+  Clock,
+  XCircle,
+  Loader2,
+  Award,
+  MapPin,
+  BookOpen,
+  ShieldCheck,
+} from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Progress } from '@/components/ui/progress';
+import { Checkbox } from '@/components/ui/checkbox';
 import { DeleteDialog } from '@/components/ui-custom/DeleteDialog';
-import { Pagination } from '@/components/ui-custom/Pagination';
-import { Skeleton } from '@/components/ui/skeleton';
-import { Card, CardContent } from '@/components/ui/card';
+import { AdminDataTable, PresetView } from '@/components/admin/table/AdminDataTable';
+import { DataTableColumnHeader } from '@/components/admin/table/DataTableColumnHeader';
+import { DataTableFacetedFilter } from '@/components/admin/table/DataTableFacetedFilter';
+import { useDataTableState } from '@/components/admin/table/useDataTableState';
 import { universitiesApi } from '@/lib/api/universities.api';
 import { cricosApi } from '@/lib/api/cricos.api';
-import { type University as UniversityType } from '@/types/university';
-import { useDebounce } from '@/hooks/useDebounce';
-import { cn } from '@/lib/utils';
-import { 
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip"
-import { AlertCircle, CheckCircle2, Clock, Play, RefreshCw, XCircle, Loader2, MapPin, Award, Filter, University, BookOpen } from 'lucide-react';
-import { Checkbox } from '@/components/ui/checkbox';
+import { University as UniversityType } from '@/types/university';
+import { format } from 'date-fns';
+
+const STATES = [
+  { label: 'All States', value: 'all' },
+  { label: 'NSW', value: 'NSW' },
+  { label: 'VIC', value: 'VIC' },
+  { label: 'QLD', value: 'QLD' },
+  { label: 'WA', value: 'WA' },
+  { label: 'SA', value: 'SA' },
+  { label: 'TAS', value: 'TAS' },
+  { label: 'ACT', value: 'ACT' },
+  { label: 'NT', value: 'NT' },
+];
+
+const STATUSES = [
+  { label: 'All Statuses', value: 'all' },
+  { label: 'Active', value: 'active' },
+  { label: 'Draft', value: 'draft' },
+  { label: 'Archived', value: 'archived' },
+];
 
 export function UniversityTable() {
-  const router = useRouter();
   const qc = useQueryClient();
-  const [deleteId, setDeleteId] = useState<string | null>(null);
-  const [deleteName, setDeleteName] = useState('');
-  const [syncingId, setSyncingId] = useState<string | null>(null);
-  
-  // Filters & Pagination
-  const [search, setSearch] = useState('');
-  const [state, setState] = useState('all');
-  const [rankingBand, setRankingBand] = useState('all');
-  const [status, setStatus] = useState('all');
-  const [page, setPage] = useState(1);
-  const [limit, setLimit] = useState(20);
-  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
-  const debouncedSearch = useDebounce(search, 350);
+  const [deleteId, setDeleteId] = React.useState<string | null>(null);
+  const [deleteName, setDeleteName] = React.useState('');
+  const [syncingId, setSyncingId] = React.useState<string | null>(null);
 
-  const bulkSyncMutation = useMutation({
-    mutationFn: (ids: string[]) => Promise.all(ids.map(id => cricosApi.syncUniversity(id))),
-    onSuccess: () => {
-      toast.success('Bulk sync jobs triggered');
-      setSelectedIds(new Set());
-      qc.invalidateQueries({ queryKey: ['admin-universities'] });
-    },
-    onError: () => toast.error('Bulk sync failed'),
+  const {
+    page,
+    limit,
+    sortBy,
+    sortOrder,
+    search,
+    debouncedSearch,
+    searchParams,
+    setPage,
+    setLimit,
+    setSorting,
+    setSearch,
+    setFilter,
+    resetFilters,
+  } = useDataTableState({
+    defaultSortBy: 'name',
+    defaultSortOrder: 'asc',
   });
 
-  const toggleSelect = (id: string) => {
-    const next = new Set(selectedIds);
-    if (next.has(id)) next.delete(id);
-    else next.add(id);
-    setSelectedIds(next);
-  };
+  const stateFilter = searchParams.get('state') || 'all';
+  const statusFilter = searchParams.get('status') || 'all';
 
-  const handleSelectAll = (checked: boolean) => {
-    if (checked) {
-      setSelectedIds(new Set(universities.map(u => u._id)));
-    } else {
-      setSelectedIds(new Set());
-    }
-  };
-
-  const { data, isLoading } = useQuery({
-    queryKey: ['admin-universities', { search: debouncedSearch, state, rankingBand, status, page, limit }],
-    queryFn: () => universitiesApi.adminGetAll({ 
-      q: debouncedSearch,
-      state: state !== 'all' ? state : undefined,
-      rankingBand: rankingBand !== 'all' ? rankingBand : undefined,
-      status: status !== 'all' ? status : undefined,
-      page, 
-      limit 
-    }),
+  // Query server with server-side pagination, search, filters & sort
+  const { data: response, isLoading, isError, error, refetch } = useQuery({
+    queryKey: ['admin-universities', { debouncedSearch, stateFilter, statusFilter, page, limit, sortBy, sortOrder }],
+    queryFn: () =>
+      universitiesApi.adminGetAll({
+        q: debouncedSearch || undefined,
+        state: stateFilter !== 'all' ? stateFilter : undefined,
+        status: statusFilter !== 'all' ? statusFilter : undefined,
+        page,
+        limit,
+        sortBy,
+        sortOrder,
+      }),
   });
 
+  const universities: UniversityType[] = response?.data?.data || [];
+  const meta = response?.data?.meta;
+  const total = meta?.total || 0;
+
+  // Single Delete Mutation
   const deleteMutation = useMutation({
     mutationFn: (id: string) => universitiesApi.delete(id),
     onSuccess: () => {
-      toast.success('University deleted');
+      toast.success('University deleted successfully');
       qc.invalidateQueries({ queryKey: ['admin-universities'] });
-      qc.invalidateQueries({ queryKey: ['dashboard-stats'] });
       setDeleteId(null);
     },
     onError: () => toast.error('Failed to delete university'),
   });
 
+  // Single Sync Mutation
   const syncMutation = useMutation({
     mutationFn: (id: string) => cricosApi.syncUniversity(id),
     onSuccess: () => {
@@ -104,372 +122,357 @@ export function UniversityTable() {
     onError: (err: any) => {
       toast.error(err.response?.data?.message || 'Sync failed');
       setSyncingId(null);
-    }
+    },
   });
 
-  const handleSync = (e: React.MouseEvent, id: string) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setSyncingId(id);
-    syncMutation.mutate(id);
-  };
+  // Bulk Sync Mutation
+  const bulkSyncMutation = useMutation({
+    mutationFn: (ids: string[]) => Promise.all(ids.map((id) => cricosApi.syncUniversity(id))),
+    onSuccess: () => {
+      toast.success('Bulk sync jobs successfully triggered');
+      qc.invalidateQueries({ queryKey: ['admin-universities'] });
+    },
+    onError: () => toast.error('Bulk sync failed'),
+  });
 
-  const universities: University[] = data?.data?.data || [];
-  const meta = data?.data?.meta;
+  // Bulk Delete Mutation
+  const bulkDeleteMutation = useMutation({
+    mutationFn: (ids: string[]) => Promise.all(ids.map((id) => universitiesApi.delete(id))),
+    onSuccess: () => {
+      toast.success('Selected universities deleted');
+      qc.invalidateQueries({ queryKey: ['admin-universities'] });
+    },
+    onError: () => toast.error('Bulk deletion failed'),
+  });
 
-  const handleFilterChange = (key: string, value: string) => {
-    setPage(1);
-    if (key === 'search') setSearch(value);
-    if (key === 'state') setState(value);
-    if (key === 'rankingBand') setRankingBand(value);
-    if (key === 'status') setStatus(value);
-  };
+  const columns: ColumnDef<UniversityType>[] = React.useMemo(
+    () => [
+      {
+        id: 'select',
+        header: ({ table }) => (
+          <Checkbox
+            checked={
+              table.getIsAllPageRowsSelected() ||
+              (table.getIsSomePageRowsSelected() ? 'indeterminate' : false)
+            }
+            onCheckedChange={(value) => table.toggleAllPageRowsSelected(!!value)}
+            aria-label="Select all"
+            className="translate-y-[2px]"
+          />
+        ),
+        cell: ({ row }) => (
+          <Checkbox
+            checked={row.getIsSelected()}
+            onCheckedChange={(value) => row.toggleSelected(!!value)}
+            aria-label="Select row"
+            className="translate-y-[2px]"
+          />
+        ),
+        enableSorting: false,
+        enableHiding: false,
+      },
+      {
+        accessorKey: 'name',
+        header: ({ column }) => (
+          <DataTableColumnHeader
+            column={column}
+            title="Provider Name & Code"
+            currentSortBy={sortBy}
+            currentSortOrder={sortOrder}
+            onSort={setSorting}
+          />
+        ),
+        cell: ({ row }) => {
+          const uni = row.original;
+          return (
+            <div className="flex items-center gap-3">
+              <div className="h-9 w-9 rounded-xl bg-card dark:bg-slate-800 border border-border/80 flex items-center justify-center shrink-0 overflow-hidden">
+                {uni.logoUrl || (uni as any).logo ? (
+                  <img src={uni.logoUrl || (uni as any).logo} alt="" className="h-6 w-6 object-contain" />
+                ) : (
+                  <Building2 className="h-4 w-4 text-muted-foreground" />
+                )}
+              </div>
+              <div className="min-w-0">
+                <Link
+                  href={`/admin/universities/${uni._id}/edit`}
+                  className="font-bold text-xs sm:text-sm text-foreground hover:text-primary transition-colors truncate block"
+                >
+                  {uni.name}
+                </Link>
+                <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground font-mono">
+                  <span>CRICOS: {uni.cricosProviderCode || (uni as any).providerCode || 'N/A'}</span>
+                  {uni.ranking && (
+                    <Badge variant="outline" className="text-[9px] px-1 py-0 bg-amber-500/10 text-amber-300 border-amber-500/20 font-sans">
+                      #{uni.ranking}
+                    </Badge>
+                  )}
+                </div>
+              </div>
+            </div>
+          );
+        },
+      },
+      {
+        accessorKey: 'state',
+        header: ({ column }) => (
+          <DataTableColumnHeader
+            column={column}
+            title="Location / State"
+            currentSortBy={sortBy}
+            currentSortOrder={sortOrder}
+            onSort={setSorting}
+          />
+        ),
+        cell: ({ row }) => (
+          <div className="flex items-center gap-1 text-xs text-foreground font-medium">
+            <MapPin className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+            <span>{row.original.state || 'Australia'}</span>
+            {row.original.city && <span className="text-muted-foreground">({row.original.city})</span>}
+          </div>
+        ),
+      },
+      {
+        accessorKey: 'type',
+        header: 'Provider Type',
+        cell: ({ row }) => (
+          <Badge variant="outline" className="text-[10px] uppercase font-semibold bg-surface-elevated text-muted-foreground">
+            {row.original.type || (row.original as any).providerType || 'University'}
+          </Badge>
+        ),
+      },
+      {
+        accessorKey: 'status',
+        header: 'Status',
+        cell: ({ row }) => {
+          const status = row.original.status || 'active';
+          return (
+            <Badge
+              variant="outline"
+              className={`text-[10px] font-bold capitalize ${
+                status === 'active'
+                  ? 'bg-teal-500/15 text-teal-300 border-teal-500/30'
+                  : 'bg-muted text-muted-foreground border-border'
+              }`}
+            >
+              ● {status}
+            </Badge>
+          );
+        },
+      },
+      {
+        accessorKey: 'programCount',
+        header: ({ column }) => (
+          <DataTableColumnHeader
+            column={column}
+            title="Programs"
+            currentSortBy={sortBy}
+            currentSortOrder={sortOrder}
+            onSort={setSorting}
+          />
+        ),
+        cell: ({ row }) => (
+          <div className="flex items-center gap-1 font-mono text-xs">
+            <BookOpen className="h-3 w-3 text-muted-foreground" />
+            <span>{row.original.programCount || 0}</span>
+          </div>
+        ),
+      },
+      {
+        id: 'completeness',
+        header: 'Completeness',
+        cell: ({ row }) => {
+          const completeness = (row.original as any).dataCompletenessScore || 85;
+          return (
+            <div className="w-24 space-y-1">
+              <div className="flex justify-between text-[10px] font-mono">
+                <span>{completeness}%</span>
+              </div>
+              <Progress value={completeness} className="h-1.5 bg-slate-800" />
+            </div>
+          );
+        },
+      },
+      {
+        accessorKey: 'lastSyncedAt',
+        header: ({ column }) => (
+          <DataTableColumnHeader
+            column={column}
+            title="Last Sync"
+            currentSortBy={sortBy}
+            currentSortOrder={sortOrder}
+            onSort={setSorting}
+          />
+        ),
+        cell: ({ row }) => {
+          const uni = row.original;
+          const syncDate = (uni as any).lastSyncedAt || uni.updatedAt;
+          return (
+            <div className="text-[11px] text-muted-foreground flex items-center gap-1">
+              <ShieldCheck className="h-3 w-3 text-teal-400 shrink-0" />
+              <span>{syncDate ? format(new Date(syncDate), 'MMM d, yyyy') : 'Never'}</span>
+            </div>
+          );
+        },
+      },
+      {
+        id: 'actions',
+        header: '',
+        cell: ({ row }) => {
+          const uni = row.original;
+          const isSyncing = syncingId === uni._id;
+          return (
+            <div className="flex items-center gap-1 justify-end">
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-7 w-7 rounded-lg text-muted-foreground hover:text-foreground"
+                asChild
+                title="Edit University"
+              >
+                <Link href={`/admin/universities/${uni._id}/edit`}>
+                  <Pencil className="h-3.5 w-3.5" />
+                </Link>
+              </Button>
 
-  const getSyncStatusIcon = (status?: string) => {
-    switch (status) {
-      case 'synced': return <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500" />;
-      case 'changes_pending': return <Clock className="h-3.5 w-3.5 text-amber-500" />;
-      case 'failed': return <XCircle className="h-3.5 w-3.5 text-destructive" />;
-      default: return <RefreshCw className="h-3.5 w-3.5 text-muted-foreground" />;
-    }
-  };
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-7 w-7 rounded-lg text-muted-foreground hover:text-primary"
+                onClick={() => {
+                  setSyncingId(uni._id);
+                  syncMutation.mutate(uni._id);
+                }}
+                disabled={isSyncing}
+                title="Trigger CRICOS Sync"
+              >
+                {isSyncing ? (
+                  <Loader2 className="h-3.5 w-3.5 animate-spin text-purple-400" />
+                ) : (
+                  <RefreshCw className="h-3.5 w-3.5" />
+                )}
+              </Button>
+
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-7 w-7 rounded-lg text-muted-foreground hover:text-rose-400"
+                onClick={() => {
+                  setDeleteId(uni._id);
+                  setDeleteName(uni.name);
+                }}
+                title="Delete University"
+              >
+                <Trash2 className="h-3.5 w-3.5" />
+              </Button>
+            </div>
+          );
+        },
+      },
+    ],
+    [sortBy, sortOrder, setSorting, syncingId, syncMutation]
+  );
+
+  const presetViews: PresetView[] = [
+    {
+      label: 'All Universities',
+      key: 'all',
+      active: stateFilter === 'all' && statusFilter === 'all',
+      onClick: () => {
+        setFilter('state', 'all');
+        setFilter('status', 'all');
+      },
+    },
+    {
+      label: 'Active Only',
+      key: 'active',
+      active: statusFilter === 'active',
+      onClick: () => setFilter('status', 'active'),
+    },
+    {
+      label: 'NSW Institutions',
+      key: 'nsw',
+      active: stateFilter === 'NSW',
+      onClick: () => setFilter('state', 'NSW'),
+    },
+    {
+      label: 'VIC Institutions',
+      key: 'vic',
+      active: stateFilter === 'VIC',
+      onClick: () => setFilter('state', 'VIC'),
+    },
+  ];
 
   return (
-    <div className="space-y-4">
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div className="flex flex-wrap items-center gap-2">
-          <input
-            type="text"
-            placeholder="Search universities..."
-            className="h-9 w-64 rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
-            value={search}
-            onChange={(e) => handleFilterChange('search', e.target.value)}
-          />
-          {selectedIds.size > 0 && (
-            <Button
-              size="sm"
-              variant="outline"
-              className="h-9 border-emerald-500/40 text-emerald-600 hover:bg-emerald-500/5 gap-2"
-              onClick={() => bulkSyncMutation.mutate(Array.from(selectedIds))}
-              disabled={bulkSyncMutation.isPending}
-            >
-              {bulkSyncMutation.isPending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <RefreshCw className="h-3.5 w-3.5" />}
-              Sync Selected ({selectedIds.size})
-            </Button>
-          )}
-          <Select value={state} onValueChange={(v) => handleFilterChange('state', v)}>
-            <SelectTrigger className="w-[140px] h-9">
-              <MapPin className="h-3.5 w-3.5 text-muted-foreground mr-1" />
-              <SelectValue placeholder="All States" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All States</SelectItem>
-              {['NSW', 'VIC', 'QLD', 'WA', 'SA', 'TAS', 'ACT', 'NT'].map(s => (
-                <SelectItem key={s} value={s}>{s}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          <Select value={rankingBand} onValueChange={(v) => handleFilterChange('rankingBand', v)}>
-            <SelectTrigger className="w-[140px] h-9">
-              <Award className="h-3.5 w-3.5 text-muted-foreground mr-1" />
-              <SelectValue placeholder="Ranking" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Rankings</SelectItem>
-              <SelectItem value="top50">Top 50</SelectItem>
-              <SelectItem value="top100">Top 100</SelectItem>
-              <SelectItem value="top200">Top 200</SelectItem>
-              <SelectItem value="top500">Top 500</SelectItem>
-              <SelectItem value="unranked">Unranked</SelectItem>
-            </SelectContent>
-          </Select>
-          <Select value={status} onValueChange={(v) => handleFilterChange('status', v)}>
-            <SelectTrigger className="w-[130px] h-9">
-              <Filter className="h-3.5 w-3.5 text-muted-foreground mr-1" />
-              <SelectValue placeholder="Status" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Status</SelectItem>
-              <SelectItem value="active">Active</SelectItem>
-              <SelectItem value="inactive">Inactive</SelectItem>
-              <SelectItem value="draft">Draft</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-        <Link href="/admin/universities/new">
-          <Button size="sm" className="gap-2 h-9">
-            <Plus className="h-3.5 w-3.5" />
-            Add University
-          </Button>
-        </Link>
-      </div>
-
-      {/* Desktop Table View */}
-      <div className="hidden md:block rounded-2xl border border-slate-200 overflow-hidden bg-white shadow-sm">
-        <Table>
-          <TableHeader>
-            <TableRow className="bg-slate-50/50 text-[11px] uppercase tracking-wider font-bold text-slate-500">
-              <TableHead className="w-[40px] pl-6">
-                <Checkbox 
-                  checked={universities.length > 0 && selectedIds.size === universities.length}
-                  onCheckedChange={handleSelectAll}
-                />
-              </TableHead>
-              <TableHead className="w-[280px]">University</TableHead>
-              <TableHead>Location</TableHead>
-              <TableHead>Provider Info</TableHead>
-              <TableHead>Metrics</TableHead>
-              <TableHead>Sync Status</TableHead>
-              <TableHead>Status</TableHead>
-              <TableHead className="text-right pr-6">Actions</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {isLoading
-              ? Array.from({ length: 5 }).map((_, i) => (
-                  <TableRow key={i}>
-                    <TableCell className="pl-6"><Skeleton className="h-4 w-4" /></TableCell>
-                    {Array.from({ length: 7 }).map((_, j) => (
-                      <TableCell key={j}>
-                        <Skeleton className="h-4 w-full" />
-                      </TableCell>
-                    ))}
-                  </TableRow>
-                ))
-              : universities.map((uni) => (
-                  <TableRow key={uni._id} className="hover:bg-slate-50/50 group transition-colors">
-                    <TableCell className="pl-6">
-                      <Checkbox 
-                        checked={selectedIds.has(uni._id)}
-                        onCheckedChange={() => toggleSelect(uni._id)}
-                      />
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex items-center gap-3">
-                        {uni.logoUrl ? (
-                          <img src={uni.logoUrl} alt={uni.name} className="w-8 h-8 rounded-lg object-contain bg-white border border-slate-100 p-1" />
-                        ) : (
-                          <div className="w-8 h-8 rounded-lg bg-slate-100 flex items-center justify-center border border-slate-200">
-                            <University className="h-4 w-4 text-slate-400" />
-                          </div>
-                        )}
-                        <div className="flex flex-col min-w-0">
-                          <span className="font-bold text-sm text-slate-900 truncate group-hover:text-deep-green transition-colors">{uni.name}</span>
-                          <span className="text-[10px] text-slate-400 font-medium uppercase tracking-tight">{uni.shortName || 'N/A'}</span>
-                        </div>
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex flex-col">
-                        <span className="text-xs font-semibold text-slate-700">{uni.state}</span>
-                        <span className="text-[10px] text-slate-400">{uni.city || 'Multiple Locations'}</span>
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex flex-col gap-1">
-                        <Badge variant="outline" className="w-fit text-[9px] font-mono border-slate-200 text-slate-500 py-0 h-4">
-                          {uni.cricosProviderCode || 'NO CRICOS'}
-                        </Badge>
-                        <span className="text-[10px] text-slate-400 italic capitalize">{uni.providerType?.toLowerCase().replace(/_/g, ' ') || 'University'}</span>
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex flex-col gap-1.5">
-                        <div className="flex items-center gap-1.5">
-                          <BookOpen className="h-3 w-3 text-slate-400" />
-                          <span className="text-xs font-bold text-slate-700">{uni.programCount || 0}</span>
-                        </div>
-                        <div className="flex items-center gap-1.5">
-                          <Award className="h-3 w-3 text-amber-500" />
-                          <span className="text-xs font-bold text-slate-700">{uni.ranking ? `#${uni.ranking}` : 'Unranked'}</span>
-                        </div>
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <TooltipProvider>
-                        <div className="flex items-center gap-2">
-                          <Tooltip>
-                            <TooltipTrigger asChild>
-                              <div className="cursor-help flex items-center gap-1.5 bg-slate-50 border border-slate-100 px-2 py-1 rounded-full w-fit">
-                                {getSyncStatusIcon(uni.cricosSyncStatus)}
-                                <span className="text-[10px] font-bold text-slate-600 capitalize">
-                                  {uni.cricosSyncStatus?.replace('_', ' ') || 'Not Synced'}
-                                </span>
-                                {uni.lastSyncError && <AlertCircle className="h-3 w-3 text-red-500" />}
-                              </div>
-                            </TooltipTrigger>
-                            <TooltipContent side="bottom" className="bg-slate-900 text-white border-none text-[10px]">
-                              <p>Last synced: {uni.lastCricosSyncedAt ? format(new Date(uni.lastCricosSyncedAt), 'PPp') : 'Never'}</p>
-                              {uni.lastSyncError && <p className="text-red-300 mt-1">Error: {uni.lastSyncError}</p>}
-                            </TooltipContent>
-                          </Tooltip>
-                          
-                          {uni.cricosProviderCode && (
-                            <Button 
-                              variant="ghost" 
-                              size="sm" 
-                              className="h-7 w-7 p-0 hover:bg-green-50 hover:text-green-600 transition-colors"
-                              onClick={(e) => handleSync(e, uni._id)}
-                              disabled={syncingId === uni._id}
-                            >
-                              <RefreshCw className={cn("h-3.5 w-3.5", syncingId === uni._id ? "animate-spin" : "")} />
-                            </Button>
-                          )}
-                        </div>
-                      </TooltipProvider>
-                    </TableCell>
-                    <TableCell>
-                      <Badge 
-                        variant={uni.status === 'active' ? 'default' : 'outline'} 
-                        className={cn(
-                          "text-[10px] px-2 py-0.5 rounded-full font-bold",
-                          uni.status === 'active' ? "bg-green-100 text-green-700 hover:bg-green-200 border-none" : "text-slate-400 border-slate-200"
-                        )}
-                      >
-                        {uni.status}
-                      </Badge>
-                    </TableCell>
-                    <TableCell className="text-right pr-6">
-                      <div className="flex items-center justify-end gap-1.5">
-                        <Link href={`/universities/${uni.slug}`} target="_blank">
-                          <Button variant="ghost" size="sm" className="h-8 w-8 p-0 text-slate-400 hover:text-deep-green hover:bg-green-50">
-                            <ExternalLink className="h-4 w-4" />
-                          </Button>
-                        </Link>
-                        <Link href={`/admin/universities/${uni._id}/edit`}>
-                          <Button variant="ghost" size="sm" className="h-8 w-8 p-0 text-slate-400 hover:text-blue-600 hover:bg-blue-50">
-                            <Pencil className="h-4 w-4" />
-                          </Button>
-                        </Link>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="h-8 w-8 p-0 text-slate-400 hover:text-red-600 hover:bg-red-50"
-                          onClick={() => { setDeleteId(uni._id); setDeleteName(uni.name); }}
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                ))}
-          </TableBody>
-        </Table>
-      </div>
-
-      {/* Mobile Card View */}
-      <div className="md:hidden space-y-4">
-        {isLoading ? (
-          Array.from({ length: 3 }).map((_, i) => <Skeleton key={i} className="h-48 rounded-2xl w-full" />)
-        ) : (
-          universities.map((uni) => (
-            <Card key={uni._id} className="rounded-2xl border-slate-200 shadow-sm overflow-hidden">
-              <CardContent className="p-5">
-                <div className="flex justify-between items-start mb-4">
-                  <div className="flex items-center gap-3">
-                    {uni.logoUrl ? (
-                      <img src={uni.logoUrl} alt={uni.name} className="w-10 h-10 rounded-xl object-contain bg-white border border-slate-100 p-1" />
-                    ) : (
-                      <div className="w-10 h-10 rounded-xl bg-slate-100 flex items-center justify-center">
-                        <University className="h-5 w-5 text-slate-400" />
-                      </div>
-                    )}
-                    <div>
-                      <h3 className="font-bold text-slate-900 leading-tight">{uni.name}</h3>
-                      <p className="text-[10px] text-slate-400 uppercase tracking-wider">{uni.shortName || 'N/A'}</p>
-                    </div>
-                  </div>
-                  <Badge 
-                    variant={uni.status === 'active' ? 'default' : 'outline'} 
-                    className={cn(
-                      "text-[10px] rounded-full",
-                      uni.status === 'active' ? "bg-green-100 text-green-700 border-none" : ""
-                    )}
-                  >
-                    {uni.status}
-                  </Badge>
-                </div>
-                
-                <div className="grid grid-cols-2 gap-4 mb-4">
-                  <div className="space-y-1">
-                    <p className="text-[10px] text-slate-400 uppercase font-semibold">Location</p>
-                    <p className="text-xs font-bold text-slate-700">{uni.state}, {uni.city || 'AU'}</p>
-                  </div>
-                  <div className="space-y-1">
-                    <p className="text-[10px] text-slate-400 uppercase font-semibold">Ranking</p>
-                    <p className="text-xs font-bold text-slate-700">#{uni.ranking || '—'}</p>
-                  </div>
-                  <div className="space-y-1">
-                    <p className="text-[10px] text-slate-400 uppercase font-semibold">Programs</p>
-                    <p className="text-xs font-bold text-slate-700">{uni.programCount || 0}</p>
-                  </div>
-                  <div className="space-y-1">
-                    <p className="text-[10px] text-slate-400 uppercase font-semibold">Sync Status</p>
-                    <div className="flex items-center gap-1.5">
-                      {getSyncStatusIcon(uni.cricosSyncStatus)}
-                      <span className="text-[10px] font-bold text-slate-600 capitalize">{uni.cricosSyncStatus || 'Not Synced'}</span>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="flex items-center gap-2 pt-4 border-t">
-                  <Button variant="outline" size="sm" className="flex-1 rounded-xl h-9 text-xs" asChild>
-                    <Link href={`/admin/universities/${uni._id}/edit`}>Edit Profile</Link>
-                  </Button>
-                  <Button variant="ghost" size="sm" className="h-9 w-9 p-0 rounded-xl" asChild>
-                    <Link href={`/universities/${uni.slug}`} target="_blank">
-                      <ExternalLink className="h-4 w-4" />
-                    </Link>
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="h-9 w-9 p-0 rounded-xl text-red-500 hover:bg-red-50 hover:text-red-600"
-                    onClick={() => { setDeleteId(uni._id); setDeleteName(uni.name); }}
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-          ))
-        )}
-      </div>
-
-      {meta && meta.pages > 1 && (
-        <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-4 border-t">
-          <p className="text-xs text-slate-400 font-medium">
-            Showing <span className="text-slate-900 font-bold">{universities.length}</span> of <span className="text-slate-900 font-bold">{meta.total}</span> universities
-          </p>
-          <div className="flex items-center gap-4">
-            <Select value={limit.toString()} onValueChange={(v) => { setLimit(parseInt(v)); setPage(1); }}>
-              <SelectTrigger className="w-[80px] h-9 text-xs rounded-xl border-slate-200">
-                <SelectValue placeholder={limit.toString()} />
-              </SelectTrigger>
-              <SelectContent className="rounded-xl">
-                <SelectItem value="10">10 / pg</SelectItem>
-                <SelectItem value="20">20 / pg</SelectItem>
-                <SelectItem value="50">50 / pg</SelectItem>
-                <SelectItem value="100">100 / pg</SelectItem>
-              </SelectContent>
-            </Select>
-            <Pagination
-              page={page}
-              totalPages={meta.pages}
-              onPageChange={setPage}
+    <>
+      <AdminDataTable
+        columns={columns}
+        data={universities}
+        page={page}
+        limit={limit}
+        total={total}
+        isLoading={isLoading}
+        isError={isError}
+        errorMessage={(error as any)?.message}
+        onRetry={() => refetch()}
+        search={search}
+        onSearchChange={setSearch}
+        searchPlaceholder="Search by provider name, code, or city..."
+        presetViews={presetViews}
+        filters={
+          <>
+            <DataTableFacetedFilter
+              title="State"
+              options={STATES}
+              value={stateFilter}
+              onSelect={(v) => setFilter('state', v || 'all')}
             />
-          </div>
-        </div>
-      )}
+            <DataTableFacetedFilter
+              title="Status"
+              options={STATUSES}
+              value={statusFilter}
+              onSelect={(v) => setFilter('status', v || 'all')}
+            />
+          </>
+        }
+        activeFilterCount={(stateFilter !== 'all' ? 1 : 0) + (statusFilter !== 'all' ? 1 : 0)}
+        onResetFilters={resetFilters}
+        sortBy={sortBy}
+        sortOrder={sortOrder}
+        onSort={setSorting}
+        onPageChange={setPage}
+        onLimitChange={setLimit}
+        bulkActions={[
+          {
+            label: 'Bulk Sync CRICOS',
+            icon: RefreshCw,
+            variant: 'outline',
+            onExecute: async (ids) => {
+              await bulkSyncMutation.mutateAsync(ids);
+            },
+          },
+          {
+            label: 'Delete Selected',
+            icon: Trash2,
+            isDestructive: true,
+            confirmTitle: 'Delete Selected Universities',
+            confirmDescription:
+              'Are you sure you want to permanently delete the selected universities? This action cannot be undone.',
+            onExecute: async (ids) => {
+              await bulkDeleteMutation.mutateAsync(ids);
+            },
+          },
+        ]}
+      />
 
       <DeleteDialog
         open={!!deleteId}
         onOpenChange={(open) => !open && setDeleteId(null)}
         onConfirm={() => deleteId && deleteMutation.mutate(deleteId)}
+        title="Delete University"
+        description={`Are you sure you want to delete "${deleteName}"? This will remove all associated provider records.`}
         loading={deleteMutation.isPending}
-        title={`Delete "${deleteName}"?`}
-        description="This will permanently delete the university and cannot be undone."
       />
-    </div>
+    </>
   );
 }

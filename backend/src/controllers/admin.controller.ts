@@ -1,5 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import { Types } from 'mongoose';
+import { AdminDashboardService } from '../services/adminDashboard.service';
 import { universityService } from '../services/university.service';
 import { programService } from '../services/program.service';
 import { aiExtractionService } from '../services/aiExtraction.service';
@@ -19,6 +20,38 @@ import { programDiscoveryQueue, cricosSyncQueue } from '../jobs/queue';
 import { UniversityIngestionJobSchema } from '../schemas/ingestion.schema';
 
 export const adminController = {
+  // Decision-Oriented Operations Dashboard Overview
+  async getDashboardOverview(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const { from, to, provider, state, source, comparePeriod, refresh } = req.query as {
+        from?: string;
+        to?: string;
+        provider?: string;
+        state?: string;
+        source?: string;
+        comparePeriod?: 'previous_period' | 'previous_year' | 'none';
+        refresh?: string;
+      };
+
+      const overview = await AdminDashboardService.getOverview({
+        from: from ? new Date(from) : undefined,
+        to: to ? new Date(to) : undefined,
+        provider,
+        state,
+        source,
+        comparePeriod,
+        refresh: refresh === 'true' || refresh === '1',
+      });
+
+      res.status(200).json({
+        success: true,
+        data: overview,
+      });
+    } catch (error) {
+      next(error);
+    }
+  },
+
   // Dashboard stats
   async getStats(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
@@ -328,11 +361,112 @@ export const adminController = {
     }
   },
 
-  // Users list
+  // Users list (with server-side pagination, search, role filter, sorting)
   async getUsers(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
-      const users = await User.find().select('-passwordHash');
-      res.status(200).json({ success: true, data: users });
+      const { 
+        page = '1', 
+        limit = '20', 
+        q, 
+        role, 
+        sortBy = 'createdAt', 
+        sortOrder = 'desc' 
+      } = req.query as Record<string, string>;
+
+      const filter: Record<string, any> = {};
+      if (role && role !== 'all') filter.role = role;
+      if (q) {
+        const safeQ = q.replace(/[-[\]{}()*+?.,\\^$|#\s]/g, '\\$&');
+        filter.$or = [
+          { username: { $regex: safeQ, $options: 'i' } },
+          { email: { $regex: safeQ, $options: 'i' } },
+          { name: { $regex: safeQ, $options: 'i' } }
+        ];
+      }
+
+      const allowedSorts = ['username', 'email', 'role', 'createdAt', 'updatedAt'];
+      const sortField = allowedSorts.includes(sortBy) ? sortBy : 'createdAt';
+      const sort: Record<string, any> = { [sortField]: sortOrder === 'asc' ? 1 : -1 };
+
+      const pageNum = Math.max(1, parseInt(page) || 1);
+      const limitNum = Math.max(1, Math.min(100, parseInt(limit) || 20));
+      const skip = (pageNum - 1) * limitNum;
+
+      const [users, total] = await Promise.all([
+        User.find(filter).select('-passwordHash').sort(sort).skip(skip).limit(limitNum).lean(),
+        User.countDocuments(filter),
+      ]);
+
+      res.status(200).json({
+        success: true,
+        data: users,
+        meta: {
+          total,
+          page: pageNum,
+          limit: limitNum,
+          pages: Math.ceil(total / limitNum),
+        },
+      });
+    } catch (error) {
+      next(error);
+    }
+  },
+
+  // Applications list (with server-side pagination, search, stage filter, sorting)
+  async getApplications(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const {
+        page = '1',
+        limit = '20',
+        q,
+        stage,
+        sortBy = 'updatedAt',
+        sortOrder = 'desc',
+      } = req.query as Record<string, string>;
+
+      const filter: Record<string, any> = { archived: { $ne: true } };
+      if (stage && stage !== 'all') {
+        filter.columnId = stage;
+      }
+      if (q) {
+        const safeQ = q.replace(/[-[\]{}()*+?.,\\^$|#\s]/g, '\\$&');
+        filter.$or = [
+          { title: { $regex: safeQ, $options: 'i' } },
+          { customUniversityName: { $regex: safeQ, $options: 'i' } },
+          { notes: { $regex: safeQ, $options: 'i' } },
+        ];
+      }
+
+      const allowedSorts = ['title', 'columnId', 'deadline', 'createdAt', 'updatedAt'];
+      const sortField = allowedSorts.includes(sortBy) ? sortBy : 'updatedAt';
+      const sort: Record<string, any> = { [sortField]: sortOrder === 'asc' ? 1 : -1 };
+
+      const pageNum = Math.max(1, parseInt(page) || 1);
+      const limitNum = Math.max(1, Math.min(100, parseInt(limit) || 20));
+      const skip = (pageNum - 1) * limitNum;
+
+      const [applications, total] = await Promise.all([
+        ApplicationTracker.find(filter)
+          .populate('userId', 'name username email')
+          .populate('universityId', 'name state logo logoUrl')
+          .populate('programId', 'name slug level fieldOfStudy primaryFeeAnnualAud')
+          .sort(sort)
+          .skip(skip)
+          .limit(limitNum)
+          .lean(),
+        ApplicationTracker.countDocuments(filter),
+      ]);
+
+      res.status(200).json({
+        success: true,
+        data: applications,
+        meta: {
+          total,
+          page: pageNum,
+          limit: limitNum,
+          pages: Math.ceil(total / limitNum),
+        },
+      });
     } catch (error) {
       next(error);
     }
@@ -430,70 +564,20 @@ export const adminController = {
         return;
       }
       
-      const university = ranking.universityId as any;
-      const results = await aiExtractionService.extractRankingsForUniversities(
-        [{ id: university._id.toString(), name: university.name }],
-        ranking.source as any
-      );
-
-      if (results.length > 0) {
-        const r = results[0];
-        const updated = await RankingRecord.findOneAndUpdate(
-          { universityId: university._id, source: ranking.source, year: r.year },
-          { 
-            globalRank: r.globalRank, 
-            nationalRank: r.nationalRank,
-            confidence: r.confidence,
-            fetchedAt: new Date(),
-            status: 'approved' 
-          },
-          { upsert: true, new: true }
-        );
-
-        // Sync to university model
-        if (updated.year === new Date().getFullYear() || updated.year === new Date().getFullYear() + 1) {
-          await University.findByIdAndUpdate(university._id, { ranking: updated.globalRank });
-        }
-
-        res.json({ success: true, message: 'Ranking updated via AI', data: updated });
-      } else {
-        res.status(500).json({ success: false, message: 'AI failed to find ranking' });
-      }
+      // In accordance with ADR-001 and Provenance Policy, model-knowledge AI guessing is disabled.
+      res.json({
+        success: true,
+        message: 'Model-knowledge ranking guessing is disabled. Rankings must be ingested from verified/licensed publisher sources with provenance evidence.',
+        data: ranking,
+      });
     } catch (error) { next(error); }
   },
   async recheckAllRankings(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
-      const unis = await University.find({ status: 'active' }).select('_id name');
-      const results = await aiExtractionService.extractRankingsForUniversities(
-        unis.map(u => ({ id: u._id.toString(), name: u.name })),
-        'QS'
-      );
-
-      const updatedRecords = [];
-      for (const r of results) {
-        const record = await RankingRecord.findOneAndUpdate(
-          { universityId: r.universityId, source: 'QS', year: r.year },
-          { 
-            globalRank: r.globalRank, 
-            nationalRank: r.nationalRank,
-            confidence: r.confidence,
-            fetchedAt: new Date(),
-            status: 'approved' 
-          },
-          { upsert: true, new: true }
-        );
-        updatedRecords.push(record);
-
-        // Sync to university model
-        if (r.year === new Date().getFullYear() || r.year === new Date().getFullYear() + 1) {
-          await University.findByIdAndUpdate(r.universityId, { ranking: r.globalRank });
-        }
-      }
-
-      res.json({ 
-        success: true, 
-        message: `Successfully enriched ${updatedRecords.length} rankings via AI`,
-        count: updatedRecords.length 
+      res.json({
+        success: true,
+        message: 'Bulk AI ranking guessing is disabled. Please trigger verified dataset sync or upload licensed ranking tables.',
+        data: [],
       });
     } catch (error) { next(error); }
   },

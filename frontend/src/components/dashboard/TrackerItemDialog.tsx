@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { 
   ApplicationTrackerItem, 
   TrackerDocument, 
@@ -101,8 +102,12 @@ export function TrackerItemDialog({
   const [tagInput, setTagInput] = useState('');
 
   // IDs
-  const [universityId, setUniversityId] = useState<string>(item?.universityId?._id || item?.universityId || '');
-  const [programId, setProgramId] = useState<string>(item?.programId?._id || item?.programId || '');
+  const [universityId, setUniversityId] = useState<string>(
+    typeof item?.universityId === 'object' && item.universityId ? item.universityId._id : (typeof item?.universityId === 'string' ? item.universityId : '')
+  );
+  const [programId, setProgramId] = useState<string>(
+    typeof item?.programId === 'object' && item.programId ? item.programId._id : (typeof item?.programId === 'string' ? item.programId : '')
+  );
   const [customUniversityName, setCustomUniversityName] = useState(item?.customUniversityName || '');
   const [customProgramName, setCustomProgramName] = useState(item?.customProgramName || '');
 
@@ -111,10 +116,20 @@ export function TrackerItemDialog({
   const [progSearch, setProgSearch] = useState('');
   const debouncedUniSearch = useDebounce(uniSearch, 300);
   const debouncedProgSearch = useDebounce(progSearch, 300);
-  const [uniResults, setUniResults] = useState<any[]>([]);
-  const [progResults, setProgResults] = useState<any[]>([]);
-  const [isSearchingUnis, setIsSearchingUnis] = useState(false);
-  const [isSearchingProgs, setIsSearchingProgs] = useState(false);
+
+  const { data: searchUnisData, isFetching: isSearchingUnis } = useQuery({
+    queryKey: ['tracker-search-unis', debouncedUniSearch],
+    queryFn: () => universitiesApi.getAll({ search: debouncedUniSearch, limit: 10 }),
+    enabled: !!debouncedUniSearch && itemType === 'university',
+  });
+  const uniResults = searchUnisData?.data?.data || [];
+
+  const { data: searchProgsData, isFetching: isSearchingProgs } = useQuery({
+    queryKey: ['tracker-search-progs', debouncedProgSearch],
+    queryFn: () => programsApi.getAll({ search: debouncedProgSearch, limit: 10 }),
+    enabled: !!debouncedProgSearch && itemType === 'program',
+  });
+  const progResults = searchProgsData?.data?.data || [];
 
   // Checklists & Tasks
   const [checklist, setChecklist] = useState<TrackerDocument[]>(item?.documentChecklist || []);
@@ -125,45 +140,35 @@ export function TrackerItemDialog({
   // UI Tabs
   const [activeTab, setActiveTab] = useState<'details' | 'checklist' | 'tasks' | 'history'>('details');
 
-  useEffect(() => {
-    if (isOpen) {
-      setItemType(item?.itemType || 'program');
-      setTitle(item?.title || '');
-      setSubtitle(item?.subtitle || '');
-      setColumnId(item?.columnId || (columns.length > 0 ? columns[0].id : ''));
-      setPriority(item?.priority || 'medium');
-      setIntake(item?.intake || '');
-      setDeadline(item?.deadline ? item.deadline.split('T')[0] : '');
-      setApplicationUrl(item?.applicationUrl || '');
-      setNotes(item?.notes || '');
-      setTags(item?.tags || []);
-      setChecklist(item?.documentChecklist || []);
-      setTasks(item?.tasks || []);
-      setUniversityId(item?.universityId?._id || item?.universityId || '');
-      setProgramId(item?.programId?._id || item?.programId || '');
-      setCustomUniversityName(item?.customUniversityName || '');
-      setCustomProgramName(item?.customProgramName || '');
-      setActiveTab('details');
-    }
-  }, [isOpen, item, columns]);
-
-  useEffect(() => {
-    if (debouncedUniSearch && itemType === 'university') {
-      setIsSearchingUnis(true);
-      universitiesApi.getAll({ search: debouncedUniSearch, limit: 10 })
-        .then(res => setUniResults(res.data.data))
-        .finally(() => setIsSearchingUnis(false));
-    }
-  }, [debouncedUniSearch, itemType]);
-
-  useEffect(() => {
-    if (debouncedProgSearch && itemType === 'program') {
-      setIsSearchingProgs(true);
-      programsApi.getAll({ search: debouncedProgSearch, limit: 10 })
-        .then(res => setProgResults(res.data.data))
-        .finally(() => setIsSearchingProgs(false));
-    }
-  }, [debouncedProgSearch, itemType]);
+  const [prevItem, setPrevItem] = useState(item);
+  const [prevOpen, setPrevOpen] = useState(isOpen);
+  if (isOpen && (item !== prevItem || !prevOpen)) {
+    setPrevItem(item);
+    setPrevOpen(isOpen);
+    setItemType(item?.itemType || 'program');
+    setTitle(item?.title || '');
+    setSubtitle(item?.subtitle || '');
+    setColumnId(item?.columnId || (columns.length > 0 ? columns[0].id : ''));
+    setPriority(item?.priority || 'medium');
+    setIntake(item?.intake || '');
+    setDeadline(item?.deadline ? item.deadline.split('T')[0] : '');
+    setApplicationUrl(item?.applicationUrl || '');
+    setNotes(item?.notes || '');
+    setTags(item?.tags || []);
+    setChecklist(item?.documentChecklist || []);
+    setTasks(item?.tasks || []);
+    setUniversityId(
+      typeof item?.universityId === 'object' && item.universityId ? item.universityId._id : (typeof item?.universityId === 'string' ? item.universityId : '')
+    );
+    setProgramId(
+      typeof item?.programId === 'object' && item.programId ? item.programId._id : (typeof item?.programId === 'string' ? item.programId : '')
+    );
+    setCustomUniversityName(item?.customUniversityName || '');
+    setCustomProgramName(item?.customProgramName || '');
+    setActiveTab('details');
+  } else if (!isOpen && prevOpen) {
+    setPrevOpen(false);
+  }
 
   const handleSave = async () => {
     if (!title && itemType === 'custom') {
@@ -338,7 +343,7 @@ export function TrackerItemDialog({
                           <CommandList>
                             <CommandEmpty>No programs found.</CommandEmpty>
                             <CommandGroup>
-                              {progResults.map((prog) => (
+                              {progResults.map((prog: any) => (
                                 <CommandItem
                                   key={prog._id}
                                   onSelect={() => {
@@ -389,7 +394,7 @@ export function TrackerItemDialog({
                           <CommandList>
                             <CommandEmpty>No universities found.</CommandEmpty>
                             <CommandGroup>
-                              {uniResults.map((uni) => (
+                              {uniResults.map((uni: any) => (
                                 <CommandItem
                                   key={uni._id}
                                   onSelect={() => {

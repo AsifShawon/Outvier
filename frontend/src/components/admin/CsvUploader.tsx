@@ -28,7 +28,7 @@ export function CsvUploader({ entity }: CsvUploaderProps) {
         ? universitiesApi.bulkUpload(f)
         : programsApi.bulkUpload(f),
     onSuccess: (res) => {
-      const job = res.data.data as UploadJob;
+      const job = res.data.data as unknown as UploadJob;
       setResult(job);
       qc.invalidateQueries({ queryKey: ['admin-universities'] });
       qc.invalidateQueries({ queryKey: ['admin-programs'] });

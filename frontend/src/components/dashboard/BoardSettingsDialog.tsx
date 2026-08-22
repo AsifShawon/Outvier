@@ -36,11 +36,17 @@ export function BoardSettingsDialog({
     compactMode: false
   });
 
-  useEffect(() => {
-    if (isOpen && board) {
+  const [prevBoard, setPrevBoard] = useState(board);
+  const [prevOpen, setPrevOpen] = useState(isOpen);
+  if (isOpen && (board !== prevBoard || !prevOpen)) {
+    setPrevBoard(board);
+    setPrevOpen(isOpen);
+    if (board) {
       setSettings(board.settings);
     }
-  }, [isOpen, board]);
+  } else if (!isOpen && prevOpen) {
+    setPrevOpen(false);
+  }
 
   const handleSave = async () => {
     await onSave(settings);
