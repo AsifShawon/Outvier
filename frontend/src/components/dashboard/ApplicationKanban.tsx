@@ -37,7 +37,12 @@ import { toast } from 'sonner';
 import { motion } from 'framer-motion';
 import { cn } from '@/lib/utils';
 
-export function ApplicationKanban() {
+interface ApplicationKanbanProps {
+  onSelectApplication?: (id: string) => void;
+  onOpenWizard?: () => void;
+}
+
+export function ApplicationKanban({ onSelectApplication, onOpenWizard }: ApplicationKanbanProps = {}) {
   const qc = useQueryClient();
 
   // UI State
@@ -428,6 +433,7 @@ export function ApplicationKanban() {
         onArchive={async (id, archived) => { await archiveItemMutation.mutateAsync({ id, archived }); }}
         onDelete={async id => { await deleteItemMutation.mutateAsync(id); }}
         onMove={async (id, columnId) => { await moveItemMutation.mutateAsync({ id, toColumnId: columnId }); }}
+        onOpenWorkspace={onSelectApplication}
       />
 
       <TrackerColumnDialog

@@ -34,3 +34,7 @@ export * from './CricosCourseLocationRaw.model';
 export * from './ProgramLocation.model';
 export * from './TuitionRecord.model';
 export * from './RankingRecord.model';
+export * from './Application.model';
+export * from './ApplicationVersion.model';
+export * from './Document.model';
+export * from './StatusEvent.model';

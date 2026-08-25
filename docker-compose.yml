@@ -1,13 +1,17 @@
 version: '3.8'
 
 services:
+  # ── MongoDB (Production Pinned Version with Auth) ──────────────────────────
   mongodb:
-    image: mongo:7.0
+    image: mongo:7.0.8-jammy
     container_name: outvier-mongodb
     restart: unless-stopped
     ports:
-      - "27018:27017"
+      # Bound to localhost only to prevent public network exposure
+      - "127.0.0.1:27018:27017"
     environment:
+      MONGO_INITDB_ROOT_USERNAME: ${MONGO_ROOT_USER:-outvier_admin}
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_ROOT_PASSWORD:-outvier_secure_pass_prod_2026}
       MONGO_INITDB_DATABASE: outvier
     volumes:
       - outvier_mongo_data:/data/db
@@ -16,39 +20,82 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+    networks:
+      - outvier-internal
 
+  # ── Redis (Production Pinned Alpine with Password) ────────────────────────
   redis:
-    image: redis:7.2-alpine
+    image: redis:7.2.4-alpine
     container_name: outvier-redis
     restart: unless-stopped
+    command: ["redis-server", "--requirepass", "${REDIS_PASSWORD:-redis_secure_pass_prod_2026}", "--maxmemory", "512mb", "--maxmemory-policy", "allkeys-lru"]
     ports:
-      - "6379:6379"
+      # Bound to localhost only
+      - "127.0.0.1:6379:6379"
+    volumes:
+      - outvier_redis_data:/data
     healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
+      test: ["CMD", "redis-cli", "-a", "${REDIS_PASSWORD:-redis_secure_pass_prod_2026}", "ping"]
       interval: 10s
       timeout: 5s
       retries: 5
+    networks:
+      - outvier-internal
 
+  # ── PostgreSQL (Production Metabase Application Store) ────────────────────
+  metabase-postgres:
+    image: postgres:16.2-alpine
+    container_name: outvier-metabase-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: metabase
+      POSTGRES_USER: ${METABASE_DB_USER:-metabase}
+      POSTGRES_PASSWORD: ${METABASE_DB_PASS:-metabase_secure_prod_2026}
+    volumes:
+      - outvier_metabase_pg_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${METABASE_DB_USER:-metabase} -d metabase"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - outvier-internal
+
+  # ── Metabase (Enterprise Reporting Backed by Postgres, Not H2) ───────────
   metabase:
-    image: metabase/metabase:latest
+    image: metabase/metabase:v0.49.13
     container_name: outvier-metabase
     restart: unless-stopped
+    depends_on:
+      metabase-postgres:
+        condition: service_healthy
     ports:
-      - "3001:3000"
+      - "127.0.0.1:3001:3000"
     environment:
-      MB_DB_TYPE: h2
-      JAVA_TIMEZONE: Australia/Adelaide
+      MB_DB_TYPE: postgres
+      MB_DB_DBNAME: metabase
+      MB_DB_PORT: 5432
+      MB_DB_USER: ${METABASE_DB_USER:-metabase}
+      MB_DB_PASS: ${METABASE_DB_PASS:-metabase_secure_prod_2026}
+      MB_DB_HOST: metabase-postgres
+      JAVA_TIMEZONE: Australia/Sydney
       MB_JETTY_MAX_HEADER_SIZE: 65536
-    volumes:
-      - outvier_metabase_data:/metabase-data
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:3000/api/health"]
       interval: 30s
       timeout: 10s
       retries: 5
+    networks:
+      - outvier-internal
+
+networks:
+  outvier-internal:
+    driver: bridge
 
 volumes:
   outvier_mongo_data:
     driver: local
-  outvier_metabase_data:
+  outvier_redis_data:
+    driver: local
+  outvier_metabase_pg_data:
     driver: local

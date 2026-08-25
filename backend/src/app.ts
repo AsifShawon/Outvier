@@ -18,12 +18,16 @@ import aiSettingsRoutes from './routes/aiSettings.routes';
 import recommendationsRoutes from './routes/recommendations.routes';
 import publicAnalyticsRoutes from './routes/publicAnalytics.routes';
 import trackerRoutes from './routes/applicationTracker.routes';
+import applicationRoutes from './routes/application.routes';
+import documentRoutes from './routes/document.routes';
 import ingestionRoutes from './routes/ingestion.routes';
 import cricosRoutes from './routes/cricos.routes';
 import budgetPlanRoutes from './routes/budgetPlan.routes';
 import scholarshipRoutes from './routes/scholarship.routes';
 import adminScholarshipRoutes from './routes/admin.scholarship.routes';
 import studentDashboardRoutes from './routes/studentDashboard.routes';
+import healthRoutes from './routes/health.routes';
+import metricsService from './services/metrics.service';
 import { csrfProtection } from './middleware/auth.middleware';
 import { aiLimiter, scrapeLimiter, importLimiter } from './middleware/rateLimiter.middleware';
 import { errorHandler, notFound, requestIdMiddleware } from './middleware/error.middleware';
@@ -32,6 +36,16 @@ const app = express();
 
 // Request ID tracking
 app.use(requestIdMiddleware);
+
+// HTTP Metrics and Structured Request Latency Logger
+app.use((req, res, next) => {
+  const start = Date.now();
+  res.on('finish', () => {
+    const duration = Date.now() - start;
+    metricsService.recordHttpRequest(res.statusCode, duration);
+  });
+  next();
+});
 
 // Security Headers with Helmet
 app.use(helmet({
@@ -53,13 +67,11 @@ app.use(cookieParser(env.COOKIE_SECRET));
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true }));
 
+// Health and Observability probes (unauthenticated for infra monitors)
+app.use('/health', healthRoutes);
+
 // CSRF Protection for state-mutating requests
 app.use(csrfProtection);
-
-// Health check
-app.get('/health', (req, res) => {
-  res.status(200).json({ status: 'ok', timestamp: new Date().toISOString() });
-});
 
 // Public & Student routes
 app.use('/api/v1/auth', authRoutes);
@@ -71,6 +83,8 @@ app.use('/api/v1/copilot', aiLimiter, aiRoutes);
 app.use('/api/v1/recommendations', recommendationsRoutes);
 app.use('/api/v1/analytics', publicAnalyticsRoutes);
 app.use('/api/v1/tracker', trackerRoutes);
+app.use('/api/v1/applications', applicationRoutes);
+app.use('/api/v1/documents', documentRoutes);
 app.use('/api/v1/budget', budgetPlanRoutes);
 app.use('/api/v1/scholarships', scholarshipRoutes);
 app.use('/api/v1/dashboard', studentDashboardRoutes);

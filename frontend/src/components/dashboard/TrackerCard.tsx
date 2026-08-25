@@ -135,6 +135,12 @@ export function TrackerCard({ item, onClick, onMoveNext, onArchive, nextColumnNa
           </span>
 
           <div className="flex items-center gap-1">
+            {/* Status Source Chip */}
+            {item.statusSource && item.statusSource !== 'student-reported' && (
+              <span className="text-[8px] font-bold font-mono px-1 py-0.2 rounded-sm bg-purple-50 text-purple-600 border border-purple-100">
+                {item.statusSource === 'integration-confirmed' ? 'Verified' : 'Staff'}
+              </span>
+            )}
             {/* Country chip */}
             {item.country && (
               <span className="text-[9px] font-semibold text-slate-400 truncate max-w-[60px]">

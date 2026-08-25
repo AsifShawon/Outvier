@@ -83,6 +83,18 @@ export interface ApplicationTrackerItem {
   applicationUrl?: string;
   notes?: string;
   tags: string[];
+  stage?: string;
+  statusSource?: 'student-reported' | 'staff-verified' | 'provider-confirmed' | 'integration-confirmed';
+  readinessPercentage?: number;
+  isLocked?: boolean;
+  currentVersionNumber?: number;
+  submissionReceipt?: {
+    submissionId: string;
+    method: string;
+    isVerifiedIntegration: boolean;
+    disclaimer: string;
+    submittedAt: string;
+  };
   documentChecklist: TrackerDocument[];
   tasks: TrackerTask[];
   reminders: TrackerReminder[];

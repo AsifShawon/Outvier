@@ -28,6 +28,7 @@ interface ApplicationDetailsDrawerProps {
   onArchive: (id: string, archived: boolean) => Promise<void>;
   onDelete: (id: string) => Promise<void>;
   onMove: (id: string, columnId: string) => Promise<void>;
+  onOpenWorkspace?: (id: string) => void;
 }
 
 const TYPE_ICONS: Record<string, any> = {
@@ -53,7 +54,7 @@ const TABS = [
 ];
 
 export function ApplicationDetailsDrawer({
-  isOpen, onClose, item, columns, onSave, onArchive, onDelete, onMove
+  isOpen, onClose, item, columns, onSave, onArchive, onDelete, onMove, onOpenWorkspace
 }: ApplicationDetailsDrawerProps) {
   const [activeTab, setActiveTab] = useState('overview');
   const [isSaving, setIsSaving] = useState(false);
@@ -146,6 +147,20 @@ export function ApplicationDetailsDrawer({
               </div>
             </div>
             <div className="flex items-center gap-1 shrink-0">
+              {onOpenWorkspace && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="text-xs h-8 gap-1 font-semibold text-primary border-primary/30 hover:bg-primary/10 mr-1"
+                  onClick={() => {
+                    onClose();
+                    onOpenWorkspace(item._id);
+                  }}
+                >
+                  <span>Open Workspace</span>
+                  <ExternalLink className="h-3.5 w-3.5" />
+                </Button>
+              )}
               {item.applicationUrl && (
                 <a href={item.applicationUrl} target="_blank" rel="noopener noreferrer">
                   <Button variant="ghost" size="icon" className="h-8 w-8 rounded-lg text-slate-400 hover:text-blue-600">

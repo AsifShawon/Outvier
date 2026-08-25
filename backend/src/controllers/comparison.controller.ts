@@ -59,24 +59,32 @@ export const comparisonController = {
 
       const [rankings, outcomes] = await Promise.all([
         RankingRecord.find({ universityId: { $in: allUniIds }, status: 'approved' }).sort({ year: -1 }).lean(),
-        OutcomeMetric.find({ universityId: { $in: allUniIds }, status: 'approved' }).sort({ year: -1 }).lean(),
+        OutcomeMetric.find({ $or: [{ provider: { $in: allUniIds } }, { universityId: { $in: allUniIds } }], status: 'approved' }).sort({ year: -1 }).lean(),
       ]);
 
       const analytics: Record<string, object> = {};
       for (const id of allUniIds) {
         const rank = rankings.find(r => String(r.universityId) === id);
-        const outcome = outcomes.find(o => String(o.universityId) === id);
+        const outcome = outcomes.find(o => String(o.provider) === id || String(o.universityId) === id);
+        const outcomeYear = outcome?.surveyYear || outcome?.year || 2024;
+        const rankYear = rank?.year || 2025;
+        const rankPublisher = rank?.source || 'QS';
+
         analytics[id] = {
           globalRank: rank?.globalRank ?? null,
           nationalRank: rank?.nationalRank ?? null,
           subjectRank: rank?.subjectRank ?? null,
-          rankingSource: rank?.source ?? null,
+          rankingSource: `${rankPublisher} World University Rankings (${rankYear})`,
+          rankingYear: rankYear,
+          rankingPublisher: rankPublisher,
           graduateEmploymentRate: outcome?.graduateEmploymentRate ?? null,
           medianSalary: outcome?.medianSalary ?? null,
           teachingQuality: outcome?.teachingQuality ?? null,
           studentSupport: outcome?.studentSupport ?? null,
           learnerEngagement: outcome?.learnerEngagement ?? null,
           overallExperience: outcome?.overallExperience ?? null,
+          outcomesSource: `QILT Graduate Outcomes Survey (${outcomeYear})`,
+          outcomesYear: outcomeYear,
         };
       }
 

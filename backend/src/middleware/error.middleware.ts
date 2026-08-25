@@ -1,5 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import { sendError, FieldError, generateRequestId } from '../utils/response.util';
+import StructuredLogger from '../utils/logger.util';
 
 export interface AppError extends Error {
   statusCode?: number;
@@ -28,10 +29,12 @@ export const errorHandler = (err: AppError, req: Request, res: Response, next: N
   );
 
   if (process.env.NODE_ENV !== 'test') {
-    console.error(`[ERROR] [${(req as any).id}] ${statusCode} ${code} - ${message}`);
-    if (statusCode === 500 && err.stack) {
-      console.error(err.stack);
-    }
+    StructuredLogger.error(`HTTP ${statusCode} ${code}: ${message}`, {
+      requestId: (req as any).id,
+      path: req.originalUrl,
+      method: req.method,
+      statusCode,
+    }, err);
   }
 
   sendError(

@@ -1,88 +1,139 @@
 'use client';
 
-import { useState, Suspense } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import { useQuery } from '@tanstack/react-query';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { Navbar } from '@/components/layout/Navbar';
 import { Footer } from '@/components/layout/Footer';
 import { ProgramCard } from '@/components/ui-custom/ProgramCard';
-import { SearchBar } from '@/components/ui-custom/SearchBar';
+import { ProminentSearchBar } from '@/components/discovery/ProminentSearchBar';
+import { ActiveFilterChips } from '@/components/discovery/ActiveFilterChips';
+import { FilterDrawer } from '@/components/discovery/FilterDrawer';
+import { ComparisonTray } from '@/components/compare/ComparisonTray';
 import { Pagination } from '@/components/ui-custom/Pagination';
 import { SkeletonCard } from '@/components/ui-custom/SkeletonCard';
 import { EmptyState } from '@/components/ui-custom/EmptyState';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { BookOpen, MapPin, Layers, ArrowUpDown, Filter, GraduationCap, DollarSign, Calendar } from 'lucide-react';
+import {
+  GraduationCap,
+  ArrowUpDown,
+  SlidersHorizontal,
+  Bookmark,
+  RotateCcw,
+  Sparkles,
+} from 'lucide-react';
 import { programsApi } from '@/lib/api/programs.api';
 import { Program } from '@/types/program';
-
-const LEVELS = [
-  { value: 'bachelor', label: 'Bachelor' },
-  { value: 'master', label: 'Master' },
-  { value: 'phd', label: 'PhD' },
-  { value: 'graduate_certificate', label: 'Grad. Certificate' },
-  { value: 'diploma', label: 'Diploma' },
-  { value: 'certificate', label: 'Certificate' },
-];
-
-const CAMPUS_MODES = [
-  { value: 'on-campus', label: 'On Campus' },
-  { value: 'online', label: 'Online' },
-  { value: 'hybrid', label: 'Hybrid' },
-];
-
-const BUDGET_OPTIONS = [
-  { label: "Under $10k", value: "under-10k" },
-  { label: "$10k - $20k", value: "10k-20k" },
-  { label: "$20k - $30k", value: "20k-30k" },
-  { label: "$30k - $40k", value: "30k-40k" },
-  { label: "$40k - $50k", value: "40k-50k" },
-  { label: "Over $50k", value: "over-50k" }
-];
-
-const INTAKE_OPTIONS = ["February", "July", "November"];
-
 import { useDebounce } from '@/hooks/useDebounce';
-import { useSearchParams } from 'next/navigation';
+import { useSavedSearches } from '@/hooks/useSavedSearches';
 
 const SORT_OPTIONS = [
-  { value: 'name_asc', label: 'A-Z', sortBy: 'name', sortOrder: 'asc' },
-  { value: 'name_desc', label: 'Z-A', sortBy: 'name', sortOrder: 'desc' },
-  { value: 'updated_desc', label: 'Recently Updated', sortBy: 'updatedAt', sortOrder: 'desc' },
+  { value: 'name_asc', label: 'Program Name (A-Z)', sortBy: 'name', sortOrder: 'asc' },
+  { value: 'name_desc', label: 'Program Name (Z-A)', sortBy: 'name', sortOrder: 'desc' },
+  { value: 'fee_asc', label: 'Tuition (Low to High)', sortBy: 'primaryFeeAnnualAud', sortOrder: 'asc' },
+  { value: 'fee_desc', label: 'Tuition (High to Low)', sortBy: 'primaryFeeAnnualAud', sortOrder: 'desc' },
+  { value: 'updated_desc', label: 'Recently Verified', sortBy: 'updatedAt', sortOrder: 'desc' },
 ];
 
 function ProgramsContent() {
+  const router = useRouter();
   const searchParams = useSearchParams();
-  const [search, setSearch] = useState(searchParams.get('search') ?? '');
-  const [level, setLevel] = useState(searchParams.get('level') ?? '');
-  const [field, setField] = useState(searchParams.get('field') ?? '');
-  const [campusMode, setCampusMode] = useState(searchParams.get('campusMode') ?? '');
-  const [city, setCity] = useState(searchParams.get('city') ?? '');
-  const [budget, setBudget] = useState(searchParams.get('budget') ?? '');
-  const [intake, setIntake] = useState(searchParams.get('intake') ?? '');
-  const [sort, setSort] = useState(searchParams.get('sort') ?? 'name_asc');
-  const [page, setPage] = useState(parseInt(searchParams.get('page') ?? '1'));
-  const debouncedSearch = useDebounce(search, 350);
 
+  // Read initial filter values from URL params
+  const [search, setSearch] = useState(searchParams.get('search') || searchParams.get('q') || '');
+  const [level, setLevel] = useState(searchParams.get('level') || '');
+  const [field, setField] = useState(searchParams.get('field') || '');
+  const [campusMode, setCampusMode] = useState(searchParams.get('campusMode') || '');
+  const [city, setCity] = useState(searchParams.get('city') || '');
+  const [state, setState] = useState(searchParams.get('state') || '');
+  const [budget, setBudget] = useState(searchParams.get('budget') || '');
+  const [feeYear, setFeeYear] = useState(searchParams.get('feeYear') || '');
+  const [intake, setIntake] = useState(searchParams.get('intake') || '');
+  const [englishMax, setEnglishMax] = useState(searchParams.get('englishMax') || '');
+  const [cricos, setCricos] = useState(searchParams.get('cricos') || '');
+  const [scholarshipAvailable, setScholarshipAvailable] = useState(searchParams.get('scholarshipAvailable') || '');
+  const [sort, setSort] = useState(searchParams.get('sort') || 'name_asc');
+  const [page, setPage] = useState(parseInt(searchParams.get('page') || '1', 10));
+  const [isFilterDrawerOpen, setIsFilterDrawerOpen] = useState(false);
+
+  const debouncedSearch = useDebounce(search, 300);
+
+  // Sync state changes back to URL searchParams
+  useEffect(() => {
+    const params = new URLSearchParams();
+    if (debouncedSearch) params.set('search', debouncedSearch);
+    if (level) params.set('level', level);
+    if (field) params.set('field', field);
+    if (campusMode) params.set('campusMode', campusMode);
+    if (city) params.set('city', city);
+    if (state) params.set('state', state);
+    if (budget) params.set('budget', budget);
+    if (feeYear) params.set('feeYear', feeYear);
+    if (intake) params.set('intake', intake);
+    if (englishMax) params.set('englishMax', englishMax);
+    if (cricos) params.set('cricos', cricos);
+    if (scholarshipAvailable) params.set('scholarshipAvailable', scholarshipAvailable);
+    if (sort && sort !== 'name_asc') params.set('sort', sort);
+    if (page > 1) params.set('page', String(page));
+
+    const queryString = params.toString();
+    router.replace(queryString ? `/programs?${queryString}` : '/programs', { scroll: false });
+  }, [
+    debouncedSearch,
+    level,
+    field,
+    campusMode,
+    city,
+    state,
+    budget,
+    feeYear,
+    intake,
+    englishMax,
+    cricos,
+    scholarshipAvailable,
+    sort,
+    page,
+    router,
+  ]);
+
+  // Cities & Fields queries for dropdowns
   const { data: citiesRes } = useQuery({
     queryKey: ['program-cities'],
-    queryFn: () => programsApi.getCities().then(r => r.data),
+    queryFn: () => programsApi.getCities().then((r) => r.data),
   });
-  const citiesRaw = citiesRes?.data;
-  const cities = Array.isArray(citiesRaw) ? citiesRaw : [];
+  const cities = Array.isArray(citiesRes?.data) ? citiesRes.data : [];
 
   const { data: fieldsRes } = useQuery({
     queryKey: ['program-fields'],
-    queryFn: () => programsApi.getFields().then(r => r.data),
+    queryFn: () => programsApi.getFields().then((r) => r.data),
   });
-  const fieldsRaw = fieldsRes?.data;
-  const fields = Array.isArray(fieldsRaw) ? fieldsRaw : [];
+  const fields = Array.isArray(fieldsRes?.data) ? fieldsRes.data : [];
 
-  const selectedSort = SORT_OPTIONS.find(s => s.value === sort) || SORT_OPTIONS[0];
+  const selectedSort = SORT_OPTIONS.find((s) => s.value === sort) || SORT_OPTIONS[0];
 
+  // Main Query
   const { data, isLoading } = useQuery({
-    queryKey: ['programs', { search: debouncedSearch, level, field, campusMode, city, budget, intake, sort, page }],
+    queryKey: [
+      'programs',
+      {
+        search: debouncedSearch,
+        level,
+        field,
+        campusMode,
+        city,
+        state,
+        budget,
+        feeYear,
+        intake,
+        englishMax,
+        cricos,
+        scholarshipAvailable,
+        sort,
+        page,
+      },
+    ],
     queryFn: () =>
       programsApi.getAll({
         ...(debouncedSearch && { search: debouncedSearch }),
@@ -90,322 +141,194 @@ function ProgramsContent() {
         ...(field && field !== 'all' && { field }),
         ...(campusMode && campusMode !== 'all' && { campusMode }),
         ...(city && city !== 'all' && { city }),
+        ...(state && state !== 'all' && { state }),
         ...(budget && budget !== 'all' && { budget }),
+        ...(feeYear && feeYear !== 'all' && { feeYear }),
         ...(intake && intake !== 'all' && { intake }),
+        ...(englishMax && englishMax !== 'all' && { englishMax: parseFloat(englishMax) }),
+        ...(cricos && { cricos: 'true' }),
+        ...(scholarshipAvailable && { scholarshipAvailable: 'true' }),
         sortBy: selectedSort.sortBy,
-        sortOrder: selectedSort.sortOrder,
+        sortOrder: selectedSort.sortOrder as any,
         page,
         limit: 12,
       }),
   });
 
-  const programs: Program[] = data?.data?.programs || [];
-  const pagination = data?.data?.pagination;
+  const programs: Program[] = (data?.data as any)?.programs || [];
+  const pagination = (data?.data as any)?.pagination;
 
-  const handleFilter = (key: string, value: string) => {
+  const handleFilterChange = (key: string, value: any) => {
     setPage(1);
-    if (key === 'level') setLevel(value === 'all' ? '' : value);
-    if (key === 'field') setField(value === 'all' ? '' : value);
-    if (key === 'campusMode') setCampusMode(value === 'all' ? '' : value);
-    if (key === 'city') setCity(value === 'all' ? '' : value);
-    if (key === 'budget') setBudget(value === 'all' ? '' : value);
-    if (key === 'intake') setIntake(value === 'all' ? '' : value);
-    if (key === 'sort') setSort(value);
+    if (key === 'level') setLevel(value);
+    if (key === 'field') setField(value);
+    if (key === 'campusMode') setCampusMode(value);
+    if (key === 'city') setCity(value);
+    if (key === 'state') setState(value);
+    if (key === 'budget') setBudget(value);
+    if (key === 'feeYear') setFeeYear(value);
+    if (key === 'intake') setIntake(value);
+    if (key === 'englishMax') setEnglishMax(value);
+    if (key === 'cricos') setCricos(value);
+    if (key === 'scholarshipAvailable') setScholarshipAvailable(value);
+  };
+
+  const handleRemoveFilter = (key: string) => {
+    handleFilterChange(key, '');
+  };
+
+  const handleClearAll = () => {
+    setSearch('');
+    setLevel('');
+    setField('');
+    setCampusMode('');
+    setCity('');
+    setState('');
+    setBudget('');
+    setFeeYear('');
+    setIntake('');
+    setEnglishMax('');
+    setCricos('');
+    setScholarshipAvailable('');
+    setPage(1);
+  };
+
+  const activeFilters = {
+    level,
+    field,
+    campusMode,
+    city,
+    state,
+    budget,
+    feeYear,
+    intake,
+    englishMax,
+    cricos,
+    scholarshipAvailable,
   };
 
   return (
     <div className="flex flex-col min-h-screen">
       <Navbar />
-      <main className="flex-1">
-        {/* Page Header */}
-        <div className="bg-gradient-to-b from-muted/50 to-background border-b border-border/60 py-12">
-          <div className="container mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-            <Badge variant="secondary" className="mb-3">Programs</Badge>
-            <h1 className="text-3xl font-bold font-display mb-2">Browse Programs</h1>
-            <p className="text-muted-foreground">
-              {pagination ? `${pagination.total} programs` : 'Explore'} across Australian universities
-            </p>
+      <main className="flex-1 pb-24">
+        {/* Hero Section with Prominent Search */}
+        <div className="bg-gradient-to-b from-muted/50 via-background to-background border-b border-border py-10 sm:py-14">
+          <div className="container mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 space-y-5">
+            <div className="space-y-1.5 max-w-2xl">
+              <Badge variant="outline" className="text-[11px] font-bold uppercase tracking-wider text-primary border-primary/30 bg-primary/5 mb-1">
+                Verified Higher Education Catalog
+              </Badge>
+              <h1 className="text-3xl sm:text-4xl font-black font-display tracking-tight text-foreground">
+                Discover Degree Programs in Australia
+              </h1>
+              <p className="text-xs sm:text-sm text-muted-foreground font-medium">
+                Search accredited Bachelor, Master, PhD, and pathway courses with transparent fee schedules, entry benchmarks, and verified CRICOS data.
+              </p>
+            </div>
+
+            {/* Prominent Search Bar */}
+            <div className="max-w-3xl pt-2">
+              <ProminentSearchBar
+                value={search}
+                onChange={(val) => {
+                  setSearch(val);
+                  setPage(1);
+                }}
+              />
+            </div>
           </div>
         </div>
 
-        <div className="container mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-8">
-          {/* Filters */}
-          <div className="mb-8 space-y-4">
-            <div className="flex gap-3">
-              <SearchBar
-                value={search}
-                onChange={(v) => { setSearch(v); setPage(1); }}
-                placeholder="Search programs..."
-                className="flex-1"
+        {/* Discovery Workspace Controls */}
+        <div className="container mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-6 space-y-4">
+          {/* Controls Bar: Results Count + Filter Drawer Trigger + Sort */}
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-card p-3 sm:p-4 rounded-2xl border border-border shadow-xs">
+            <div className="flex items-center gap-3">
+              <FilterDrawer
+                filters={activeFilters}
+                onChange={handleFilterChange}
+                onClearAll={handleClearAll}
+                cities={cities}
+                fields={fields}
+                isOpen={isFilterDrawerOpen}
+                onOpenChange={setIsFilterDrawerOpen}
               />
-              <div className="lg:hidden">
-                <Sheet>
-                  <SheetTrigger asChild>
-                    <Button variant="outline" className="px-3 h-10">
-                      <Filter className="h-4 w-4" />
-                    </Button>
-                  </SheetTrigger>
-                  <SheetContent side="right" className="w-[300px] sm:w-[400px]">
-                    <SheetHeader>
-                      <SheetTitle>Filters</SheetTitle>
-                    </SheetHeader>
-                    <div className="flex flex-col gap-4 mt-6">
-                      <Select value={level || 'all'} onValueChange={(v) => handleFilter('level', v as string)}>
-                        <SelectTrigger className="w-full" id="filter-level-mobile">
-                          <div className="flex items-center gap-1.5 truncate">
-                            <BookOpen className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
-                            <span className="text-muted-foreground font-medium">Level:</span>
-                            <SelectValue placeholder="All" />
-                          </div>
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="all">All</SelectItem>
-                          {LEVELS.map((l) => (
-                            <SelectItem key={l.value} value={l.value}>{l.label}</SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
 
-                      <Select value={field || 'all'} onValueChange={(v) => handleFilter('field', v as string)}>
-                        <SelectTrigger className="w-full" id="filter-field-mobile">
-                          <div className="flex items-center gap-1.5 truncate">
-                            <GraduationCap className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
-                            <span className="text-muted-foreground font-medium">Subject:</span>
-                            <SelectValue placeholder="All" />
-                          </div>
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="all">All</SelectItem>
-                          {fields.map((f: string) => (
-                            <SelectItem key={f} value={f}>{f}</SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-
-                      <Select value={campusMode || 'all'} onValueChange={(v) => handleFilter('campusMode', v as string)}>
-                        <SelectTrigger className="w-full" id="filter-campus-mobile">
-                          <div className="flex items-center gap-1.5 truncate">
-                            <Layers className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
-                            <span className="text-muted-foreground font-medium">Mode:</span>
-                            <SelectValue placeholder="All" />
-                          </div>
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="all">All</SelectItem>
-                          {CAMPUS_MODES.map((m) => (
-                            <SelectItem key={m.value} value={m.value}>{m.label}</SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-
-                      <Select value={city || 'all'} onValueChange={(v) => handleFilter('city', v as string)}>
-                        <SelectTrigger className="w-full" id="filter-city-mobile">
-                          <div className="flex items-center gap-1.5 truncate">
-                            <MapPin className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
-                            <span className="text-muted-foreground font-medium">City:</span>
-                            <SelectValue placeholder="All" />
-                          </div>
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="all">All</SelectItem>
-                          {cities.map((c: string) => (
-                            <SelectItem key={c} value={c}>{c}</SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-
-                      <Select value={budget || 'all'} onValueChange={(v) => handleFilter('budget', v as string)}>
-                        <SelectTrigger className="w-full" id="filter-budget-mobile">
-                          <div className="flex items-center gap-1.5 truncate">
-                            <DollarSign className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
-                            <span className="text-muted-foreground font-medium">Budget:</span>
-                            <SelectValue placeholder="All" />
-                          </div>
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="all">All</SelectItem>
-                          {BUDGET_OPTIONS.map((b) => (
-                            <SelectItem key={b.value} value={b.value}>{b.label}</SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-
-                      <Select value={intake || 'all'} onValueChange={(v) => handleFilter('intake', v as string)}>
-                        <SelectTrigger className="w-full" id="filter-intake-mobile">
-                          <div className="flex items-center gap-1.5 truncate">
-                            <Calendar className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
-                            <span className="text-muted-foreground font-medium">Intake:</span>
-                            <SelectValue placeholder="All" />
-                          </div>
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="all">All</SelectItem>
-                          {INTAKE_OPTIONS.map((i) => (
-                            <SelectItem key={i} value={i}>{i}</SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-
-                      <Select value={sort} onValueChange={(v) => handleFilter('sort', v as string)}>
-                        <SelectTrigger className="w-full" id="filter-sort-mobile">
-                          <div className="flex items-center gap-1.5 truncate">
-                            <ArrowUpDown className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
-                            <span className="text-muted-foreground font-medium">Sort:</span>
-                            <SelectValue placeholder="A-Z" />
-                          </div>
-                        </SelectTrigger>
-                        <SelectContent>
-                          {SORT_OPTIONS.map((o) => (
-                            <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  </SheetContent>
-                </Sheet>
-              </div>
+              <span className="text-xs font-bold text-foreground">
+                {isLoading ? 'Searching...' : `${pagination?.total || 0} Programs Found`}
+              </span>
             </div>
 
-            {/* Desktop Filters (Rows 2 & 3) */}
-            <div className="hidden lg:grid grid-cols-4 gap-3">
-              <Select value={level || 'all'} onValueChange={(v) => handleFilter('level', v as string)}>
-                <SelectTrigger className="w-full" id="filter-level">
-                  <div className="flex items-center gap-1.5 truncate">
-                    <BookOpen className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
-                    <span className="text-muted-foreground font-medium">Level:</span>
-                    <SelectValue placeholder="All" />
-                  </div>
+            {/* Sort Selector */}
+            <div className="flex items-center gap-2">
+              <span className="text-xs font-bold text-muted-foreground whitespace-nowrap hidden sm:inline">
+                Sort by:
+              </span>
+              <Select value={sort} onValueChange={(val) => setSort(val)}>
+                <SelectTrigger className="w-[180px] h-9 text-xs bg-background">
+                  <ArrowUpDown className="h-3.5 w-3.5 mr-1 text-muted-foreground" />
+                  <SelectValue placeholder="Sort by" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">All</SelectItem>
-                  {LEVELS.map((l) => (
-                    <SelectItem key={l.value} value={l.value}>{l.label}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-
-              <Select value={field || 'all'} onValueChange={(v) => handleFilter('field', v as string)}>
-                <SelectTrigger className="w-full" id="filter-field">
-                  <div className="flex items-center gap-1.5 truncate">
-                    <GraduationCap className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
-                    <span className="text-muted-foreground font-medium">Subject:</span>
-                    <SelectValue placeholder="All" />
-                  </div>
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All</SelectItem>
-                  {fields.map((f: string) => (
-                    <SelectItem key={f} value={f}>{f}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-
-              <Select value={campusMode || 'all'} onValueChange={(v) => handleFilter('campusMode', v as string)}>
-                <SelectTrigger className="w-full" id="filter-campus">
-                  <div className="flex items-center gap-1.5 truncate">
-                    <Layers className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
-                    <span className="text-muted-foreground font-medium">Mode:</span>
-                    <SelectValue placeholder="All" />
-                  </div>
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All</SelectItem>
-                  {CAMPUS_MODES.map((m) => (
-                    <SelectItem key={m.value} value={m.value}>{m.label}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-
-              <Select value={city || 'all'} onValueChange={(v) => handleFilter('city', v as string)}>
-                <SelectTrigger className="w-full" id="filter-city">
-                  <div className="flex items-center gap-1.5 truncate">
-                    <MapPin className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
-                    <span className="text-muted-foreground font-medium">City:</span>
-                    <SelectValue placeholder="All" />
-                  </div>
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All</SelectItem>
-                  {cities.map((c: string) => (
-                    <SelectItem key={c} value={c}>{c}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-
-              <Select value={budget || 'all'} onValueChange={(v) => handleFilter('budget', v as string)}>
-                <SelectTrigger className="w-full" id="filter-budget">
-                  <div className="flex items-center gap-1.5 truncate">
-                    <DollarSign className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
-                    <span className="text-muted-foreground font-medium">Budget:</span>
-                    <SelectValue placeholder="All" />
-                  </div>
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All</SelectItem>
-                  {BUDGET_OPTIONS.map((b) => (
-                    <SelectItem key={b.value} value={b.value}>{b.label}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-
-              <Select value={intake || 'all'} onValueChange={(v) => handleFilter('intake', v as string)}>
-                <SelectTrigger className="w-full" id="filter-intake">
-                  <div className="flex items-center gap-1.5 truncate">
-                    <Calendar className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
-                    <span className="text-muted-foreground font-medium">Intake:</span>
-                    <SelectValue placeholder="All" />
-                  </div>
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All</SelectItem>
-                  {INTAKE_OPTIONS.map((i) => (
-                    <SelectItem key={i} value={i}>{i}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-
-              <Select value={sort} onValueChange={(v) => handleFilter('sort', v as string)}>
-                <SelectTrigger className="w-full" id="filter-sort">
-                  <div className="flex items-center gap-1.5 truncate">
-                    <ArrowUpDown className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
-                    <span className="text-muted-foreground font-medium">Sort:</span>
-                    <SelectValue placeholder="A-Z" />
-                  </div>
-                </SelectTrigger>
-                <SelectContent>
-                  {SORT_OPTIONS.map((o) => (
-                    <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>
+                  {SORT_OPTIONS.map((opt) => (
+                    <SelectItem key={opt.value} value={opt.value} className="text-xs">
+                      {opt.label}
+                    </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
             </div>
           </div>
 
-          {/* Grid */}
+          {/* Active Filter Chips */}
+          <ActiveFilterChips
+            filters={activeFilters}
+            onRemove={handleRemoveFilter}
+            onClearAll={handleClearAll}
+          />
+
+          {/* Programs Grid */}
           {isLoading ? (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
-              {Array.from({ length: 8 }).map((_, i) => <SkeletonCard key={i} />)}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 pt-2">
+              {Array.from({ length: 6 }).map((_, i) => (
+                <SkeletonCard key={i} />
+              ))}
             </div>
           ) : programs.length === 0 ? (
-            <EmptyState
-              title="No programs found"
-              description="Try adjusting your search or removing filters to see more results."
-            />
+            <div className="py-16 text-center">
+              <EmptyState
+                icon={<GraduationCap className="h-7 w-7 text-muted-foreground" />}
+                title="No degree programs matched your search"
+                description="Try adjusting your keywords, broadening your tuition budget, or clearing filter criteria."
+              />
+            </div>
           ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
-              {programs.map((p) => <ProgramCard key={p._id} program={p} />)}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 pt-2">
+              {programs.map((program) => (
+                <ProgramCard key={program._id} program={program} />
+              ))}
             </div>
           )}
 
-          {pagination && (
-            <Pagination
-              page={pagination.page}
-              totalPages={pagination.pages}
-              onPageChange={setPage}
-            />
+          {/* Pagination */}
+          {pagination && pagination.pages > 1 && (
+            <div className="pt-8 flex justify-center">
+              <Pagination
+                page={page}
+                totalPages={pagination.pages}
+                onPageChange={(p) => {
+                  setPage(p);
+                  window.scrollTo({ top: 300, behavior: 'smooth' });
+                }}
+              />
+            </div>
           )}
         </div>
       </main>
+
+      {/* Floating Comparison Tray */}
+      <ComparisonTray />
+
       <Footer />
     </div>
   );
@@ -413,7 +336,7 @@ function ProgramsContent() {
 
 export default function ProgramsPage() {
   return (
-    <Suspense fallback={<div className="min-h-screen flex items-center justify-center">Loading...</div>}>
+    <Suspense fallback={<div className="p-12 text-center text-sm font-semibold">Loading programs...</div>}>
       <ProgramsContent />
     </Suspense>
   );
